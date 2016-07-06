@@ -6,8 +6,8 @@
 Simple demonstration of Box visual.
 """
 
-from vispy import app, gloo, visuals, geometry
-#from vispy.geometry import create_box
+from vispy import app, gloo, visuals
+from vispy.geometry import create_box
 from vispy.visuals.transforms import MatrixTransform
 
 
@@ -16,7 +16,7 @@ class Canvas(app.Canvas):
     def __init__(self):
         app.Canvas.__init__(self, keys='interactive', size=(800, 550))
 
-        vertices, faces, outline = geometry.create_box(width=1, height=1, depth=1,
+        vertices, faces, outline = create_box(width=1, height=1, depth=1,
                                               width_segments=4,
                                               height_segments=8,
                                               depth_segments=16)
