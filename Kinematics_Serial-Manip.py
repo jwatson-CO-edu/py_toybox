@@ -33,7 +33,6 @@ add_first_valid_dir_to_path( [ '/media/jwatson/FILEPILE/Python/ResearchEnv',
 from ResearchEnv import * # Load the custom environment
 from ResearchUtils.Vector import *
 from ResearchUtils.Plotting import *
-#import matplotlib as mpl
 
 # == End Init ==========================================================================================================
 
@@ -108,5 +107,18 @@ d_56 = Q06.apply_to( [0,0,80] )
 endpoint = d_01 + d_12 + d_23 + d_34 + d_45 + d_56
 
 print endpoint
+print [0,0,0] , d_01 , d_12 , d_23 , d_34 , d_45 , d_56
 
-plot_chain( [ [0,0,0] , d_01 , d_12 , d_23 , d_34 , d_45 , d_56 ] )
+def vec_chain_points(vecList):
+    ptsList = [ vecList[0] ]
+    for i in range(1,len(vecList)):
+        ptsList.append( np.add( vecList[-1] , vecList[i] ) )
+    return ptsList
+    
+linkPoints = vec_chain_points( [ [0,0,0] , d_01 , d_12 , d_23 , d_34 , d_45 , d_56 ] )
+print linkPoints
+
+#plot_chain( [ [0,0,0] , d_01 , d_12 , d_23 , d_34 , d_45 , d_56 ] )
+#plot_points_only_list( [ [0,0,0] , d_01 , d_12 , d_23 , d_34 , d_45 , d_56 ] )
+#plot_points_only_list( [ [0,0,0],[0,0,4],[0,4,4],[4,0,0],[4,0,4],[4,4,0],[4,4,4],[0,4,0] ] )
+plot_chain( linkPoints )
