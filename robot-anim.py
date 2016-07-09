@@ -52,12 +52,13 @@ def lab_to_screen_transform(*labFrameCoords):
     return None
 
 def polr_2_cart(polarCoords):
-    """ Convert polar coordinates [radius , angle (radians)] to cartesian [x , y]. Theta = 0 is UP """
+    """ Convert polar coordinates [radius , angle (radians)] to cartesian [x , y]. Theta = 0 is UP = Y+ """
     return [ polarCoords[0] * sin(polarCoords[1]) , polarCoords[0] * cos(polarCoords[1]) ]
     # TODO : Look into imaginary number transformation and perform a benchmark
     
 def cart_2_polr(cartCoords):
-    pass # FIXME: define this for the sake of symmetry, I feel like I have written this many times!
+    """ Convert cartesian coordinates [x , y] to polar coordinates [radius , angle (radians)]. Theta = 0 is UP = Y+ """
+    return [ vec_mag(cartCoords) , atan2(-cartCoords[0], cartCoords[1]) ]
 
 """
 == Cheap Isometric Projection ==
@@ -67,7 +68,7 @@ representation. Transforming coordinates from R3 to Cheap Iso is just a matter o
 a 2D non-orthogonal "basis vector" and adding the resultants.
 """
 def cheap_iso_transform(R3triple):
-    """ Transform R3 coordinates into a cheap isometric projection in 2D """
+    """ Transform R3 coordinates into a cheap isometric projection in 2D, as described above """
     # NOTE: You will need to scale thye resulting coords according to the need of the application
     return np.multiply( cheap_iso_transform.xBasis , R3triple[0] ) + \
            np.multiply( cheap_iso_transform.yBasis , R3triple[1] ) + \
@@ -76,3 +77,17 @@ def cheap_iso_transform(R3triple):
 cheap_iso_transform.zBasis = [ 0.0 , 1.0 ] 
 cheap_iso_transform.xBasis = polr_2_cart( [1.0 , 2.0/3 * pi] )
 cheap_iso_transform.yBasis = polr_2_cart( [1.0 , 1.0/3 * pi] )
+
+class tk_segment(object):
+    def __init__(self,bgnPnt,endPnt,tkSegment):
+        self.bgn = bgnPnt
+        self.end = endPnt
+        self.drawHandle = tkSegment
+    def set_pnts(self,bgnPnt,endPnt):
+        self.bgn = bgnPnt
+        self.end = endPnt
+    def draw(self):
+        pass # FIXME: code to move the segment here, move by endpoints
+        
+staticSegments = []  # List of static segments for the simulation, drawn once and never moved again during the simulation
+dynamicSegments = [] # List of dynamic segments, subject to movement throughout the simulation
