@@ -78,16 +78,114 @@ cheap_iso_transform.zBasis = [ 0.0 , 1.0 ]
 cheap_iso_transform.xBasis = polr_2_cart( [1.0 , 2.0/3 * pi] )
 cheap_iso_transform.yBasis = polr_2_cart( [1.0 , 1.0/3 * pi] )
 
-class tk_segment(object):
-    def __init__(self,bgnPnt,endPnt,tkSegment):
+class Segment(object):
+    """ A line segment to be displayed on a Tkinter canvas """
+    def __init__(self,bgnPnt,endPnt,TKcanvas):
+        """ Assign vars and create the canvas object 'self.drawHandle' """
         self.bgn = bgnPnt
         self.end = endPnt
-        self.drawHandle = tkSegment
+        self.drawHandle = TKcanvas.create_line( bgnPnt[0] , bgnPnt[1] , endPnt[0] , endPnt[1] )
+        self.canvas = TKcanvas
     def set_pnts(self,bgnPnt,endPnt):
+        """ Set the endpoints as two-element iterables """
         self.bgn = bgnPnt
         self.end = endPnt
     def draw(self):
-        pass # FIXME: code to move the segment here, move by endpoints
+        """ Update the position of the segment on the canvas """
+        self.canvas.coords( self.drawHandle , bgnPnt[0] , bgnPnt[1] , endPnt[0] , endPnt[1] )
         
 staticSegments = []  # List of static segments for the simulation, drawn once and never moved again during the simulation
 dynamicSegments = [] # List of dynamic segments, subject to movement throughout the simulation
+
+"""
+class Application:
+    def __initGUI(self, win):
+        ## Window ##
+        self.win = win
+
+        ## Initialize Frame ##
+        win.grid()
+        self.dec = -.5
+        self.inc = .5
+        self.tickTime = 0.1
+        
+        ## Canvas ##
+        self.canvas = Tkinter.Canvas(root, height=200, width=1000)
+        self.canvas.grid(row=2,columnspan=10)
+        
+    def __init__(self, win):
+
+        self.ep = 0
+        self.ga = 2
+        self.al = 2
+        self.stepCount = 0
+        ## Init Gui
+
+        self.__initGUI(win)
+        
+        # Start GUI
+        self.running = True
+        self.stopped = False
+        self.stepsToSkip = 0
+        self.thread = threading.Thread(target=self.run)
+        self.thread.start()
+        
+    def exit(self):
+        self.running = False
+        for i in range(5):
+            if not self.stopped:
+                time.sleep(0.1)
+        try:
+            self.win.destroy()
+        except:
+            pass
+        sys.exit(0)
+        
+    def step(self):
+
+        self.stepCount += 1
+        
+    def run(self):
+        self.stepCount = 0
+        self.learner.startEpisode()
+        while True:
+            minSleep = .01
+            tm = max(minSleep, self.tickTime)
+            time.sleep(tm)
+            self.stepsToSkip = int(tm / self.tickTime) - 1
+
+            if not self.running:
+                self.stopped = True
+                return
+            for i in range(self.stepsToSkip):
+                self.step()
+            self.stepsToSkip = 0
+            self.step()
+#          self.robot.draw()
+        self.learner.stopEpisode()
+
+    def start(self):
+        self.win.mainloop()
+        
+def run():
+    global root
+    root = Tkinter.Tk()
+    root.title( 'Crawler GUI' )
+    root.resizable( 0, 0 )
+
+#  root.mainloop()
+
+
+    app = Application(root)
+    def update_gui():
+        app.robot.draw(app.stepCount, app.tickTime)
+        root.after(10, update_gui)
+    update_gui()
+
+    root.protocol( 'WM_DELETE_WINDOW', app.exit)
+    try:
+        app.start()
+    except:
+        app.exit()
+
+"""
