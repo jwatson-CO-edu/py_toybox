@@ -8,7 +8,7 @@ from __future__ import division # Future imports must be called before everythin
 """
 robot-anim.py , Built on Spyder for Python 2.7
 James Watson, 2016 July
-Simple graphics for a simple stick-figure robot
+Display of a serial manipulator, stick robot
 """
 
 """
@@ -16,7 +16,9 @@ Simple graphics for a simple stick-figure robot
 * For now, points and segments will have persistence on the canvas and will be moved on repaint. (That is what Tkinter 
   is made for anyway) For the purposes of this stick robot, world objects will not be subject to rapid creation/distruction 
   or occlusion. Those are concerns for a more complex sim on another day!
-
+* Will not be messing with threads until it becomes absolutely necessary. Calcs will be counted on to finish between
+  frames until proven otherwise.
+* Target framerate is 25fps, leaving 40ms for calcs and repaint
 """
 # == Init Environment ==================================================================================================
 import sys, os.path
@@ -39,26 +41,21 @@ add_first_valid_dir_to_path( [ '/home/jwatson/regrasp_planning/researchenv',
                                '/media/jwatson/FILEPILE/Python/ResearchEnv' ] )
 from ResearchEnv import * # Load the custom environment
 from ResearchUtils.Vector import *
+from Tkinter import *
+import time
 
 # == End Init ==========================================================================================================
 
-def lab_to_screen_transform(*labFrameCoords):
-    """ Transform natural coordinates in the lab frame to coordinates on the screen display """
-    if len(labFrameCoords) == 1:
-        pass # FIXME: complete this function
-    else:
-        for coord in labFrameCoords:
-            pass
-    return None
-
-def polr_2_cart(polarCoords):
+def polr_2_cart(polarCoords): # TODO: Send this to the Vector module
     """ Convert polar coordinates [radius , angle (radians)] to cartesian [x , y]. Theta = 0 is UP = Y+ """
     return [ polarCoords[0] * sin(polarCoords[1]) , polarCoords[0] * cos(polarCoords[1]) ]
     # TODO : Look into imaginary number transformation and perform a benchmark
     
-def cart_2_polr(cartCoords):
+def cart_2_polr(cartCoords): # TODO: Send this to the Vector module
     """ Convert cartesian coordinates [x , y] to polar coordinates [radius , angle (radians)]. Theta = 0 is UP = Y+ """
     return [ vec_mag(cartCoords) , atan2(-cartCoords[0], cartCoords[1]) ]
+
+# == Cheap Iso ==
 
 """
 == Cheap Isometric Projection ==
@@ -78,18 +75,41 @@ cheap_iso_transform.zBasis = [ 0.0 , 1.0 ]
 cheap_iso_transform.xBasis = polr_2_cart( [1.0 , 2.0/3 * pi] )
 cheap_iso_transform.yBasis = polr_2_cart( [1.0 , 1.0/3 * pi] )
 
+# = Rendering Helpers =
+
+def lab_to_screen_transform(labFrameCoords):
+    """ Transform natural coordinates in the lab frame to coordinates on the screen display """
+    # NOTE: For now assume to handle one pair of coords, not handling the recursive case!
+    return [ labFrameCoords[0] , -labFrameCoords[1] ]
+    
+def lad_coord_chain_to_screen(coordList):
+    """ Convert a list of coordinates in the lab frame to the screen frame """
+    rtnCoords = []
+    for coord in coordList:
+        rtnCoords.append( lab_to_screen_transform(coord) )
+    return rtnCoords
+
+# = End Rendering =
+
+# == End Iso ==
+
 class Segment(object):
     """ A line segment to be displayed on a Tkinter canvas """
-    def __init__(self,bgnPnt,endPnt,TKcanvas):
-        """ Assign vars and create the canvas object 'self.drawHandle' """
+    def __init__(self,bgnPnt,endPnt,TKcanvas=None):
+        """ Assign vars and conditionally create the canvas object 'self.drawHandle' """
         self.bgn = bgnPnt
         self.end = endPnt
-        self.drawHandle = TKcanvas.create_line( bgnPnt[0] , bgnPnt[1] , endPnt[0] , endPnt[1] )
-        self.canvas = TKcanvas
+        if TKcanvas: # If canvas is available at instantiation, go ahead and create the widget
+            self.drawHandle = TKcanvas.create_line( bgnPnt[0] , bgnPnt[1] , endPnt[0] , endPnt[1] )
+            self.canvas = TKcanvas
     def set_pnts(self,bgnPnt,endPnt):
         """ Set the endpoints as two-element iterables """
         self.bgn = bgnPnt
         self.end = endPnt
+    def attach_to_canvas(self, TKcanvas):
+        """ Given a 'TKcanvas', create the graphics widget and attach it to the that canvas """
+        self.drawHandle = TKcanvas.create_line( bgnPnt[0] , bgnPnt[1] , endPnt[0] , endPnt[1] )
+        self.canvas = TKcanvas
     def draw(self):
         """ Update the position of the segment on the canvas """
         self.canvas.coords( self.drawHandle , bgnPnt[0] , bgnPnt[1] , endPnt[0] , endPnt[1] )
@@ -97,95 +117,72 @@ class Segment(object):
 staticSegments = []  # List of static segments for the simulation, drawn once and never moved again during the simulation
 dynamicSegments = [] # List of dynamic segments, subject to movement throughout the simulation
 
+winTitle = 'Robot Sim'
+winHeight = 500
+winWidth = 500   
+
+# GUI Plan
+# 1. Init Tkinter root
+rootWin = Tk()
+# 2. Set up window
+canvas = Canvas(rootWin, width=winWidth, height = winHeight)
+# 3. Pack window
+canvas.pack()
+# 4. Loop function
+    # 4.a. Calc geometry
+    # 4.b. Send new coords to segments
+    # 4.c. Take input from widgets
+    # 4.d. Wait remainder of 40ms
+    # 4.e. Mark beginning of next loop
+    # 4.f. Update window
+
 """
-class Application:
-    def __initGUI(self, win):
-        ## Window ##
-        self.win = win
+import Tkinter
 
-        ## Initialize Frame ##
-        win.grid()
-        self.dec = -.5
-        self.inc = .5
-        self.tickTime = 0.1
-        
-        ## Canvas ##
-        self.canvas = Tkinter.Canvas(root, height=200, width=1000)
-        self.canvas.grid(row=2,columnspan=10)
-        
-    def __init__(self, win):
+topWin = Tkinter.Tk()
 
-        self.ep = 0
-        self.ga = 2
-        self.al = 2
-        self.stepCount = 0
-        ## Init Gui
+canvas = Tkinter.Canvas(topWin, bg='blue', height=250, width=300)
+coord = (10,50,240,210)
+arc = canvas.create_arc(coord,start=0,extent=150,fill='red')
 
-        self.__initGUI(win)
-        
-        # Start GUI
-        self.running = True
-        self.stopped = False
-        self.stepsToSkip = 0
-        self.thread = threading.Thread(target=self.run)
-        self.thread.start()
-        
-    def exit(self):
-        self.running = False
-        for i in range(5):
-            if not self.stopped:
-                time.sleep(0.1)
-        try:
-            self.win.destroy()
-        except:
-            pass
-        sys.exit(0)
-        
-    def step(self):
+canvas.pack()
+topWin.mainloop()
+"""
 
-        self.stepCount += 1
-        
-    def run(self):
-        self.stepCount = 0
-        self.learner.startEpisode()
+"""
+class SimApp(object):
+     def __init__(self):
+        self.root = Tk()
+        self.canvas = Canvas(self.root, width=400, height = 400)
+        self.canvas.pack()
+        self.alien1 = self.canvas.create_oval(20, 260, 120, 360, outline='blue') #,         fill='blue')
+        self.alien2 = self.canvas.create_oval(2, 2, 40, 40, outline='red') #, fill='red')
+        self.canvas.pack()
+        self.root.after(0, self.animation)
+        self.root.mainloop()
+
+     def animation(self):
+        track = 0
         while True:
-            minSleep = .01
-            tm = max(minSleep, self.tickTime)
-            time.sleep(tm)
-            self.stepsToSkip = int(tm / self.tickTime) - 1
+            x = 5
+            y = 0
+            if track == 0:
+               for i in range(0,51):
+                    time.sleep(0.025)
+                    self.canvas.move(self.alien1, x, y)
+                    self.canvas.move(self.alien2, x, y)
+                    self.canvas.update()
+               track = 1
+               print "check"
 
-            if not self.running:
-                self.stopped = True
-                return
-            for i in range(self.stepsToSkip):
-                self.step()
-            self.stepsToSkip = 0
-            self.step()
-#          self.robot.draw()
-        self.learner.stopEpisode()
+            else:
+               for i in range(0,51):
+                    time.sleep(0.025)
+                    self.canvas.move(self.alien1, -x, y)
+                    self.canvas.move(self.alien2, -x, y)
+                    self.canvas.update()
+               track = 0
+            print track
 
-    def start(self):
-        self.win.mainloop()
-        
-def run():
-    global root
-    root = Tkinter.Tk()
-    root.title( 'Crawler GUI' )
-    root.resizable( 0, 0 )
-
-#  root.mainloop()
-
-
-    app = Application(root)
-    def update_gui():
-        app.robot.draw(app.stepCount, app.tickTime)
-        root.after(10, update_gui)
-    update_gui()
-
-    root.protocol( 'WM_DELETE_WINDOW', app.exit)
-    try:
-        app.start()
-    except:
-        app.exit()
-
+#alien()
 """

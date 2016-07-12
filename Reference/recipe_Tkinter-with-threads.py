@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 """
 This recipe describes how to handle asynchronous I/O in an environment where
 you are running Tkinter as the graphical user interface. Tkinter is safe
@@ -12,6 +15,9 @@ but they add a lot of complexity to the application.
 
 Created by Jacob Hallén, AB Strakt, Sweden. 2001-10-17
 """
+# NOTE:  This script does not exit cleanly when run from within Spyder, freezing the console. Things are okay if run from
+#        the terminal, however.
+
 import Tkinter
 import time
 import threading
