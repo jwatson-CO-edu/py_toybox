@@ -33,12 +33,13 @@ add_first_valid_dir_to_path( [ '/media/jwatson/FILEPILE/Python/ResearchEnv',
 from ResearchEnv import * # Load the custom environment
 from ResearchUtils.Vector import *
 from ResearchUtils.Plotting import *
+from robotAnim import *
 
 # == End Init ==========================================================================================================
 
 # ~ Control ~
-Theta1 = -90
-Theta2 = 40
+Theta1 = 0
+Theta2 = 0
 Theta3 = 0
 Theta4 = 0
 Theta5 = 0
@@ -104,21 +105,34 @@ Q06 = Quaternion.serial_rots( Quaternion.k_rot_to_Quat( [0,0,1], Theta6),
                         Q05 )
 d_56 = Q06.apply_to( [0,0,80] )
 
-endpoint = d_01 + d_12 + d_23 + d_34 + d_45 + d_56
+startpoint = [0,0,0] # This is where the robot will be planted in the world frame
+endpoint = startpoint + d_01 + d_12 + d_23 + d_34 + d_45 + d_56
+
 
 print endpoint
-print [0,0,0] , d_01 , d_12 , d_23 , d_34 , d_45 , d_56
+print startpoint , d_01 , d_12 , d_23 , d_34 , d_45 , d_56
 
-def vec_chain_points(vecList):
+def sum_vector_chain(vecList):
     ptsList = [ vecList[0] ]
     for i in range(1,len(vecList)):
         ptsList.append( np.add( vecList[-1] , vecList[i] ) )
     return ptsList
     
-linkPoints = vec_chain_points( [ [0,0,0] , d_01 , d_12 , d_23 , d_34 , d_45 , d_56 ] )
+linkPoints = sum_vector_chain( [ startpoint , d_01 , d_12 , d_23 , d_34 , d_45 , d_56 ] )
 print linkPoints
+print bound_box_3D( linkPoints )
+
+foo = SegmentApp()
+
+armSegments = []
+for index in range(1,len(linkPoints)):
+    armSegments.append( Segment(linkPoints[index - 1] , linkPoints[index] , foo.canvas , 'white' ) )
+    
+foo.dynamicSegments = armSegments
+
+foo.run()
 
 #plot_chain( [ [0,0,0] , d_01 , d_12 , d_23 , d_34 , d_45 , d_56 ] )
 #plot_points_only_list( [ [0,0,0] , d_01 , d_12 , d_23 , d_34 , d_45 , d_56 ] )
 #plot_points_only_list( [ [0,0,0],[0,0,4],[0,4,4],[4,0,0],[4,0,4],[4,4,0],[4,4,4],[0,4,0] ] )
-plot_chain( linkPoints )
+#plot_chain( linkPoints )
