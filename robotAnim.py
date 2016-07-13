@@ -43,7 +43,7 @@ add_first_valid_dir_to_path( [ '/home/jwatson/regrasp_planning/researchenv',
 from ResearchEnv import * # Load the custom environment
 from ResearchUtils.Vector import *
 from Tkinter import *
-#import time
+import time
 
 # == End Init ==========================================================================================================
 
@@ -134,11 +134,11 @@ class Segment(object):
         self.canvas.itemconfig(self.drawHandle,fill=color)
     def attach_to_canvas(self, TKcanvas):
         """ Given a 'TKcanvas', create the graphics widget and attach it to the that canvas """
-        self.drawHandle = TKcanvas.create_line( bgnPnt[0] , bgnPnt[1] , endPnt[0] , endPnt[1] ) 
+        self.drawHandle = TKcanvas.create_line( self.bgn[0] , self.bgn[1] , self.end[0] , self.end[1] ) 
         self.canvas = TKcanvas
     def update(self):
         """ Update the position of the segment on the canvas """
-        self.canvas.coords( self.drawHandle , bgnPnt[0] , bgnPnt[1] , endPnt[0] , endPnt[1] )
+        self.canvas.coords( self.drawHandle , self.bgn[0] , self.bgn[1] , self.end[0] , self.end[1] )
   
 
 class SegmentApp(object):
@@ -156,6 +156,9 @@ class SegmentApp(object):
         self.renderScale = 1/2.0
         self.rootWin = Tk()
         self.rootWin.wm_title("Simple Robot Sim")
+        self.rootWin.protocol("WM_DELETE_WINDOW", self.callback_destroy)
+        self.calcFunc = None # Should really be loaded with something before running
+        self.winRunning = False
         # 2. Set up window
         self.canvas = Canvas(self.rootWin, width=self.winWidth, height = self.winHeight)
         self.canvas.config(background='black')
@@ -164,7 +167,9 @@ class SegmentApp(object):
         FLATORIGIN = self.FLATORIGIN
         self.set_stage()
         # 3. Pack window
-        self.canvas.pack()
+        self.canvas.grid(row=1, column=1)
+        # 3.a. Pack controls
+        self.init_controls()
 
     def set_stage(self): # TODO: Consider making this general for any sort of display simulation, only if needed
         """ Set up the canvas with line segments that will not change throughout the simulation """
@@ -174,15 +179,60 @@ class SegmentApp(object):
         for vecDex,vector in enumerate(scaledVecs):
             self.staticSegments.append( Segment( [0,0,0] , vector , TKcanvas=self.canvas, color=c[vecDex]) )
             
+    def init_controls(self):
+        """ Control sliders """ # TODO: Pack these into a frame
+        self.controlPanel = Frame(self.rootWin)
+        # Control Sliders
+        self.j1_sldr = Scale(self.controlPanel, from_=-170, to=170, orient=HORIZONTAL) #Theta1 > 170 or Theta1 < -170:
+        self.j2_sldr = Scale(self.controlPanel, from_=-190, to= 45, orient=HORIZONTAL) #Theta2 >  45 or Theta2 < -190:
+        self.j3_sldr = Scale(self.controlPanel, from_=-120, to=156, orient=HORIZONTAL) #Theta3 > 156 or Theta3 < -120:
+        self.j4_sldr = Scale(self.controlPanel, from_=-185, to=185, orient=HORIZONTAL) #Theta4 > 185 or Theta4 < -185:
+        self.j5_sldr = Scale(self.controlPanel, from_=-120, to=120, orient=HORIZONTAL) #Theta5 > 120 or Theta5 < -120:
+        self.j6_sldr = Scale(self.controlPanel, from_=-350, to=350, orient=HORIZONTAL) #Theta6 > 350 or Theta5 < -350:
+        # Control Labels
+        self.j1_labl = Label(self.controlPanel, text="Joint 1")
+        self.j2_labl = Label(self.controlPanel, text="Joint 2")
+        self.j3_labl = Label(self.controlPanel, text="Joint 3")
+        self.j4_labl = Label(self.controlPanel, text="Joint 4")
+        self.j5_labl = Label(self.controlPanel, text="Joint 5")
+        self.j6_labl = Label(self.controlPanel, text="Joint 6")
+        # Pack all widgets
+        self.j1_sldr.grid(row=2, column=1); self.j2_sldr.grid(row=2, column=2); self.j3_sldr.grid(row=2, column=3); # Joint controls 1-3
+        self.j1_labl.grid(row=3, column=1); self.j2_labl.grid(row=3, column=2); self.j3_labl.grid(row=3, column=3); # Slider labels  1-3
+        self.j4_sldr.grid(row=4, column=1); self.j5_sldr.grid(row=4, column=2); self.j6_sldr.grid(row=4, column=3); # Joint controls 4-6 
+        self.j4_labl.grid(row=5, column=1); self.j5_labl.grid(row=5, column=2); self.j6_labl.grid(row=5, column=3); # Slider labels  4-6
+        # Init slider values
+        self.j1_sldr.set(0); self.j2_sldr.set(-90); self.j3_sldr.set(0);
+        self.j4_sldr.set(0); self.j5_sldr.set(0); self.j6_sldr.set(0);
+        self.controlPanel.grid(row=1,column=2) # Pack the control panel
+    
+    def get_sliders_as_list(self):
+        """ Return a list of all slider values from j1 to j6 """
+        return [ self.j1_sldr.get() , self.j2_sldr.get() , self.j3_sldr.get() , self.j4_sldr.get() , self.j5_sldr.get() , self.j6_sldr.get() ]
+        
+    def callback_destroy(self):
+        self.winRunning = False
+        self.rootWin.destroy()
+        
     def run(self):
         # 4. Loop function
-        self.rootWin.mainloop()
+        #self.rootWin.mainloop()
+        last = -infty
+        self.winRunning = True
+        while self.winRunning:
             # 4.a. Calc geometry
+            self.calcFunc( self.get_sliders_as_list() )
             # 4.b. Send new coords to segments
             # 4.c. Take input from widgets
             # 4.d. Wait remainder of 40ms
+            elapsed = time.time() * 1000 - last
+            if elapsed < 40:
+                time.sleep( (40 - elapsed) / 1000.0 )
             # 4.e. Mark beginning of next loop
+            last = time.time() * 1000
             # 4.f. Update window
+            self.canvas.update()
+            self.rootWin.update()
     
 
 
