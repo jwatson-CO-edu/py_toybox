@@ -29,7 +29,8 @@ def add_first_valid_dir_to_path(dirList):
 # List all the places where the research environment could be
 add_first_valid_dir_to_path( [ '/media/jwatson/FILEPILE/Python/ResearchEnv',
                                '/home/jwatson/regrasp_planning/researchenv',
-                               'F:\Python\ResearchEnv' ] )
+                               'F:\Python\ResearchEnv',
+                               '/media/mawglin/FILEPILE/Python/ResearchEnv'] )
 from ResearchEnv import * # Load the custom environment
 from ResearchUtils.Vector import *
 from ResearchUtils.Plotting import *
@@ -45,8 +46,7 @@ def sum_vector_chain(vecList):
 
 def KUKA_chain_from_jnt_angles( Theta1 = 0 , Theta2 = 0 , Theta3 = 0 , Theta4 = 0 , Theta5 = 0 , Theta6 = 0):
 
-    # Corrections for home position
-    #Theta2 += -90
+    # Home position is not the same as the zero-angle position
     
     if Theta1 > 170 or Theta1 < -170:
         raise RuntimeWarning("Theta 1 was out of bounds! " + str(Theta1))
@@ -69,47 +69,75 @@ def KUKA_chain_from_jnt_angles( Theta1 = 0 , Theta2 = 0 , Theta3 = 0 , Theta4 = 
     Theta5 = radians( Theta6 )
     
     # ~ Link 1 ~ # OK
-    Q01  = Quaternion.k_rot_to_Quat([0,0,1], Theta1)
-    d_01 = [0,0,400] + Q01.apply_to( [-25,0,0] )
+    #Q01  = Quaternion.k_rot_to_Quat([0,0,1], Theta1)
+    
     
     # ~ Link 2 ~
     Alpha1 = pi/2
 #    Q02 = Quaternion.serial_rots( Quaternion.k_rot_to_Quat([0,0,1], Theta2) , 
 #                            Quaternion.k_rot_to_Quat([1,0,0], Alpha1), \
 #                            Q01 )
-    Q02 = Quaternion.serial_rots( Quaternion.k_rot_to_Quat([1,0,0], Alpha1) ,
-                                  Q01, 
-                                  Quaternion.k_rot_to_Quat([0,0,1], Theta2)   )
-    d_12 = Q02.apply_to( [-455,0,0] )
+    
                         
     # ~ Link 3 ~
-    Q03 = Quaternion.serial_rots( Quaternion.k_rot_to_Quat( [0,0,1], Theta3),
-                            Q02 )
-    d_23 = Q03.apply_to( [-35,0,0] )
+#    Q03 = Quaternion.serial_rots( Quaternion.k_rot_to_Quat( [0,0,1], Theta3),
+#                            Q02 )
+    
     
     # ~ Link 4 ~
     Alpha3 = pi/2
-    Q04 = Quaternion.serial_rots( Quaternion.k_rot_to_Quat( [0,0,1], Theta4), 
-                            Quaternion.k_rot_to_Quat([1,0,0], Alpha3), \
-                            Q03 )
-    d_34 = Q04.apply_to( [0,0,420] )
+#    Q04 = Quaternion.serial_rots( Quaternion.k_rot_to_Quat( [0,0,1], Theta4), 
+#                            Quaternion.k_rot_to_Quat([1,0,0], Alpha3), \
+#                            Q03 )
+    
     
     # ~ Link 5 ~
     Alpha4 = -pi/2
-    Q05 = Quaternion.serial_rots( Quaternion.k_rot_to_Quat( [0,0,1], Theta5), 
-                            Quaternion.k_rot_to_Quat([1,0,0], Alpha4), \
-                            Q04 )
-    d_45 = [0,0,0]
+#    Q05 = Quaternion.serial_rots( Quaternion.k_rot_to_Quat( [0,0,1], Theta5), # c
+#                            Quaternion.k_rot_to_Quat([1,0,0], Alpha4), # d
+#                            Q04 )
+    
     
     # ~ Link 6 ~
     Alpha5 = pi/2
-    Q06 = Quaternion.serial_rots( Quaternion.k_rot_to_Quat( [0,0,1], Theta6), 
-                            Quaternion.k_rot_to_Quat([1,0,0], Alpha5), \
-                            Q05 )
-    d_56 = Q06.apply_to( [0,0,80] )
+#    Q06 = Quaternion.serial_rots( Quaternion.k_rot_to_Quat( [0,0,1], Theta6), # a
+#                            Quaternion.k_rot_to_Quat([1,0,0], Alpha5), # b
+#                            Q05 )
+    
     
     startpoint = [0,0,0] # This is where the robot will be planted in the world frame
     #endpoint = startpoint + d_01 + d_12 + d_23 + d_34 + d_45 + d_56
+    
+    # Link 6
+    a = Quaternion.k_rot_to_Quat( [0,0,1], Theta6)
+    b = Quaternion.k_rot_to_Quat([1,0,0], Alpha5)
+    # Link 5
+    c = Quaternion.k_rot_to_Quat( [0,0,1], Theta5)
+    d = Quaternion.k_rot_to_Quat([1,0,0], Alpha4)
+    # Link 4
+    e = Quaternion.k_rot_to_Quat( [0,0,1], Theta4)
+    f = Quaternion.k_rot_to_Quat([1,0,0], Alpha3)
+    # Link 3
+    g = Quaternion.k_rot_to_Quat( [0,0,1], Theta3)
+    # Link 2
+    h = Quaternion.k_rot_to_Quat([0,0,1], Theta2)
+    i = Quaternion.k_rot_to_Quat([1,0,0], Alpha1)
+    # Link 1
+    j = Quaternion.k_rot_to_Quat([0,0,1], Theta1)
+    
+    Q06 = Quaternion.serial_rots( a , b , c , d , e , f , g , h , i , j )
+    Q05 =         Quaternion.serial_rots( c , d , e , f , g , h , i , j )
+    Q04 =                 Quaternion.serial_rots( e , f , g , h , i , j )
+    Q03 =                         Quaternion.serial_rots( g , h , i , j )
+    Q02 =                             Quaternion.serial_rots( h , i , j )
+    Q01 =                                                             j
+    
+    d_01 = [0,0,400] + Q01.apply_to( [-25,0,0] )
+    d_12 = Q02.apply_to( [-455,0,0] )
+    d_23 = Q03.apply_to( [-35,0,0] )
+    d_34 = Q04.apply_to( [0,0,420] )
+    d_45 = [0,0,0]
+    d_56 = Q06.apply_to( [0,0,80] )
     
     
     #print endpoint
