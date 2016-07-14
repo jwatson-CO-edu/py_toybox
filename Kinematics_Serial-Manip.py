@@ -125,13 +125,29 @@ def KUKA_chain_from_jnt_angles( Theta1 = 0 , Theta2 = 0 , Theta3 = 0 , Theta4 = 
     # Link 1
     j = Quaternion.k_rot_to_Quat([0,0,1], Theta1)
     
-    Q06 = Quaternion.serial_rots( a , b , c , d , e , f , g , h , i , j )
-    Q05 =         Quaternion.serial_rots( c , d , e , f , g , h , i , j )
-    Q04 =                 Quaternion.serial_rots( e , f , g , h , i , j )
-    Q03 =                         Quaternion.serial_rots( g , h , i , j )
-    Q02 =                             Quaternion.serial_rots( h , i , j )
-    Q01 =                                                             j
+#    Q06 = Quaternion.serial_rots( a , b , c , d , e , f , g , h , i , j )
+#    Q05 =         Quaternion.serial_rots( c , d , e , f , g , h , i , j )
+#    Q04 =                 Quaternion.serial_rots( e , f , g , h , i , j )
+#    Q03 =                         Quaternion.serial_rots( g , h , i , j )
+#    Q02 =                             Quaternion.serial_rots( h , i , j )
+#    Q01 =                                                             j
     
+    #                             6   6 \ 5   5 \ 4   4 \ 3 \ 2   2 \ 1
+#    Q06 = Quaternion.serial_rots( b , a , d , c , f , e , g , i , h , j )
+#    Q05 =         Quaternion.serial_rots( d , c , f , e , g , i , h , j )
+#    Q04 =                 Quaternion.serial_rots( f , e , g , i , h , j )
+#    Q03 =                         Quaternion.serial_rots( g , i , h , j )
+#    Q02 =                             Quaternion.serial_rots( i , h , j )
+#    Q01 =                                                             j
+ 
+
+    Q06 = Quaternion.serial_rots( j , i , h , g , f , e , d , c , b , a )
+    Q05 = Quaternion.serial_rots( j , i , h , g , f , e , d , c )
+    Q04 = Quaternion.serial_rots( j , i , h , g , f , e )
+    Q03 = Quaternion.serial_rots( j , i , h , g )
+    Q02 = Quaternion.serial_rots( j , i , h )
+    Q01 =                         j
+   
     d_01 = [0,0,400] + Q01.apply_to( [-25,0,0] )
     d_12 = Q02.apply_to( [-455,0,0] )
     d_23 = Q03.apply_to( [-35,0,0] )
