@@ -6,7 +6,7 @@
 from __future__ import division # Future imports must be called before everything else, including triple-quote docs!
 
 """
-robot-anim.py , Built on Spyder for Python 2.7
+robotAnim.py , Built on Spyder for Python 2.7
 James Watson, 2016 July
 Display of a serial manipulator, stick robot
 """
@@ -46,15 +46,6 @@ from Tkinter import *
 import time
 
 # == End Init ==========================================================================================================
-
-def polr_2_cart(polarCoords): # TODO: Send this to the Vector module
-    """ Convert polar coordinates [radius , angle (radians)] to cartesian [x , y]. Theta = 0 is UP = Y+ """
-    return [ polarCoords[0] * sin(polarCoords[1]) , polarCoords[0] * cos(polarCoords[1]) ]
-    # TODO : Look into imaginary number transformation and perform a benchmark
-    
-def cart_2_polr(cartCoords): # TODO: Send this to the Vector module
-    """ Convert cartesian coordinates [x , y] to polar coordinates [radius , angle (radians)]. Theta = 0 is UP = Y+ """
-    return [ vec_mag(cartCoords) , atan2(-cartCoords[0], cartCoords[1]) ]
 
 # == Cheap Iso ==
 
@@ -207,8 +198,8 @@ class SegmentApp(object):
         self.controlPanel.grid(row=1,column=2) # Pack the control panel
     
     def get_sliders_as_list(self):
-        """ Return a list of all slider values from j1 to j6 """
-        return [ self.j1_sldr.get() , self.j2_sldr.get() , self.j3_sldr.get() , self.j4_sldr.get() , self.j5_sldr.get() , self.j6_sldr.get() ]
+        """ Return a list of all slider values from j1 to j6 """ # TODO: ITERATIVE TROUBLESHOOTING
+        return [ self.j1_sldr.get() , self.j2_sldr.get() , self.j3_sldr.get() ]#, self.j4_sldr.get() , self.j5_sldr.get() , self.j6_sldr.get() ]
         
     def callback_destroy(self):
         self.winRunning = False
