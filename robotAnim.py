@@ -199,7 +199,7 @@ class SegmentApp(object):
     
     def get_sliders_as_list(self):
         """ Return a list of all slider values from j1 to j6 """ # TODO: ITERATIVE TROUBLESHOOTING
-        return [ self.j1_sldr.get() , self.j2_sldr.get() , self.j3_sldr.get() ]#, self.j4_sldr.get() , self.j5_sldr.get() , self.j6_sldr.get() ]
+        return [ self.j1_sldr.get() , self.j2_sldr.get() , self.j3_sldr.get() , self.j4_sldr.get() , self.j5_sldr.get() , self.j6_sldr.get() ]
         
     def callback_destroy(self):
         self.winRunning = False
@@ -222,7 +222,9 @@ class SegmentApp(object):
             # 4.e. Mark beginning of next loop
             last = time.time() * 1000
             # 4.f. Update window
-            self.canvas.update()
+            if not self.winRunning:
+                break
+            self.canvas.update() # don't know how to prevent these from being called again after the window is destroyed
             self.rootWin.update()
     
 
