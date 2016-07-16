@@ -204,6 +204,7 @@ class SegmentApp(object):
     def callback_destroy(self):
         self.winRunning = False
         self.rootWin.destroy()
+        exit()
         
     def run(self):
         # 4. Loop function
