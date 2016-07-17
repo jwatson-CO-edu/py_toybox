@@ -99,38 +99,7 @@ def chain_R3_scrn(R3chain, scale):
 
 # == End Iso ==
 
-class Segment(object):
-    """ A line segment to be displayed on a Tkinter canvas """
-    def __init__(self,bgnPnt,endPnt,TKcanvas=None, color=None):
-        """ Assign vars and conditionally create the canvas object 'self.drawHandle' """
-        self.transform = coord_R3_scrn # Optionally change this for a different rendering engine
-        self.displayScale = 1/4.0
-        self.bgn = self.transform(bgnPnt, self.displayScale)
-        self.end = self.transform(endPnt, self.displayScale)
-        print self.bgn , self.end
-        if TKcanvas: # If canvas is available at instantiation, go ahead and create the widget
-            self.canvas = TKcanvas
-            self.drawHandle = TKcanvas.create_line( self.bgn[0] , self.bgn[1] , self.end[0] , self.end[1]) 
-            print "Item",self.drawHandle,"created on canvas"
-            if color:
-                self.canvas.itemconfig(self.drawHandle,fill=color)
-                print "Item",self.drawHandle,"has color", color
-            
-    def set_pnts(self,bgnPnt,endPnt):
-        """ Set the endpoints as two-element iterables """
-        self.bgn = self.transform(bgnPnt, self.displayScale)
-        self.end = self.transform(endPnt, self.displayScale)
-    def set_color(self, color):
-        """ Set the 'color' of the line """
-        self.canvas.itemconfig(self.drawHandle,fill=color)
-    def attach_to_canvas(self, TKcanvas):
-        """ Given a 'TKcanvas', create the graphics widget and attach it to the that canvas """
-        self.drawHandle = TKcanvas.create_line( self.bgn[0] , self.bgn[1] , self.end[0] , self.end[1] ) 
-        self.canvas = TKcanvas
-    def update(self):
-        """ Update the position of the segment on the canvas """
-        self.canvas.coords( self.drawHandle , self.bgn[0] , self.bgn[1] , self.end[0] , self.end[1] )
-  
+# 'Segment' moved to ResearchUtils.Vector
 
 class SegmentApp(object):
     """ An Tkinter display to be paired with simple simulations that need line segments displayed """
