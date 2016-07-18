@@ -69,55 +69,35 @@ def KUKA_chain_from_jnt_angles( Theta1 = 0 , Theta2 = 0 , Theta3 = 0 , Theta4 = 
     Theta6 = radians( Theta6 )
     
     # ~ Link 1 ~ # OK
-    #Q01  = Quaternion.k_rot_to_Quat([0,0,1], Theta1)
-    
     
     # ~ Link 2 ~
     Alpha1 = pi/2
-#    Q02 = Quaternion.serial_rots( Quaternion.k_rot_to_Quat([0,0,1], Theta2) , 
-#                            Quaternion.k_rot_to_Quat([1,0,0], Alpha1), \
-#                            Q01 )
-    
-                        
+                      
     # ~ Link 3 ~
-#    Q03 = Quaternion.serial_rots( Quaternion.k_rot_to_Quat( [0,0,1], Theta3),
-#                            Q02 )
-    
-    
+  
     # ~ Link 4 ~
     Alpha3 = pi/2
-#    Q04 = Quaternion.serial_rots( Quaternion.k_rot_to_Quat( [0,0,1], Theta4), 
-#                            Quaternion.k_rot_to_Quat([1,0,0], Alpha3), \
-#                            Q03 )
-    
-    
+
     # ~ Link 5 ~
     Alpha4 = -pi/2
-#    Q05 = Quaternion.serial_rots( Quaternion.k_rot_to_Quat( [0,0,1], Theta5), # c
-#                            Quaternion.k_rot_to_Quat([1,0,0], Alpha4), # d
-#                            Q04 )
-    
-    
+
     # ~ Link 6 ~
     Alpha5 = pi/2
-#    Q06 = Quaternion.serial_rots( Quaternion.k_rot_to_Quat( [0,0,1], Theta6), # a
-#                            Quaternion.k_rot_to_Quat([1,0,0], Alpha5), # b
-#                            Q05 )
-    
+
     
     startpoint = [0,0,0] # This is where the robot will be planted in the world frame
     #endpoint = startpoint + d_01 + d_12 + d_23 + d_34 + d_45 + d_56
     
-#    # Link 6
+    # Link 6
     a = Quaternion.k_rot_to_Quat( [0,0,1], Theta6)
     b = Quaternion.k_rot_to_Quat([1,0,0], Alpha5)
-#    # Link 5
+    # Link 5
     c = Quaternion.k_rot_to_Quat( [0,0,1], Theta5)
     d = Quaternion.k_rot_to_Quat([1,0,0], Alpha4)
-#    # Link 4
+    # Link 4
     e = Quaternion.k_rot_to_Quat( [0,0,1], Theta4)
-    f = Quaternion.k_rot_to_Quat([1,0,0], Alpha3) # FIXME: Find out if this has been applied correctly
-#    # Link 3
+    f = Quaternion.k_rot_to_Quat([1,0,0], Alpha3) 
+    # Link 3
     g = Quaternion.k_rot_to_Quat( [0,0,1], Theta3)
     # Link 2
     h = Quaternion.k_rot_to_Quat([0,0,1], Theta2) # TODO: ITERATIVE TROUBLESHOOTING
@@ -126,29 +106,12 @@ def KUKA_chain_from_jnt_angles( Theta1 = 0 , Theta2 = 0 , Theta3 = 0 , Theta4 = 
     j = Quaternion.k_rot_to_Quat([0,0,1], Theta1)
     
     Q06 = Quaternion.serial_rots( a , b , c , d , e , f , g , h , i , j )
-    Q05 =         Quaternion.serial_rots( c , d , e , f , g , h , i , j )
+   #Q05 =         Quaternion.serial_rots( c , d , e , f , g , h , i , j ) # No link to rotate, joints are coincident
     Q04 =                 Quaternion.serial_rots( e , f , g , h , i , j )
     Q03 =                         Quaternion.serial_rots( g , h , i , j )
     Q02 =                             Quaternion.serial_rots( h , i , j ) # TODO: ITERATIVE TROUBLESHOOTING
     Q01 =                                                             j
-    
-    #                             6   6 \ 5   5 \ 4   4 \ 3 \ 2   2 \ 1
-#    Q06 = Quaternion.serial_rots( b , a , d , c , f , e , g , i , h , j )
-#    Q05 =         Quaternion.serial_rots( d , c , f , e , g , i , h , j )
-#    Q04 =                 Quaternion.serial_rots( f , e , g , i , h , j )
-#    Q03 =                         Quaternion.serial_rots( g , i , h , j )
-#    Q02 =                           Quaternion.serial_rots( h , i , j )  
-#    Q01 =                                                             j
 
-
-#    Q06 = Quaternion.serial_rots( j , i , h , g , f , e , d , c , b , a )
-#    Q05 = Quaternion.serial_rots( j , i , h , g , f , e , d , c )
-#    Q04 = Quaternion.serial_rots( j , i , h , g , f , e )
-#    Q03 = Quaternion.serial_rots( j , i , h , g )
-#    Q02 = Quaternion.serial_rots( j , i , h )
-#    Q01 =                         j
-   
-    #d_01 = [0,0,400] + Q01.apply_to( [-25,0,0] )
     d_01 =  Q01.apply_to( np.add( [0,0,400] , [-25,0,0] ) )
     d_12 = Q02.apply_to( [-455,0,0] ) # TODO: ITERATIVE TROUBLESHOOTING
     d_23 = Q03.apply_to( [-35,0,0] )

@@ -32,6 +32,7 @@ add_first_valid_dir_to_path( [ '/home/jwatson/regrasp_planning/researchenv',
                                '/media/jwatson/FILEPILE/Python/ResearchEnv',
                                'F:\Python\ResearchEnv' ] )
 from ResearchEnv import * # Load the custom environment
+from ResearchUtils.Vector import *
 
 # == End Init ==========================================================================================================
 
@@ -51,11 +52,18 @@ def tokenize_with_separator(rawStr,separator,evalFunc=str):
         tokens.append( evalFunc( currToken ) ) # transform token and append to the token list
     return tokens
 
-Link1 = [ 100 ,   0 , 100 ]
-Link2 = [ 100 ,   0 ,   0 ]
+Beam1 = [ 100 ,   0 , 100 ] # extent of link 1 in its own frame
+Beam2 = [ 100 ,   0 ,   0 ] # extent of link 2 in its own frame
 
-
-
+Link1 = Frame( [0.0 , 0.0 , 0,0] , 
+               Rotation([0,0,1],0) , 
+               Segment( [ [0.0 , 0.0 , 0,0] , Beam1  ] ) )
+               
+Link2 = Frame( Beam1 , 
+               Rotation([0,1,0],0) , 
+               Segment( [ [0.0 , 0.0 , 0,0] , Beam2  ] ) )
+               
+Link2.parent = Link1
 
 looping = True
 thetaList = [0.0 for i in range(10)]
