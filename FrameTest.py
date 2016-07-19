@@ -30,7 +30,8 @@ def add_first_valid_dir_to_path(dirList):
 # List all the places where the research environment could be
 add_first_valid_dir_to_path( [ '/home/jwatson/regrasp_planning/researchenv',
                                '/media/jwatson/FILEPILE/Python/ResearchEnv',
-                               'F:\Python\ResearchEnv' ] )
+                               'F:\Python\ResearchEnv',
+                               '/media/mawglin/FILEPILE/Python/ResearchEnv'] )
 from ResearchEnv import * # Load the custom environment
 from ResearchUtils.Vector import *
 
@@ -52,21 +53,25 @@ def tokenize_with_separator(rawStr,separator,evalFunc=str):
         tokens.append( evalFunc( currToken ) ) # transform token and append to the token list
     return tokens
 
-Beam1 = [ 100 ,   0 , 100 ] # extent of link 1 in its own frame
-Beam2 = [ 100 ,   0 ,   0 ] # extent of link 2 in its own frame
+def eval_to_float(tokenStr):
+    """ Evaluate a token string and attempt conversion to float """
+    return float( eval( tokenStr ) )
+
+Span1 = [ 100 ,   0 , 100 ] # extent of link 1 in its own frame
+Span2 = [ 100 ,   0 ,   0 ] # extent of link 2 in its own frame
 
 Link1 = Frame( [0.0 , 0.0 , 0,0] , 
                Rotation([0,0,1],0) , 
-               Segment( [ [0.0 , 0.0 , 0,0] , Beam1  ] ) )
+               Segment( [ [0.0 , 0.0 , 0,0] , Span1  ] ) )
                
-Link2 = Frame( Beam1 , 
+Link2 = Frame( Span1 , 
                Rotation([0,1,0],0) , 
-               Segment( [ [0.0 , 0.0 , 0,0] , Beam2  ] ) )
+               Segment( [ [0.0 , 0.0 , 0,0] , Span2  ] ) )
                
 Link2.parent = Link1
 
 looping = True
-thetaList = [0.0 for i in range(10)]
+thetaList = [0.0 for i in range(10)] # FIXME: Maybe don't need this?
 
 while looping:
     cmd = raw_input('Angles or Command: ')
@@ -79,4 +84,8 @@ while looping:
         except BaseException as err:
             print "Your command was not understood!:" , err
     else:
-        print tokenize_with_separator(cmd,',',float)
+        angles =  tokenize_with_separator(cmd,',',eval_to_float)
+        print angles
+        Link1.orientation.set_theta(angles[0])
+        Link1.transform_contents()
+        
