@@ -60,15 +60,19 @@ def eval_to_float(tokenStr):
 Span1 = [ 100 ,   0 , 100 ] # extent of link 1 in its own frame
 Span2 = [ 100 ,   0 ,   0 ] # extent of link 2 in its own frame
 
-Link1 = Frame( [0.0 , 0.0 , 0,0] , 
+Link1 = Frame( [0.0 , 0.0 , 0.0] , 
                Rotation([0,0,1],0) , 
-               Segment( [ [0.0 , 0.0 , 0,0] , Span1  ] ) )
+               Segment( [ [0.0 , 0.0 , 0.0] , Span1  ] ) )
+               
+print Link1.objs
                
 Link2 = Frame( Span1 , 
                Rotation([0,1,0],0) , 
-               Segment( [ [0.0 , 0.0 , 0,0] , Span2  ] ) )
+               Segment( [ [0.0 , 0.0 , 0.0] , Span2  ] ) )
                
 Link2.parent = Link1
+
+print Link2.objs
 
 looping = True
 thetaList = [0.0 for i in range(10)] # FIXME: Maybe don't need this?
@@ -87,5 +91,6 @@ while looping:
         angles =  tokenize_with_separator(cmd,',',eval_to_float)
         print angles
         Link1.orientation.set_theta(angles[0])
+        print "Link1 theta was set to",Link1.orientation.theta # Link1 theta was set to 1.57079632679
         Link1.transform_contents()
         
