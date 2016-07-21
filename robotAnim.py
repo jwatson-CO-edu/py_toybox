@@ -192,13 +192,17 @@ class SegmentApp(object):
             # 4.e. Mark beginning of next loop
             last = time.time() * 1000
             # 4.f. Update window
-            if not self.winRunning:
-                break
+            if not self.winRunning: # This does not solve the problem of continuing to run after 
+                # break
+                return # What if I return instead? # TODO: Try this in FrameApp
             self.canvas.update() # don't know how to prevent these from being called again after the window is destroyed
             self.rootWin.update()
     
 
-
+class FrameApp(object):
+    """ A Tkinter display to display a new Frame/link-based robot model """
+    # FIXME: START HERE
+    pass
 
 
 

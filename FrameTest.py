@@ -11,6 +11,11 @@ James Watson, 2016 July
 Testing representation of reference frames in the simplest implementation possible, find out what is going wrong
 """
 
+"""
+  == TODO ==
+* Give this application a display window
+"""
+
 # == Init Environment ==================================================================================================
 import sys, os.path
 SOURCEDIR = os.path.dirname(os.path.abspath(__file__)) # URL, dir containing source file: http://stackoverflow.com/a/7783326
@@ -33,7 +38,8 @@ add_first_valid_dir_to_path( [ '/home/jwatson/regrasp_planning/researchenv',
                                'F:\Python\ResearchEnv',
                                '/media/mawglin/FILEPILE/Python/ResearchEnv'] )
 from ResearchEnv import * # Load the custom environment
-from ResearchUtils.Vector import *
+from ResearchUtils.Vector import * # Geometry
+from robotAnim import * # Cheap Iso
 
 # == End Init ==========================================================================================================
 
@@ -64,33 +70,43 @@ Link1 = Frame( [0.0 , 0.0 , 0.0] ,
                Rotation([0,0,1],0) , 
                Segment( [ [0.0 , 0.0 , 0.0] , Span1  ] ) )
                
-print Link1.objs
+# print Link1.objs
                
 Link2 = Frame( Span1 , 
                Rotation([0,1,0],0) , 
                Segment( [ [0.0 , 0.0 , 0.0] , Span2  ] ) )
                
-Link2.parent = Link1
+Link2.parent = Link1 # this one is not currently used
+Link1.subFrames.append( Link2 ) # this connection is important for downstream transformations
 
-print Link2.objs
+# print Link2.objs
 
-looping = True
-thetaList = [0.0 for i in range(10)] # FIXME: Maybe don't need this?
+Link3 = Frame( Span2 , 
+               Rotation([0,1,0],0) )
+               
+Link2.subFrames.append( Link3 )
 
-while looping:
+looping = True # Flag for whether to continue running
+# thetaList = [0.0 for i in range(10)]
+
+while looping: # If the looping flag is set True
+    print endl
     cmd = raw_input('Angles or Command: ')
-    if cmd == 'q':
+    if cmd == 'q': # User quit, set looping flag False
         print "Quit"
         looping = False
-    elif cmd[0] == 'e':
+    elif cmd[0] == 'e': # Evaluate
         try:
-            print eval(cmd[2:])
+            print eval(cmd[2:]) # Assume the user left a space after the "e", If there is no space - error likely
         except BaseException as err:
             print "Your command was not understood!:" , err
-    else:
-        angles =  tokenize_with_separator(cmd,',',eval_to_float)
+    else: # else assume the user has specified angles
+        print endl
+        angles = tokenize_with_separator(cmd,',',eval_to_float) # Thise will throw an error if input string is malformed
         print angles
         Link1.orientation.set_theta(angles[0])
         print "Link1 theta was set to",Link1.orientation.theta # Link1 theta was set to 1.57079632679
-        Link1.transform_contents()
+        Link2.orientation.set_theta(angles[1])
+        print "Link2 theta was set to",Link2.orientation.theta
+        Link1.transform_contents() # Initiate transformation at the root node
         
