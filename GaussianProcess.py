@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Template Version: 2016-06-25
+# Template Version: 2016-07-21
 
 # ~~ Future First ~~
 from __future__ import division # Future imports must be called before everything else, including triple-quote docs!
@@ -26,19 +26,42 @@ def add_first_valid_dir_to_path(dirList):
             loadedOne = True
             break
     if not loadedOne:
-        print "None of the specified directories were loaded"
+        raise ImportError("None of the specified directories were loaded") # Assume that not having this loaded is a bad thing
 # List all the places where the research environment could be
 add_first_valid_dir_to_path( [ '/home/jwatson/regrasp_planning/researchenv',
-                               '/media/jwatson/FILEPILE/Python/ResearchEnv' ] )
+                               '/media/jwatson/FILEPILE/Python/ResearchEnv',
+                               'F:\Python\ResearchEnv',
+                               '/media/mawglin/FILEPILE/Python/ResearchEnv'] )
+
+# ~~ Libraries ~~
+# ~ Standard Libraries ~
+import random
+# ~ Special Libraries ~
+# ~ Local Libraries ~
 from ResearchEnv import * # Load the custom environment
-from ResearchUtils.Vector import *
 
 # == End Init ==========================================================================================================
 
 """
-* Gaussian Distribtution - A multidimensional distribution , each random variable is a dimension
+* Normal/Gaussian Distribution
+    ^ Mainstay of statistics
+    ^ Standard Normal: Z ~ N(0,1) , Distribution with mean (\mu) = 0 and standard deviation (\sigma) = 1
+    ^ Shift and scale the standard normal to model any phenomenon that is represented by a normal random variable
+      X = \mu + \sigma * Z  : \mu shifts the center , \sigma scales the spread
+
+* Gaussian Multivariate Distribtution - A multidimensional distribution , each random variable is a dimension
     ^ The individual random variables are indexed by their positions in the vector
     ^ An infinite-dimensional object, but we only work with dimensions that interest us
+    ^ The multivariate normal distribution is often the assumed distribution underlying data samples and 
+      it is widely used in pattern recognition and classifcation
+    ^ Generate a random vector
+        1. Generate n random values x_1 to x_n
+        2. Assemble the variables into a 1 X n vector, this vector has a distribution N(0,I_d) where I_d is the identity matrix
+            a. The covariance matrix has no off-diagonal terms because the random variables have no influence on each other
+        3. Transform x such that x ~ N( \mu , \Sigma )
+            b. \Sigma = [[\sigma_11 , ... , \sigma_1d ],    \sigma_ij = E[ (x_i - \mu_i)(x_j - \mu_j) ]
+                        [    ... , sigma_ij , ...    ],     The expectation of the the product of each element's deviation
+                        [\sigma_d1 , ... , \sigma_dd ]]     from the corresponding mean
 
 * A Gaussian process is full specified by its mean function and covariance function
     ^ A Gaussian Distribution is over vectors
@@ -51,8 +74,45 @@ from ResearchUtils.Vector import *
 Mean       |  \mu :    Vector Average                    m : "Averaging" function (not necessarily mean)
               \mu = [\mu_1 , ... , \mu_n  ]
 Covariance |  \Sigma : Covariance matrix                 k : Covariance function
-              \Sigma = [[\sigma_11 , ... , \sigma_1d ],
-                        [    ... , sigma_ij , ...    ],
-                        [\sigma_d1 , ... , \sigma_dd ]]
+              
 Variable   |  x :      Vector of random variables        f(x) : Valud of the stochastic function at x
 """
+
+def normal_dist_ratio_method():
+    """ Return a number X with standard normal distribution \mu = 0, \sigma = 1, using the ratio method """
+    # URL, generate a normal distribution of numbers: https://en.wikipedia.org/wiki/Normal_distribution#Generating_values_from_normal_distribution
+    # This is just one of a number of ways to generate numbers on a normal distribution, or use 'numpy.random.normal'
+    while True:
+        U = random.random() # Algo requires two independent, uniformly distributed random numbers
+        V = random.random()
+        X = sqrt( 8 / e ) * (V - 0.5) / U # candidate number
+        if X ** 2 <= 5 - 4 * e ** 0.25 * U:
+            return X # accept
+        if X ** 2 >= 4 * e ** -1.35 / U + 1.4:
+            continue # reject
+        if X ** 2 <= -4 * log(U):
+            return X # accept
+        # else not accepted, generate new and check
+     
+if False: # Set to true to verify the effectiveness of the normal random number generator, above
+    data = [ normal_dist_ratio_method() for n in range(50000) ] # Gen 50k nums on a standard normal distribution
+    
+    # URL, histogram of a normally distributed random variable: http://matplotlib.org/1.2.1/examples/pylab_examples/histogram_demo.html
+    
+    # the histogram of the data
+    n, bins, patches = plt.hist(data, 50, normed=1, facecolor='green', alpha=0.75)
+    
+    # add a 'best fit' line
+    import matplotlib.mlab as mlab
+    y = mlab.normpdf( bins, 0, 1)
+    plt.plot(bins, y, 'r--', linewidth=1)
+    
+    plt.xlabel('X')
+    plt.ylabel('Probability')
+    plt.title(r'$\mathrm{Histogram\ of\ X:}\ \mu=0,\ \sigma=1$')
+    plt.axis([-4, 4, 0, 1])
+    plt.grid(True)
+    
+    plt.show() # Result: Generated numbers fit a normal distribution very well!
+    
+# Generate a bivariate distribution
