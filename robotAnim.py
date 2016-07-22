@@ -136,12 +136,12 @@ class SegmentApp(object):
         orgnVecs = [ [1,0,0] , [0,1,0] , [0,0,1] ]
         scaledVecs = [ np.multiply( vec , self.orgnScale ) for vec in orgnVecs]
         c = ['red','green','blue']
-        for vecDex,vector in enumerate(scaledVecs):
+        for vecDex , vector in enumerate(scaledVecs):
             self.staticSegments.append( Segment( [0,0,0] , vector , TKcanvas=self.canvas, color=c[vecDex]) )
             
     def init_controls(self):
-        """ Control sliders """ # TODO: Pack these into a frame
-        self.controlPanel = Frame(self.rootWin)
+        """ Control sliders """ 
+        self.controlPanel = Frame(self.rootWin) # A panel to hold the controls, has its own packing environment
         # Control Sliders
         self.j1_sldr = Scale(self.controlPanel, from_=-170, to=170, orient=HORIZONTAL) #Theta1 > 170 or Theta1 < -170:
         self.j2_sldr = Scale(self.controlPanel, from_=-190, to= 45, orient=HORIZONTAL) #Theta2 >  45 or Theta2 < -190:
@@ -201,9 +201,39 @@ class SegmentApp(object):
 
 class FrameApp(object):
     """ A Tkinter display to display a new Frame/link-based robot model """
-    # FIXME: START HERE
-    pass
+    
+    def __init__(self):
+        global FLATORIGIN
+        # GUI Plan
+        # 1. Init Tkinter root
+        #self.staticSegments = []  # List of static segments for the simulation, drawn once and never moved again during the simulation
+        #self.dynamicSegments = [] # List of dynamic segments, subject to movement throughout the simulation
+        self.winWidth = 500
+        self.winHeight = 500
+        self.orgnScale = min( self.winHeight , self.winWidth ) * 2/3.0
+        self.renderScale = 1/2.0
+        self.rootWin = Tk()
+        self.rootWin.wm_title("Simple Robot Sim")
+        self.rootWin.protocol("WM_DELETE_WINDOW", self.callback_destroy)
+        self.calcFunc = None # Should really be loaded with something before running
+        self.winRunning = False
+        # 2. Set up window
+        self.canvas = Canvas(self.rootWin, width=self.winWidth, height = self.winHeight)
+        self.canvas.config(background='black')
+        self.FLATORIGIN = [self.winWidth/2, self.winHeight/2]
+        FLATORIGIN = self.FLATORIGIN
+        self.set_stage()
+        # 3. Pack window
+        self.canvas.grid(row=1, column=1)
+        self.init_controls()
 
+    def set_stage(self): # TODO: Consider making this general for any sort of display simulation, only if needed
+        """ Set up the canvas with line segments that will not change throughout the simulation """
+        orgnVecs = [ [1,0,0] , [0,1,0] , [0,0,1] ]
+        scaledVecs = [ np.multiply( vec , self.orgnScale ) for vec in orgnVecs]
+        c = ['red','green','blue']
+        for vecDex , vector in enumerate(scaledVecs):
+            self.staticSegments.append( Segment( [0,0,0] , vector , TKcanvas=self.canvas, color=c[vecDex]) )
 
 
 

@@ -89,6 +89,8 @@ Link2.subFrames.append( Link3 )
 looping = True # Flag for whether to continue running
 # thetaList = [0.0 for i in range(10)]
 
+# TODO: Write function to attach geometry to canvas
+
 while looping: # If the looping flag is set True
     print endl
     cmd = raw_input('Angles or Command: ')
@@ -109,4 +111,27 @@ while looping: # If the looping flag is set True
         Link2.orientation.set_theta(angles[1])
         print "Link2 theta was set to",Link2.orientation.theta
         Link1.transform_contents() # Initiate transformation at the root node
+
+def REP():
+    """ [R]ead , [E]val , [P]rint , Loop is someone else's problem! """
+    print endl
+    cmd = raw_input('Angles or Command: ')
+    if cmd == 'q': # User quit, set looping flag False
+        print "Quit"
+    elif cmd[0] == 'e': # Evaluate
+        try:
+            print eval(cmd[2:]) # Assume the user left a space after the "e", If there is no space - error likely
+        except BaseException as err:
+            print "Your command was not understood!:" , err
+    else: # else assume the user has specified angles
+        print endl
+        angles = tokenize_with_separator(cmd,',',eval_to_float) # Thise will throw an error if input string is malformed
+        print angles
+        Link1.orientation.set_theta(angles[0])
+        print "Link1 theta was set to",Link1.orientation.theta # Link1 theta was set to 1.57079632679
+        Link2.orientation.set_theta(angles[1])
+        print "Link2 theta was set to",Link2.orientation.theta
+        Link1.transform_contents() # Initiate transformation at the root node
         
+def attach_geometry(rootFrame, pCanvas):
+    """ Traverse geometry from the root frame to the all subframes, attaching all drawable geometry to canvas """

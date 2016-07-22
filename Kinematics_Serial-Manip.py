@@ -149,6 +149,4 @@ def segment_update(angleList):
     
 foo.calcFunc = segment_update
     
-
 foo.run()
-
