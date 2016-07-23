@@ -20,7 +20,7 @@ Display of a serial manipulator, stick robot
   frames until proven otherwise.
 * Target framerate is 25fps, leaving 40ms for calcs and repaint
 """
-# == Init Environment ==================================================================================================
+# == Init Environment ==================================================================================================    
 import sys, os.path
 SOURCEDIR = os.path.dirname(os.path.abspath(__file__)) # URL, dir containing source file: http://stackoverflow.com/a/7783326
 
@@ -30,8 +30,11 @@ def add_first_valid_dir_to_path(dirList):
     loadedOne = False
     for drctry in dirList:
         if os.path.exists( drctry ):
-            sys.path.append( drctry )
-            print 'Loaded', str(drctry)
+            if drctry not in sys.path:
+                sys.path.append( drctry )
+                print 'Loaded:', str(drctry)
+            else:
+                print "Already in sys.path:", str(drctry)
             loadedOne = True
             break
     if not loadedOne:
@@ -234,10 +237,51 @@ class FrameApp(object):
         c = ['red','green','blue']
         for vecDex , vector in enumerate(scaledVecs):
             self.staticSegments.append( Segment( [0,0,0] , vector , TKcanvas=self.canvas, color=c[vecDex]) )
+            
+    def init_controls(self):
+        """ Control sliders """ 
+        self.controlPanel = Frame(self.rootWin) # A panel to hold the controls, has its own packing environment
+        # Control Sliders
+        self.j1_sldr = Scale(self.controlPanel, from_=-pi, to= pi, orient=HORIZONTAL) 
+        self.j2_sldr = Scale(self.controlPanel, from_=-pi, to= pi, orient=HORIZONTAL) 
+        # Control Labels
+        self.j1_labl = Label(self.controlPanel, text="Joint 1")
+        self.j2_labl = Label(self.controlPanel, text="Joint 2")
+        # Pack all widgets
+        self.j1_sldr.grid(row=2, column=1); self.j2_sldr.grid(row=2, column=2); 
+        # Init slider values
+        self.j1_sldr.set(0); self.j2_sldr.set(0); 
+        self.controlPanel.grid(row=1,column=2) # Pack the control panel
 
+    def get_sliders_as_list(self):
+        """ Return a list of all slider values from j1 to j6 """ # TODO: ITERATIVE TROUBLESHOOTING
+        return [ self.j1_sldr.get() , self.j2_sldr.get() ]
+        
+    def callback_destroy(self):
+        self.winRunning = False
+        self.rootWin.destroy()
+        exit()
 
-
-
+    def run(self):
+        # 4. Loop function
+        last = -infty
+        self.winRunning = True
+        while self.winRunning:
+            # 4.a. Calc geometry
+            self.calcFunc( self.get_sliders_as_list() )
+            # 4.b. Send new coords to segments
+            # 4.c. Take input from widgets
+            # 4.d. Wait remainder of 40ms
+            elapsed = time.time() * 1000 - last
+            if elapsed < 40:
+                time.sleep( (40 - elapsed) / 1000.0 )
+            # 4.e. Mark beginning of next loop
+            last = time.time() * 1000
+            # 4.f. Update window
+            if not self.winRunning: # This does not solve the problem of continuing to run after 
+                return # What if I return instead?
+            self.canvas.update() # don't know how to prevent these from being called again after the window is destroyed
+            self.rootWin.update()
 
 """
 import Tkinter
