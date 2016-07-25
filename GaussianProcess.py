@@ -116,3 +116,39 @@ if False: # Set to true to verify the effectiveness of the normal random number 
     plt.show() # Result: Generated numbers fit a normal distribution very well!
     
 # Generate a bivariate distribution
+if True: # Set to true to generate and display random vectors from a bivariate Gaussian distribution
+    """ 
+    == Section 6.2 , Generating Random Vectors from the Multivariate Normal Distribution , Istvan T. Hernadvolgyi ==
+    Objective: To obtain random vector from the Gaussian distribution N( \mu , \Sigma )
+    \mu = [ [1] ,      \Sigma = [ [ 1.0 , 0.3 ] ,
+            [2] ]                 [ 0.3 , 0.6] ]
+    
+    Find \Lambda and \Phi:
+        1. Find eigenvalues
+    
+    | [ [ \lambda , 0       ],     -     [ [ 1.0 , 0.3 ] ,     =     [ [ \lambda - 1.0 , -0.3          ]   |
+    |   [ 0       , \lambda ] ]            [ 0.3 , 0.6] ]              [ -0.3          , \lambda - 0.6 ] ] |
+    
+    det( \lambda * eye(2) - \Sigma ) = ( \lambda ** 2 ) - ( 1.6 * \lambda ) + ( 0.51 )
+    
+    For n = 2 and n = 3, it is trivial to calculate the eigenvalues, as closed form formulae exist for quadratic and 
+    cubic polynomials. For larger n , nding the roots of the polynomial is impractical. Instead a version of the 
+    iterative QR algorithm [4] [5] [8] [9] is used.
+    """
+    
+    mu = [ [1.0] , 
+           [2.0] ]                 
+    Sigma = [ [ 1.0 , 0.3 ] , 
+              [ 0.3 , 0.6] ]
+    
+    def eigenvals_2D( Sigma ):
+        """ Calc the eigenvalues of the 2x2 matrix sigma and return as a row vector """
+        b = -Sigma[0][0] - Sigma[1][1]
+        c = (-Sigma[0][0]) * (-Sigma[1][1]) - (-Sigma[0][1]) * (-Sigma[1][0])
+        return quadroots( 1 , b , c )
+    
+    eigens = eigenvals_2D( Sigma )
+    print eigens
+    
+    Lambda = np.multiply( np.eye(2) , np.transpose( [eigens] ) )
+    print Lambda
