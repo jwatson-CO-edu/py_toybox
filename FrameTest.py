@@ -36,8 +36,8 @@ def add_first_valid_dir_to_path(dirList):
     if not loadedOne:
         print "None of the specified directories were loaded"
 # List all the places where the research environment could be
-add_first_valid_dir_to_path( [ '/home/jwatson/regrasp_planning/researchenv',
-                               '/media/jwatson/FILEPILE/Python/ResearchEnv',
+add_first_valid_dir_to_path( [ '/media/jwatson/FILEPILE/Python/ResearchEnv',
+                               '/home/jwatson/regrasp_planning/researchenv',
                                'F:\Python\ResearchEnv',
                                '/media/mawglin/FILEPILE/Python/ResearchEnv'] )
 
