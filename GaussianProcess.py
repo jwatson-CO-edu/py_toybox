@@ -136,10 +136,10 @@ if True: # Set to true to generate and display random vectors from a bivariate G
     iterative QR algorithm [4] [5] [8] [9] is used.
     """
     
-    mu = [ [1.0] , 
-           [2.0] ]                 
+    mu = [ [ 1.0 ] , 
+           [ 2.0 ] ]                 
     Sigma = [ [ 1.0 , 0.3 ] , 
-              [ 0.3 , 0.6] ]
+              [ 0.3 , 0.6 ] ]
     
     def eigenvals_2D( Sigma ):
         """ Calc the eigenvalues of the 2x2 matrix sigma and return as a row vector """
