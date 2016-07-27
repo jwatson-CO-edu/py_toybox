@@ -53,8 +53,8 @@ Span1 = [ 100 ,   0 , 100 ] # extent of link 1 in its own frame
 Span2 = [ 100 ,   0 ,   0 ] # extent of link 2 in its own frame
 
 Link1 = Frame( [0.0 , 0.0 , 0.0] , 
-               Rotation([0,0,1],0) , 
-               Segment( [ [0.0 , 0.0 , 0.0] , Span1  ] ) )
+               Rotation([0,0,1],0), 
+               Segment( pCoords=[ [0.0 , 0.0 , 0.0] , Span1  ] ) )
                
 # print Link1.objs
                
