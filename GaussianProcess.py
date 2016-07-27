@@ -93,6 +93,11 @@ def normal_dist_ratio_method():
         if X ** 2 <= -4 * log(U):
             return X # accept
         # else not accepted, generate new and check
+        
+def normal_std_vec(dim):
+    """ Return a vector sampled from the standard normal in 'dim' dimensions , Z~N(0,I_d) """
+    rtnVec = [ normal_dist_ratio_method() for n in xrange(dim) ]
+    return np.transpose( np.matrix( rtnVec ) ) # 'np.transpose' does not perform as expected on a vanilla array, must convert to np.matrix first
      
 if False: # Set to true to verify the effectiveness of the normal random number generator, above
     data = [ normal_dist_ratio_method() for n in range(50000) ] # Gen 50k nums on a standard normal distribution
@@ -118,22 +123,14 @@ if False: # Set to true to verify the effectiveness of the normal random number 
 # Generate a bivariate distribution
 if True: # Set to true to generate and display random vectors from a bivariate Gaussian distribution
     """ 
-    == Section 6.2 , Generating Random Vectors from the Multivariate Normal Distribution , Istvan T. Hernadvolgyi ==
+    == Section 5.2 , Generating Random Vectors from the Multivariate Normal Distribution , Art Owen , "Ch-randvectors.pdf"  ==
+    
     Objective: To obtain random vector from the Gaussian distribution N( \mu , \Sigma )
     \mu = [ [1] ,      \Sigma = [ [ 1.0 , 0.3 ] ,
             [2] ]                 [ 0.3 , 0.6] ]
     
-    Find \Lambda and \Phi:
-        1. Find eigenvalues
-    
-    | [ [ \lambda , 0       ],     -     [ [ 1.0 , 0.3 ] ,     =     [ [ \lambda - 1.0 , -0.3          ]   |
-    |   [ 0       , \lambda ] ]            [ 0.3 , 0.6] ]              [ -0.3          , \lambda - 0.6 ] ] |
-    
-    det( \lambda * eye(2) - \Sigma ) = ( \lambda ** 2 ) - ( 1.6 * \lambda ) + ( 0.51 )
-    
-    For n = 2 and n = 3, it is trivial to calculate the eigenvalues, as closed form formulae exist for quadratic and 
-    cubic polynomials. For larger n , nding the roots of the polynomial is impractical. Instead a version of the 
-    iterative QR algorithm [4] [5] [8] [9] is used.
+    To sample N( \mu , \Sigma ), we find a matrix C such that C * transpose(C) == \Sigma, then we set
+    X = \mu + C*Z   ,   where Z~N(0,I_d) , the standard normal in d dimensions
     """
     
     mu = [ [ 1.0 ] , 
@@ -141,14 +138,49 @@ if True: # Set to true to generate and display random vectors from a bivariate G
     Sigma = [ [ 1.0 , 0.3 ] , 
               [ 0.3 , 0.6 ] ]
     
-    def eigenvals_2D( Sigma ):
+    def eigenvals_2D( Sigma ): # Forget this, just use "numpy". DIY eigendecomposition is a project for another day!
         """ Calc the eigenvalues of the 2x2 matrix sigma and return as a row vector """
         b = -Sigma[0][0] - Sigma[1][1]
         c = (-Sigma[0][0]) * (-Sigma[1][1]) - (-Sigma[0][1]) * (-Sigma[1][0])
         return quadroots( 1 , b , c )
     
-    eigens = eigenvals_2D( Sigma )
-    print eigens
+    # eigens = eigenvals_2D( Sigma )
+    # print eigens
     
-    Lambda = np.multiply( np.eye(2) , np.transpose( [eigens] ) )
-    print Lambda
+    #Lambda = np.multiply( np.eye(2) , np.transpose( [eigens] ) )
+    #print Lambda
+    
+    eigVals , eigVecs = np.linalg.eig( Sigma )
+    print eigVals
+    print eigVecs
+    
+    P = np.matrix( np.transpose(eigVecs) )
+    LambdaOneHalf = np.matrix(np.diag( [sqrt(eigen) for eigen in eigVals] ) )
+    print P
+    print LambdaOneHalf
+    
+    def mat_mult(*matrices): # This function turned out to be unnecessary, as numpy automatically handles the currect order
+        """ Multiply matrices in the correct order """
+        if len(matrices) == 2:
+            return np.dot( matrices[0] , matrices[1] )
+        elif len(matrices) > 2:
+            return np.dot( matrices[0] , mat_mult( *matrices[1:] ) )
+        else:
+            raise Exception("mat_mult: Bad number of args " + str(len(matrices)) + " , args: " + str(matrices))
+        
+    #result1 = mat_mult( P , LambdaOneHalf , np.transpose(P) )
+    #result2 = P * LambdaOneHalf * np.transpose(P)
+    
+    #print result1 == result2
+    #print result1 
+    #print result2
+    
+    C = P * LambdaOneHalf * np.transpose(P) # easy!
+    print C
+    
+    N = 50000
+    data = [ mu + C * normal_std_vec(2) for i in xrange(N) ]
+    
+    # FIXME: START HERE
+    # http://docs.scipy.org/doc/numpy/reference/generated/numpy.histogram2d.html
+    # http://jpktd.blogspot.com/2012/01/distributions-with-matplotlib-in-3d.html
