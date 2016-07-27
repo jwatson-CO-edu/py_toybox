@@ -232,9 +232,11 @@ class FrameApp(object):
 
     def set_stage(self): # TODO: Consider making this general for any sort of display simulation, only if needed
         """ Set up the canvas with line segments that will not change throughout the simulation """
-        orgnVecs = [ [1,0,0] , [0,1,0] , [0,0,1] ]
-        scaledVecs = [ np.multiply( vec , self.orgnScale ) for vec in orgnVecs]
+        orgnVecs = [ [1,0,0] , [0,1,0] , [0,0,1] ] # Orthonormal bases
+        scaledVecs = [ np.multiply( vec , self.orgnScale ) for vec in orgnVecs] # Scale the bases for good UI
         c = ['red','green','blue']
+        self.staticSegments = []
+        print "FrameApp.canvas" , self.canvas
         for vecDex , vector in enumerate(scaledVecs):
             self.staticSegments.append( Segment( [0,0,0] , vector , TKcanvas=self.canvas, color=c[vecDex]) )
             

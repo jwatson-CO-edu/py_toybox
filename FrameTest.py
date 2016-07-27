@@ -42,7 +42,7 @@ add_first_valid_dir_to_path( [ '/media/jwatson/FILEPILE/Python/ResearchEnv',
                                '/media/mawglin/FILEPILE/Python/ResearchEnv'] )
 
 from ResearchEnv import * # Load the custom environment
-from ResearchUtils.Vector import * # Geometry
+from ResearchUtils import Vector # Geometry # Not importing all becuase of collisions with Vector.Frame and Tkinter.Frame
 from robotAnim import * # Cheap Iso
 
 # == End Init ==========================================================================================================
@@ -52,25 +52,30 @@ from robotAnim import * # Cheap Iso
 Span1 = [ 100 ,   0 , 100 ] # extent of link 1 in its own frame
 Span2 = [ 100 ,   0 ,   0 ] # extent of link 2 in its own frame
 
-Link1 = Frame( [0.0 , 0.0 , 0.0] , 
-               Rotation([0,0,1],0), 
-               Segment( pCoords=[ [0.0 , 0.0 , 0.0] , Span1  ] ) )
-               
-# print Link1.objs
-               
-Link2 = Frame( Span1 , 
-               Rotation([0,1,0],0) , 
-               Segment( [ [0.0 , 0.0 , 0.0] , Span2  ] ) )
-               
+#foo = Segment()
+#bar = Frame()
+
+Link1 = Vector.Frame( [0.0 , 0.0 , 0.0] , 
+                      Rotation([0,0,1],0), 
+                      Segment( pCoords=[ [0.0 , 0.0 , 0.0] , Span1  ] ) )
+#               
+print Link1.objs
+#               
+Link2 = Vector.Frame( Span1 , 
+                      Rotation([0,1,0],0) , 
+                      Segment( [ [0.0 , 0.0 , 0.0] , Span2  ] ) )
+#               
 Link2.parent = Link1 # this one is not currently used
 Link1.subFrames.append( Link2 ) # this connection is important for downstream transformations
-
-# print Link2.objs
-
-Link3 = Frame( Span2 , 
-               Rotation([0,1,0],0) )
+#
+print Link2.objs
+print Link1.subFrames
+#
+Link3 = Vector.Frame( Span2 , 
+                      Rotation([0,1,0],0) )
                
 Link2.subFrames.append( Link3 )
+Link2.subFrames
         
 def attach_geometry(rootFrame, pCanvas):
     """ Traverse geometry from the root frame to the all subframes, recursively, attaching all drawable geometry to canvas """
@@ -98,10 +103,10 @@ def jnt_refs_serial_chain( rootLink ):
         
 foo = FrameApp() # init the app object
 
-attach_geometry( Link1 , foo.canvas ) # attach all the segments to the canvas
-color_all( Link1 , 'white' )
+#attach_geometry( Link1 , foo.canvas ) # attach all the segments to the canvas
+#color_all( Link1 , 'white' )
 
-armJoints = jnt_refs_serial_chain( Link1 )
+#armJoints = jnt_refs_serial_chain( Link1 )
 
 def segment_update( angleList ):
     """ Set all the joint angles to those specified in 'angleList' """
@@ -109,9 +114,9 @@ def segment_update( angleList ):
     for jntDex , joint in enumerate(armJoints):
         joint.set_theta( angleList[jntDex] )
     
-foo.calcFunc = segment_update
+#foo.calcFunc = segment_update
     
-foo.run()    
+#foo.run()    
     
 # == Abandoned Code ==
 
