@@ -111,12 +111,12 @@ class SegmentApp(object):
         global FLATORIGIN
         # GUI Plan
         # 1. Init Tkinter root
-        self.staticSegments = []  # List of static segments for the simulation, drawn once and never moved again during the simulation
-        self.dynamicSegments = [] # List of dynamic segments, subject to movement throughout the simulation
+        #self.staticSegments = []  # List of static segments for the simulation, drawn once and never moved again during the simulation
+        #self.dynamicSegments = [] # List of dynamic segments, subject to movement throughout the simulation
         self.winWidth = 500
         self.winHeight = 500
-        self.orgnScale = min( self.winHeight , self.winWidth ) * 2/3.0
-        self.renderScale = 1/2.0
+        #self.orgnScale = min( self.winHeight , self.winWidth ) * 2/3.0
+        #self.renderScale = 1/2.0
         self.rootWin = Tk()
         self.rootWin.wm_title("Simple Robot Sim")
         self.rootWin.protocol("WM_DELETE_WINDOW", self.callback_destroy)
@@ -214,7 +214,7 @@ class FrameApp(object):
         self.winWidth = 500
         self.winHeight = 500
         self.orgnScale = min( self.winHeight , self.winWidth ) * 2/3.0
-        self.renderScale = 1/2.0
+        #self.renderScale = 1/2.0
         self.rootWin = Tk()
         self.rootWin.wm_title("Simple Robot Sim")
         self.rootWin.protocol("WM_DELETE_WINDOW", self.callback_destroy)
@@ -236,9 +236,9 @@ class FrameApp(object):
         scaledVecs = [ np.multiply( vec , self.orgnScale ) for vec in orgnVecs] # Scale the bases for good UI
         c = ['red','green','blue']
         self.staticSegments = []
-        print "FrameApp.canvas" , self.canvas
+        print "FrameApp.canvas" , self.canvas , self.canvas.__class__
         for vecDex , vector in enumerate(scaledVecs):
-            self.staticSegments.append( Segment( [0,0,0] , vector , TKcanvas=self.canvas, color=c[vecDex]) )
+            self.staticSegments.append( Segment( [ [0,0,0] , vector ] , TKcanvas=self.canvas, color=c[vecDex]) )
             
     def init_controls(self):
         """ Control sliders """ 
@@ -269,21 +269,22 @@ class FrameApp(object):
         last = -infty
         self.winRunning = True
         while self.winRunning:
-            # 4.a. Calc geometry
-            self.calcFunc( self.get_sliders_as_list() )
-            # 4.b. Send new coords to segments
-            # 4.c. Take input from widgets
-            # 4.d. Wait remainder of 40ms
-            elapsed = time.time() * 1000 - last
-            if elapsed < 40:
-                time.sleep( (40 - elapsed) / 1000.0 )
-            # 4.e. Mark beginning of next loop
-            last = time.time() * 1000
-            # 4.f. Update window
-            if not self.winRunning: # This does not solve the problem of continuing to run after 
-                return # What if I return instead?
+            #pass
+#            # 4.a. Calc geometry
+#            self.calcFunc( self.get_sliders_as_list() )
+#            # 4.b. Send new coords to segments
+#            # 4.c. Take input from widgets
+#            # 4.d. Wait remainder of 40ms
+#            elapsed = time.time() * 1000 - last
+#            if elapsed < 40:
+#                time.sleep( (40 - elapsed) / 1000.0 )
+#            # 4.e. Mark beginning of next loop
+#            last = time.time() * 1000
+#            # 4.f. Update window
+#            if not self.winRunning: # This does not solve the problem of continuing to run after 
+#                return # What if I return instead?
             self.canvas.update() # don't know how to prevent these from being called again after the window is destroyed
-            self.rootWin.update()
+            #self.rootWin.update_idletasks()
 
 """
 import Tkinter

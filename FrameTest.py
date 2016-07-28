@@ -51,6 +51,7 @@ from robotAnim import * # Cheap Iso
 
 Span1 = [ 100 ,   0 , 100 ] # extent of link 1 in its own frame
 Span2 = [ 100 ,   0 ,   0 ] # extent of link 2 in its own frame
+#                             Link3 does not have an extent
 
 #foo = Segment()
 #bar = Frame()
@@ -75,7 +76,6 @@ Link3 = Vector.Frame( Span2 ,
                       Rotation([0,1,0],0) )
                
 Link2.subFrames.append( Link3 )
-Link2.subFrames
         
 def attach_geometry(rootFrame, pCanvas):
     """ Traverse geometry from the root frame to the all subframes, recursively, attaching all drawable geometry to canvas """
@@ -89,24 +89,29 @@ def color_all(rootFrame, pColor):
     for obj in rootFrame.objs:
         obj.set_color( pColor )
     for frame in rootFrame.subFrames:
-        color_all( frame , pCanvas )
+        color_all( frame , pColor )
         
 def jnt_refs_serial_chain( rootLink ):
     """ Return a list of references to Rotations that correspond to each of the links of the manipulator """
     # NOTE: This function assumes that each frame has only one subframe
-    jntRefs = [ rootLink.rotation ]
+    jntRefs = [] # [ rootLink.orientation ]
     currLink = rootLink
-    while len(currLInk.subFrames) > 0:
+    
+    while len(currLink.subFrames) > 0:
+        print "At link:", currLink
+        print "This link has",len(currLink.subFrames),"subframes"
+        
+        jntRefs.append( currLink.orientation ) # TODO: Find out if this attaches the reference or a copy
         currLink = currLink.subFrames[0]
-        jntRefs.append( currLink.Rotation ) # TODO: Find out if this attaches the reference or a copy
     return jntRefs
         
 foo = FrameApp() # init the app object
 
-#attach_geometry( Link1 , foo.canvas ) # attach all the segments to the canvas
-#color_all( Link1 , 'white' )
+attach_geometry( Link1 , foo.canvas ) # attach all the segments to the canvas
+color_all( Link1 , 'white' )
 
-#armJoints = jnt_refs_serial_chain( Link1 )
+armJoints = jnt_refs_serial_chain( Link1 )
+print "Found", len(armJoints), "arm joints:", armJoints
 
 def segment_update( angleList ):
     """ Set all the joint angles to those specified in 'angleList' """
@@ -114,9 +119,9 @@ def segment_update( angleList ):
     for jntDex , joint in enumerate(armJoints):
         joint.set_theta( angleList[jntDex] )
     
-#foo.calcFunc = segment_update
+foo.calcFunc = segment_update
     
-#foo.run()    
+foo.run()    
     
 # == Abandoned Code ==
 
