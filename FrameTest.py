@@ -84,6 +84,13 @@ def attach_geometry(rootFrame, pCanvas):
     for frame in rootFrame.subFrames:
         attach_geometry( frame , pCanvas )
         
+def attach_transform( rootFrame, pTransform ):
+    """ Traverse geometry from the root frame to the all subframes, recursively, attaching all drawable geometry to canvas """
+    for obj in rootFrame.objs:
+        obj.transform = pTransform
+    for frame in rootFrame.subFrames:
+        attach_transform( frame , pTransform )
+        
 def color_all(rootFrame, pColor):
     """ Traverse geometry from the root frame to the all subframes, recursively, setting all graphics to 'pColor' """
     for obj in rootFrame.objs:
@@ -109,6 +116,10 @@ foo = FrameApp() # init the app object
 
 attach_geometry( Link1 , foo.canvas ) # attach all the segments to the canvas
 color_all( Link1 , 'white' )
+attach_transform( Link1 , chain_R3_scrn )
+
+for segment in foo.staticSegments:
+    segment.transform = chain_R3_scrn
 
 armJoints = jnt_refs_serial_chain( Link1 )
 print "Found", len(armJoints), "arm joints:", armJoints
@@ -120,6 +131,7 @@ def segment_update( angleList ):
         joint.set_theta( angleList[jntDex] )
     
 foo.calcFunc = segment_update
+foo.simFrame = Link1
     
 foo.run()    
     

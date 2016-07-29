@@ -95,8 +95,8 @@ def chain_R3_scrn(R3chain, scale):
     """ Flatten a list of R3 triples to the isometric view and transform to screen coords """
     rtnCoords = []
     for triple in R3chain:
-        rtnCoords.append( coord_R3_scrn(R3triple, scale) )
-    return rtnCoords
+        rtnCoords.extend( coord_R3_scrn(triple, scale) )
+    return rtnCoords # TODO: Tkinter expects coords a X1 , Y1 , X2 , Y2
     
 # = End Rendering =
 
@@ -214,12 +214,13 @@ class FrameApp(object):
         self.winWidth = 500
         self.winHeight = 500
         self.orgnScale = min( self.winHeight , self.winWidth ) * 2/3.0
-        #self.renderScale = 1/2.0
+        self.renderScale = 1/2.0
         self.rootWin = Tk()
         self.rootWin.wm_title("Simple Robot Sim")
         self.rootWin.protocol("WM_DELETE_WINDOW", self.callback_destroy)
         self.calcFunc = None # Should really be loaded with something before running
         self.winRunning = False
+        self.simFrame = None # The reference frame that contains all simulated objects
         # 2. Set up window
         self.canvas = Canvas(self.rootWin, width=self.winWidth, height = self.winHeight)
         self.canvas.config(background='black')
@@ -244,47 +245,59 @@ class FrameApp(object):
         """ Control sliders """ 
         self.controlPanel = Frame(self.rootWin) # A panel to hold the controls, has its own packing environment
         # Control Sliders
-        self.j1_sldr = Scale(self.controlPanel, from_=-pi, to= pi, orient=HORIZONTAL) 
-        self.j2_sldr = Scale(self.controlPanel, from_=-pi, to= pi, orient=HORIZONTAL) 
+        self.j1_sldr = Scale(self.controlPanel, from_=-pi, to= pi, orient=HORIZONTAL, resolution=0.05) 
+        self.j2_sldr = Scale(self.controlPanel, from_=-pi, to= pi, orient=HORIZONTAL, resolution=0.05) 
         # Control Labels
         self.j1_labl = Label(self.controlPanel, text="Joint 1")
         self.j2_labl = Label(self.controlPanel, text="Joint 2")
         # Pack all widgets
-        self.j1_sldr.grid(row=2, column=1); self.j2_sldr.grid(row=2, column=2); 
+        self.j1_sldr.grid(row=2, column=1); self.j2_sldr.grid(row=2, column=2); # pack sliders
+        self.j1_labl.grid(row=3, column=1); self.j2_labl.grid(row=3, column=2); # pack labels
         # Init slider values
         self.j1_sldr.set(0); self.j2_sldr.set(0); 
         self.controlPanel.grid(row=1,column=2) # Pack the control panel
 
     def get_sliders_as_list(self):
-        """ Return a list of all slider values from j1 to j6 """ # TODO: ITERATIVE TROUBLESHOOTING
+        """ Return a list of all slider values from j1 to j6 """ 
         return [ self.j1_sldr.get() , self.j2_sldr.get() ]
         
     def callback_destroy(self):
         self.winRunning = False
         self.rootWin.destroy()
         exit()
+    
+    def update_Frames(self , currFrame):
+        for obj in currFrame.objs:
+            obj.update()
+        for frame in currFrame.subFrames:
+            self.update_Frames( frame )
 
     def run(self):
         # 4. Loop function
         last = -infty
         self.winRunning = True
+        for segment in self.staticSegments:
+            segment.update()
         while self.winRunning:
             #pass
-#            # 4.a. Calc geometry
-#            self.calcFunc( self.get_sliders_as_list() )
-#            # 4.b. Send new coords to segments
-#            # 4.c. Take input from widgets
-#            # 4.d. Wait remainder of 40ms
-#            elapsed = time.time() * 1000 - last
-#            if elapsed < 40:
-#                time.sleep( (40 - elapsed) / 1000.0 )
-#            # 4.e. Mark beginning of next loop
-#            last = time.time() * 1000
-#            # 4.f. Update window
-#            if not self.winRunning: # This does not solve the problem of continuing to run after 
-#                return # What if I return instead?
+            # 4.a. Calc geometry
+            self.calcFunc( self.get_sliders_as_list() )
+            # 4.b. Send new coords to segments
+            self.simFrame.transform_contents()
+            self.update_Frames( self.simFrame )
+            # 4.c. Take input from widgets
+            # 4.d. Wait remainder of 40ms
+            elapsed = time.time() * 1000 - last
+            if elapsed < 40:
+                time.sleep( (40 - elapsed) / 1000.0 )
+            # 4.e. Mark beginning of next loop
+            last = time.time() * 1000
+            # 4.f. Update window
+            if not self.winRunning: # This does not solve the problem of continuing to run after 
+                return # What if I return instead? - SOmetimes still tries to call 'update', but never updates cleanly
             self.canvas.update() # don't know how to prevent these from being called again after the window is destroyed
-            #self.rootWin.update_idletasks()
+            self.rootWin.update_idletasks()
+            # self.rootWin.update()
 
 """
 import Tkinter
