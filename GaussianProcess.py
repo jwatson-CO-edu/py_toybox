@@ -6,9 +6,9 @@
 from __future__ import division # Future imports must be called before everything else, including triple-quote docs!
 
 """
-FILENAME.py , Built on Spyder for Python 2.7
-James Watson, YYYY MONTHNAME
-A ONE LINE DESCRIPTION OF THE FILE
+GaussianProcess.py , Built on Spyder for Python 2.7
+James Watson, 2016 July
+Teach yourself gaussian processes
 """
 
 # == Init Environment ==================================================================================================
@@ -39,6 +39,7 @@ import random
 # ~ Special Libraries ~
 # ~ Local Libraries ~
 from ResearchEnv import * # Load the custom environment
+from ResearchUtils.Plotting import *
 
 # == End Init ==========================================================================================================
 
@@ -121,7 +122,7 @@ if False: # Set to true to verify the effectiveness of the normal random number 
     plt.show() # Result: Generated numbers fit a normal distribution very well!
     
 # Generate a bivariate distribution
-if True: # Set to true to generate and display random vectors from a bivariate Gaussian distribution
+if False: # Set to true to generate and display random vectors from a bivariate Gaussian distribution
     """ 
     == Section 5.2 , Generating Random Vectors from the Multivariate Normal Distribution , Art Owen , "Ch-randvectors.pdf"  ==
     
@@ -132,6 +133,9 @@ if True: # Set to true to generate and display random vectors from a bivariate G
     To sample N( \mu , \Sigma ), we find a matrix C such that C * transpose(C) == \Sigma, then we set
     X = \mu + C*Z   ,   where Z~N(0,I_d) , the standard normal in d dimensions
     """
+    
+    # NOTE: The distribution matches the shape of the example, but one paper defines a new \hat{\mu} while the other
+    #       just uses \mu as an offset, and I'm not sure why
     
     mu = [ [ 1.0 ] , 
            [ 2.0 ] ]                 
@@ -151,10 +155,12 @@ if True: # Set to true to generate and display random vectors from a bivariate G
     #print Lambda
     
     eigVals , eigVecs = np.linalg.eig( Sigma )
+    """ The normalized (unit “length”) eigenvectors, such that the column v[:,i] is the eigenvector corresponding to the eigenvalue w[i] 
+    http://docs.scipy.org/doc/numpy/reference/generated/numpy.linalg.eig.html """
     print eigVals
     print eigVecs
     
-    P = np.matrix( np.transpose(eigVecs) )
+    P = np.matrix( eigVecs )
     LambdaOneHalf = np.matrix(np.diag( [sqrt(eigen) for eigen in eigVals] ) )
     print P
     print LambdaOneHalf
@@ -181,6 +187,101 @@ if True: # Set to true to generate and display random vectors from a bivariate G
     N = 50000
     data = [ mu + C * normal_std_vec(2) for i in xrange(N) ]
     
-    # FIXME: START HERE
     # http://docs.scipy.org/doc/numpy/reference/generated/numpy.histogram2d.html
     # http://jpktd.blogspot.com/2012/01/distributions-with-matplotlib-in-3d.html
+    
+    # Split the data for plotting
+    Xs = []
+    Ys = []
+    for datDex , datum in enumerate(data):
+        Xs.append( float(datum[0][0]) ) # Individual elements will also be matrices unless you recast them
+        Ys.append( float(datum[1][0]) )
+        
+    axisDivs = 50
+    
+    # Set up the X and Y edges of the histogram bins
+    xEdges = np.linspace( float(mu[0][0]) - 3.0 , float(mu[0][0]) + 3.0 , axisDivs + 1 )
+    yEdges = np.linspace( float(mu[1][0]) - 3.0 , float(mu[1][0]) + 3.0 , axisDivs + 1 )
+    
+    H, xedges, yedges = np.histogram2d(Ys, Xs, bins=(xEdges, yEdges))
+    
+    if True:
+        fig = plt.figure()
+        ax = fig.add_subplot(132)
+        ax.set_title('pcolormesh: exact bin edges')
+        X, Y = np.meshgrid(xedges, yedges)
+        ax.pcolormesh(X, Y, H)
+        ax.set_aspect('equal') 
+        plt.show() 
+    
+    if True:
+        fig2 = plt.figure()
+        ax2 = fig2.add_subplot(111, projection='3d')
+        # x, y = np.random.rand(2, 100) * 4
+        # hist, xedges, yedges = np.histogram2d(x, y, bins=4)
+        
+        elements = (len(xEdges) - 1) * (len(yEdges) - 1)
+        # xpos, ypos = np.meshgrid(xEdges[:-1] + 0.25, yEdges[:-1] + 0.25)
+        xpos, ypos = np.meshgrid(xEdges[:-1] , yEdges[:-1] )
+        
+        xpos = xpos.flatten() # Why?
+        ypos = ypos.flatten()
+        zpos = np.zeros(elements)
+        dx = 0.25 * np.ones_like(zpos)
+        dy = dx.copy()
+        dz = H.flatten()
+        
+        ax2.bar3d(xpos, ypos, zpos, dx, dy, dz, color='b', zsort='average')
+        
+        plt.show() 
+        
+if True: # Set to true to demonstrate a simple Gaussian Process
+    """ Gaussian processes (GPs) extend multivariate Gaussian distributions to infinite dimensionality. Formally, a 
+    Gaussian process generates data located throughout some domain such that any finite subset of the range follows a 
+    multivariate Gaussian distribution. 
+    
+    The n observations on an arbitrary dataset y = { y_1 , ... , y_n } can be imagined as a single point sampled from 
+    some n-variate Gaussian distribution, so the dataset is partnered with a Gaussian Process. 
+        * Very often, it is assumed that the mean of the GP is zero everywhere. In this case, only the covariance function
+          relates one observation to another
+        * The choice of covariance function depends on the problem, 
+        * The Squared Exponential is a popular covariance function:
+          k( x , x' ) = \sigma_f ** 2 * exp( -1 * (x-x') ** 2 / ( 2 * l ** 2 ) ), where
+              ^_ \sigma_f ** 2 : maximum allowable covariance, 
+                  ^__ When x ~ x' then k(x,x') approaches this maximum, meaning f(x) is nearly perfectly correlated 
+                      with f(x'). In order for there to be a smooth function neighbors should be alike
+                  ^__ When x is distant from x' then k(x,x') ~ 0 instead, the two points have little influence over each 
+                      other. The effect of this separation depends on the length parameter l
+        * Each observation y can be thought of as related to an underlying system model function f(x) plus a Gaussian noise model
+          y = f(x) + N( 0 , \sigma_n ** 2 )
+          
+        * !!---> Regression is the search for f(x) <---!!
+          
+    Given n observations, our objective is to predict y_star, not the actual f_star.
+    
+    To prepare for Guassian Process Regression, we calculate the covariance function, among all possible combinations of points,
+    summarizing out findings in 3 matrices: 
+    
+    K = [ [ k(x1,x1) , k(x1,x2) , ... , k(x1,xn) ] ,
+                             ...
+          [ k(xn,x1) , k(xn,x2) , ... , k(xn,xn) ] ]
+    
+    K_star = [ k(x_star,x1) , k(x_star,x2) , ... , k(x_star,xn) ]
+    
+    K_starstar = k( x_star , x_star )
+    
+    The diagonal elements of K are \sigma_f ** 2 + \sigma_n ** 2, and the extreme diagonals of K tend to 0 when x spans
+    a large enough domain.
+    
+    Since the key assumption in GP modelling is that our data can be represented as a sample from a multivariate Gaussian
+    distribution, we have that
+    
+    [[y     ],   ~   N(  0  ,  [[ K      , transpose(K_star) ]    )
+     [y_star]]                  [ K_star , K_starstar        ]]
+     
+    The probability of a prediction y_star given an observation follows a Gaussian distribution. (Explained slowly in Appendix of M. Ebden, "GPtutorial.pdf")
+    p( y_star | y ) = N(   K_star * inverse(K) * y   ,   K_starstar - K_star * inverse(K) * transpose(K_star)   )
+                           ^-- Mean, Best estimate       ^-- Covariance, Uncertainty in estimate
+                           
+                    [FIXME: Page 3]
+    """
