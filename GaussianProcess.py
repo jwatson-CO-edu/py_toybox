@@ -270,6 +270,8 @@ if True: # Set to true to demonstrate a simple Gaussian Process
     
     K_starstar = k( x_star , x_star )
     
+    x_star : estimated state
+    
     The diagonal elements of K are \sigma_f ** 2 + \sigma_n ** 2, and the extreme diagonals of K tend to 0 when x spans
     a large enough domain.
     
@@ -283,5 +285,5 @@ if True: # Set to true to demonstrate a simple Gaussian Process
     p( y_star | y ) = N(   K_star * inverse(K) * y   ,   K_starstar - K_star * inverse(K) * transpose(K_star)   )
                            ^-- Mean, Best estimate       ^-- Covariance, Uncertainty in estimate
                            
-                    [FIXME: Page 3]
+                    
     """
