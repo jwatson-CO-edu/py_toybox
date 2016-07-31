@@ -111,7 +111,11 @@ def jnt_refs_serial_chain( rootLink ):
         jntRefs.append( currLink.orientation ) # TODO: Find out if this attaches the reference or a copy
         currLink = currLink.subFrames[0]
     return jntRefs
-        
+ 
+def link_report():
+    """ Report the link states for debugging """
+    print "Link2 Pose: " # FIXME: I don't think the Frames are broadcasting their poses to their objects
+       
 foo = FrameApp() # init the app object
 
 attach_geometry( Link1 , foo.canvas ) # attach all the segments to the canvas
