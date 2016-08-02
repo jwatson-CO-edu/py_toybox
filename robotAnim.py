@@ -64,7 +64,7 @@ def cheap_iso_transform(R3triple):
     # NOTE: You will need to scale thye resulting coords according to the need of the application
     return np.multiply( cheap_iso_transform.xBasis , R3triple[0] ) + \
            np.multiply( cheap_iso_transform.yBasis , R3triple[1] ) + \
-           np.multiply( cheap_iso_transform.zBasis , R3triple[2] ) # Do I need to use 'np_add'?
+           np.multiply( cheap_iso_transform.zBasis , R3triple[2] ) # use 'np_add' if this concatenates coords
 
 cheap_iso_transform.zBasis = [ 0.0 , 1.0 ] 
 cheap_iso_transform.xBasis = polr_2_cart( [1.0 , 2.0/3 * pi] )
@@ -96,7 +96,7 @@ def chain_R3_scrn(R3chain, scale):
     rtnCoords = []
     for triple in R3chain:
         rtnCoords.extend( coord_R3_scrn(triple, scale) )
-    return rtnCoords # TODO: Tkinter expects coords a X1 , Y1 , X2 , Y2
+    return rtnCoords # TODO: Tkinter expects coords as X1 , Y1 , X2 , Y2
     
 # = End Rendering =
 
@@ -283,8 +283,8 @@ class FrameApp(object):
             # 4.a. Calc geometry
             self.calcFunc( self.get_sliders_as_list() )
             # 4.b. Send new coords to segments
-            self.simFrame.transform_contents()
-            self.update_Frames( self.simFrame )
+            self.simFrame.transform_contents() # one of these contains the redundant update
+            self.update_Frames( self.simFrame ) # Is this the redundant update?
             # 4.c. Take input from widgets
             # 4.d. Wait remainder of 40ms
             elapsed = time.time() * 1000 - last
