@@ -302,24 +302,31 @@ if True: # Set to true to demonstrate a simple Gaussian Process
         #case 4; k =@(x,y) exp(-1*sqrt((x-y)'*(x-y)))     
         4: lambda x,y: exp( -1 * sqrt( np.dot( np.subtract(x,y) , np.subtract(x,y) ) ) ),
         #case 5; k =@(x,y) exp(-1*sin(50*pi*(x-y))^2) % Periodic
-        5: # FIXME: START HERE
-        #case 6; k =@(x,y) exp(-100*min(abs(x-y), abs(x+y))^2) 
+        5: lambda x,y: exp( -1 * sin( 50 * pi * np.subtract(x,y) ) ** 2 ),
+        #case 6; k =@(x,y) exp(-100*min(abs(x-y), abs(x+y))^2)
+        6: lambda x,y: exp( -100 * np.minimum( np.absolute( np.subtract(x,y) ), np.absolute( np.add(x,y) )) ** 2 )
+        #                                         ^-- Return a vector where each element is the abs of the corresponding element in the arg
     }     
      
     #% Choose points at which to sample 15 
     #x= (0:.5:1);  
-    #n = length(x);  
+    x = np.arange(0,1.5,0.5)  
+    n = len(x);  
      
     #% Construct the covariance matrix  
-    #C = zeros(n,n); 
+    C = np.zeros( (n,n) ); 
     #for i = 1:n      
         #for j = 1:n          
             #C(i,j)= k(x(i),x(j));     
         #end 
     #end 
+    for i in xrange(n):
+            for j in xrange(n):
+                #C(i,j)= k(x(i),x(j));
+                C[i][j] = kernels[kernelChoice]( x[i] , y[j] )    
     
     #% Sample from the Gaussian process at these  
-    #u = randn(n,1); % sample u ~ N(0, I) 
+    u = np.random.randn(n,1); # sample u ~ N(0, I_d) , d = 3 , Column vector 3x1
     #[A,S, B] = svd(C); % factor C = ASB' 
     
     #z = A*sqrt(S)*u; % z = A S^.5 u  
