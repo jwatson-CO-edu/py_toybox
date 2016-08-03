@@ -13,7 +13,9 @@ Testing representation of reference frames in the simplest implementation possib
 
 """
   == TODO ==
-* Give this application a display window
+* TROUBLESHOOTING
+    [X] Report link Poses each frame, relative and lab
+    [ ] Report changes to Segment lab coordinates
 """
 
 # == Init Environment ==================================================================================================
@@ -46,7 +48,6 @@ from ResearchUtils import Vector # Geometry # Not importing all becuase of colli
 from robotAnim import * # Cheap Iso
 
 # == End Init ==========================================================================================================
-
 
 
 Span1 = [ 100 ,   0 , 100 ] # extent of link 1 in its own frame
@@ -130,7 +131,7 @@ print "Found", len(armJoints), "arm joints:", armJoints
 
 def segment_update( angleList ):
     """ Set all the joint angles to those specified in 'angleList' """
-    global armJoints # Do I need this?
+    #global armJoints # Do I need this?
     for jntDex , joint in enumerate(armJoints):
         joint.set_theta( angleList[jntDex] )
     

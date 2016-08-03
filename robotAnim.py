@@ -272,6 +272,26 @@ class FrameApp(object):
         for frame in currFrame.subFrames:
             self.update_Frames( frame )
 
+    def report_frames(self, currFrame):
+        """ Print the relative and lab poses of each of the serial frames in the simulation """
+        print "Rel:",str(currFrame)
+        print "Lab:",str(currFrame.labPose)
+        if len(currFrame.subFrames) < 1:
+            print
+        else:
+            for frame in currFrame.subFrames:
+                self.report_frames( frame )
+                
+    def report_segments(self, currFrame):
+        """ Print the relative and lab poses of each of the serial Segments in the simulation """
+        print "Rel:" , currFrame.objs[0].coords
+        print "Lab:" , currFrame.objs[0].labCoords
+        if len(currFrame.subFrames) < 1:
+            print
+        else:
+            for frame in currFrame.subFrames:
+                self.report_frames( frame )
+
     def run(self):
         # 4. Loop function
         last = -infty
@@ -298,6 +318,8 @@ class FrameApp(object):
             self.canvas.update() # don't know how to prevent these from being called again after the window is destroyed
             self.rootWin.update_idletasks()
             # self.rootWin.update()
+            # self.report_frames( self.simFrame ) # List all the Frame states to diagnose transforms
+            self.report_segments( self.simFrame ) # List all the Segment states to diagnose transforms
 
 """
 import Tkinter
