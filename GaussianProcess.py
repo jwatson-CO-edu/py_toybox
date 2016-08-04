@@ -63,6 +63,11 @@ from ResearchUtils.Plotting import *
             b. \Sigma = [[\sigma_11 , ... , \sigma_1d ],    \sigma_ij = E[ (x_i - \mu_i)(x_j - \mu_j) ]
                         [    ... , sigma_ij , ...    ],     The expectation of the the product of each element's deviation
                         [\sigma_d1 , ... , \sigma_dd ]]     from the corresponding mean
+    ^ A multivariate distribution is Gaussian if any linear combination of its components is Gaussian.
+      Probability along a line drawn through the space will be a univariate Gaussian
+    ^ X ~ N(\mu,C) , X is a Gaussian (random vector) with E[x_i] = \mu_i , E[] : expected value of
+                     Covariance(x_i,x_j) = C_ij
+                     C is positive semi-definite - all eigenvalues \lambda_i >= 0
 
 * A Gaussian process is full specified by its mean function and covariance function
     ^ A Gaussian Distribution is over vectors
@@ -99,7 +104,14 @@ def normal_std_vec(dim):
     """ Return a vector sampled from the standard normal in 'dim' dimensions , Z~N(0,I_d) """
     rtnVec = [ normal_dist_ratio_method() for n in xrange(dim) ]
     return np.transpose( np.matrix( rtnVec ) ) # 'np.transpose' does not perform as expected on a vanilla array, must convert to np.matrix first
-     
+ 
+def density_at(x , mu , sigma):
+    # Return the probability density at 'x' of a Gaussian distribution with mean 'mu' and variance 'sigma'
+    return (1 / sqrt( 2 * pi * sigma ** 2 ) ) * exp( -1 / (2 *  sigma ** 2) * (x - mu) ** 2 )
+ 
+if True: # Set to true to demonstrate a univariate Gaussian
+    pass
+    
 if False: # Set to true to verify the effectiveness of the normal random number generator, above
     data = [ normal_dist_ratio_method() for n in range(50000) ] # Gen 50k nums on a standard normal distribution
     
@@ -235,7 +247,7 @@ if False: # Set to true to generate and display random vectors from a bivariate 
         
         plt.show() 
         
-if True: # Set to true to demonstrate a simple Gaussian Process
+if False: # Set to true to demonstrate a simple Gaussian Process
     """ Gaussian processes (GPs) extend multivariate Gaussian distributions to infinite dimensionality. Formally, a 
     Gaussian process generates data located throughout some domain such that any finite subset of the range follows a 
     multivariate Gaussian distribution. 
@@ -320,16 +332,28 @@ if True: # Set to true to demonstrate a simple Gaussian Process
             #C(i,j)= k(x(i),x(j));     
         #end 
     #end 
+    """ C =
+    [ [ k( 0.0 , 0.0 ) , k( 0.0 , 0.5 ) , k( 0.0 , 1.0 ) ] ,
+      [ k( 0.5 , 0.0 ) , k( 0.5 , 0.5 ) , k( 0.5 , 1.0 ) ] ,
+      [ k( 1.0 , 0.0 ) , k( 1.0 , 0.5 ) , k( 1.0 , 1.0 ) ] ]
+    """
     for i in xrange(n):
             for j in xrange(n):
                 #C(i,j)= k(x(i),x(j));
-                C[i][j] = kernels[kernelChoice]( x[i] , y[j] )    
+                C[i][j] = kernels[kernelChoice]( x[i] , x[j] )    
     
     #% Sample from the Gaussian process at these  
     u = np.random.randn(n,1); # sample u ~ N(0, I_d) , d = 3 , Column vector 3x1
-    #[A,S, B] = svd(C); % factor C = ASB' 
+    #[A,S, B] = svd(C); % factor C = ASB' % Singular Value Decomposition
+    A,S,B = np.linalg.svd( C )
+    #print A
+    #print S
+    #print B
+    #print u
     
-    #z = A*sqrt(S)*u; % z = A S^.5 u  
+    #z = A*np.sqrt(S)*u; % z = A S^.5 u  
+    z = np.multiply(A , np.sqrt(S)) * u # z = A S^.5 u  # Sample from the process
+    print z
     
     #% Plot  
     #figure(2); 
