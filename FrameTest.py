@@ -59,13 +59,13 @@ Span2 = [ 100 ,   0 ,   0 ] # extent of link 2 in its own frame
 
 Link1 = Vector.Frame( [0.0 , 0.0 , 0.0] , 
                       Rotation([0,0,1],0), 
-                      Segment( pCoords=[ [0.0 , 0.0 , 0.0] , Span1  ] ) )
+                      Segment( [ [0.0 , 0.0 , 0.0] , Span1[:]  ] ) )
 #               
 print Link1.objs
 #               
-Link2 = Vector.Frame( Span1 , 
+Link2 = Vector.Frame( Span1[:] , 
                       Rotation([0,1,0],0) , 
-                      Segment( [ [0.0 , 0.0 , 0.0] , Span2  ] ) )
+                      Segment( [ [0.0 , 0.0 , 0.0] , Span2[:]  ] ) )
 #               
 Link2.parent = Link1 # this one is not currently used
 Link1.subFrames.append( Link2 ) # this connection is important for downstream transformations
@@ -73,7 +73,7 @@ Link1.subFrames.append( Link2 ) # this connection is important for downstream tr
 print Link2.objs
 print Link1.subFrames
 #
-Link3 = Vector.Frame( Span2 , 
+Link3 = Vector.Frame( Span2[:] , 
                       Rotation([0,1,0],0) )
                
 Link2.subFrames.append( Link3 )
@@ -138,7 +138,8 @@ def segment_update( angleList ):
 foo.calcFunc = segment_update
 foo.simFrame = Link1
     
-foo.run()    
+foo.rootWin.after(100,foo.run)  
+foo.rootWin.mainloop()
     
 # == Abandoned Code ==
 

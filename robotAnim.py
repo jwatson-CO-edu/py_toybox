@@ -230,6 +230,7 @@ class FrameApp(object):
         # 3. Pack window
         self.canvas.grid(row=1, column=1)
         self.init_controls()
+                
 
     def set_stage(self): # TODO: Consider making this general for any sort of display simulation, only if needed
         """ Set up the canvas with line segments that will not change throughout the simulation """
@@ -256,6 +257,7 @@ class FrameApp(object):
         # Init slider values
         self.j1_sldr.set(0); self.j2_sldr.set(0); 
         self.controlPanel.grid(row=1,column=2) # Pack the control panel
+        self.last = -infty
 
     def get_sliders_as_list(self):
         """ Return a list of all slider values from j1 to j6 """ 
@@ -293,33 +295,41 @@ class FrameApp(object):
                 self.report_frames( frame )
 
     def run(self):
-        # 4. Loop function
-        last = -infty
-        self.winRunning = True
+        # 4. Draw world axes
         for segment in self.staticSegments:
-            segment.update()
-        while self.winRunning:
-            #pass
-            # 4.a. Calc geometry
-            self.calcFunc( self.get_sliders_as_list() )
-            # 4.b. Send new coords to segments
-            self.simFrame.transform_contents() # one of these contains the redundant update
-            self.update_Frames( self.simFrame ) # Is this the redundant update?
-            # 4.c. Take input from widgets
-            # 4.d. Wait remainder of 40ms
-            elapsed = time.time() * 1000 - last
-            if elapsed < 40:
-                time.sleep( (40 - elapsed) / 1000.0 )
-            # 4.e. Mark beginning of next loop
-            last = time.time() * 1000
-            # 4.f. Update window
-            if not self.winRunning: # This does not solve the problem of continuing to run after 
-                return # What if I return instead? - SOmetimes still tries to call 'update', but never updates cleanly
-            self.canvas.update() # don't know how to prevent these from being called again after the window is destroyed
-            self.rootWin.update_idletasks()
-            # self.rootWin.update()
-            # self.report_frames( self.simFrame ) # List all the Frame states to diagnose transforms
-            self.report_segments( self.simFrame ) # List all the Segment states to diagnose transforms
+            segment.update()        
+        # 4. Loop function
+        
+        print "Running!"
+        
+        #pass
+        # 4.a. Calc geometry
+        self.calcFunc( self.get_sliders_as_list() )
+        # 4.b. Send new coords to segments
+        self.simFrame.transform_contents() # one of these contains the redundant update
+        self.update_Frames( self.simFrame ) # Is this the redundant update?
+        # 4.c. Take input from widgets
+        
+        # 4.f. Update window
+        # if not self.winRunning: # This does not solve the problem of continuing to run after 
+        #    return # What if I return instead? - SOmetimes still tries to call 'update', but never updates cleanly
+        self.canvas.update() # don't know how to prevent these from being called again after the window is destroyed
+        self.rootWin.update_idletasks()
+        # self.rootWin.update()
+        # self.report_frames( self.simFrame ) # List all the Frame states to diagnose transforms
+        self.report_segments( self.simFrame ) # List all the Segment states to diagnose transforms
+        # 4.d. Wait remainder of 40ms
+        elapsed = time.time() * 1000 - self.last
+        if elapsed < 40:
+            # time.sleep( (40 - elapsed) / 1000.0 )
+            sleepTime = int(40 - elapsed) # / 1000.0
+        else:
+            sleepTime = 0
+        # 4.e. Mark beginning of next loop
+        self.last = time.time() * 1000    
+        print "Sleeping for",sleepTime,"ms"
+        self.rootWin.after( sleepTime , self.run )
+        # self.rootWin.after( 40 , self.run )
 
 """
 import Tkinter
