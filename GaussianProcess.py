@@ -63,11 +63,32 @@ from ResearchUtils.Plotting import *
             b. \Sigma = [[\sigma_11 , ... , \sigma_1d ],    \sigma_ij = E[ (x_i - \mu_i)(x_j - \mu_j) ]
                         [    ... , sigma_ij , ...    ],     The expectation of the the product of each element's deviation
                         [\sigma_d1 , ... , \sigma_dd ]]     from the corresponding mean
+                        
+------------------------------------------------------------------------------------------------                        
+                        
     ^ A multivariate distribution is Gaussian if any linear combination of its components is Gaussian.
       Probability along a line drawn through the space will be a univariate Gaussian
     ^ X ~ N(\mu,C) , X is a Gaussian (random vector) with E[x_i] = \mu_i , E[] : expected value of
                      Covariance(x_i,x_j) = C_ij
                      C is positive semi-definite - all eigenvalues \lambda_i >= 0
+    ^ A multivariate Gaussian is degenerate if det(C) == 0, has no width in one direction
+      
+    ^ The simplest Gaussian has independent components
+      [ x_1 , ... , x_n ], each is a univariate Gaussian with its own mean and variance, so C = diag( [ \sigma_1 , ... , \sigma_n ] )
+      Contours of prob density are axis-aligned because there is no co-variance, one var has no influence on any other
+      x_i and x_j are independent IFF Cov(x_i , x_j) == 0 , aka no correlation, this holds for Gaussians but not necessarily other distributions
+      This does not imply
+    ^ A Gaussian X ~ N(\mu,C) has a density IFF it is non-degenerate, det(C) != 0
+    ^ Density function for a multivariate Gaussian
+      f(X) = (1 / sqrt( det( 2 * pi * C ) ) ) * exp( -0.5 * transpose(X - \mu) * inverse( C ) * (X - \mu) )
+      ^_ C is invertible by the assumption that det(C) != 0
+    ^ Any affine transformation on a multivariate Gaussian is Gaussian
+    ^ Ax + \mu ~ N( \mu , C ) , where x is [x_1 , ... , x_n] ~ N(0,I_n)
+    ^ A * transpose(A) = C # FIXME: HOW TO FIND A?
+      
+* Quadratic Form in X
+  transpose(X) * A * X , the level sets of a quadratic form are ellipsoids, when A is symmetric positive semi-definite
+------------------------------------------------------------------------------------------------------------------------------------------------
 
 * A Gaussian process is full specified by its mean function and covariance function
     ^ A Gaussian Distribution is over vectors
