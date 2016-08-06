@@ -13,9 +13,7 @@ Testing representation of reference frames in the simplest implementation possib
 
 """
   == TODO ==
-* TROUBLESHOOTING
-    [X] Report link Poses each frame, relative and lab
-    [ ] Report changes to Segment lab coordinates
+* 
 """
 
 # == Init Environment ==================================================================================================
@@ -77,28 +75,7 @@ Link3 = Vector.Frame( Span2[:] ,
                       Rotation([0,1,0],0) )
                
 Link2.subFrames.append( Link3 )
-        
-def attach_geometry(rootFrame, pCanvas):
-    """ Traverse geometry from the root frame to the all subframes, recursively, attaching all drawable geometry to canvas """
-    for obj in rootFrame.objs:
-        obj.attach_to_canvas( pCanvas )
-    for frame in rootFrame.subFrames:
-        attach_geometry( frame , pCanvas )
-        
-def attach_transform( rootFrame, pTransform ):
-    """ Traverse geometry from the root frame to the all subframes, recursively, attaching all drawable geometry to canvas """
-    for obj in rootFrame.objs:
-        obj.transform = pTransform
-    for frame in rootFrame.subFrames:
-        attach_transform( frame , pTransform )
-        
-def color_all(rootFrame, pColor):
-    """ Traverse geometry from the root frame to the all subframes, recursively, setting all graphics to 'pColor' """
-    for obj in rootFrame.objs:
-        obj.set_color( pColor )
-    for frame in rootFrame.subFrames:
-        color_all( frame , pColor )
-        
+                
 def jnt_refs_serial_chain( rootLink ):
     """ Return a list of references to Rotations that correspond to each of the links of the manipulator """
     # NOTE: This function assumes that each frame has only one subframe

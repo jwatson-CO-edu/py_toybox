@@ -331,53 +331,123 @@ class FrameApp(object):
         self.rootWin.after( sleepTime , self.run )
         # self.rootWin.after( 40 , self.run )
 
-"""
-import Tkinter
+class LinkFrameApp(object):
+    """ A Tkinter display to display a new Frame/link-based robot model """
+    
+    def __init__(self):
+        global FLATORIGIN
+        # 1. Init Tkinter root
+        self.winWidth = 500
+        self.winHeight = 500
+        self.orgnScale = min( self.winHeight , self.winWidth ) * 2/3.0
+        self.renderScale = 1/2.0
+        self.rootWin = Tk()
+        self.rootWin.wm_title("Simple Robot Sim")
+        self.rootWin.protocol("WM_DELETE_WINDOW", self.callback_destroy)
+        self.calcFunc = None # Should really be loaded with something before running
+        self.winRunning = False
+        self.simFrame = None # The reference frame that contains all simulated objects
+        # 2. Set up window
+        self.canvas = Canvas(self.rootWin, width=self.winWidth, height = self.winHeight)
+        self.canvas.config(background='black')
+        self.FLATORIGIN = [self.winWidth/2, self.winHeight/2]
+        FLATORIGIN = self.FLATORIGIN
+        self.set_stage()
+        # 3. Pack window
+        self.canvas.grid(row=1, column=1)
+        self.init_controls()
+                
+    def set_stage(self): # TODO: Consider making this general for any sort of display simulation, only if needed
+        """ Set up the canvas with line segments that will not change throughout the simulation """
+        orgnVecs = [ [1,0,0] , [0,1,0] , [0,0,1] ] # Orthonormal bases
+        scaledVecs = [ np.multiply( vec , self.orgnScale ) for vec in orgnVecs] # Scale the bases for good UI
+        c = ['red','green','blue']
+        self.staticSegments = []
+        print "FrameApp.canvas" , self.canvas , self.canvas.__class__
+        for vecDex , vector in enumerate(scaledVecs):
+            self.staticSegments.append( Segment( [ [0,0,0] , vector ] , TKcanvas=self.canvas, color=c[vecDex]) )
+            
+    def init_controls(self):
+        """ Control sliders """ 
+        self.controlPanel = Frame(self.rootWin) # A panel to hold the controls, has its own packing environment
+        # Control Sliders
+        self.j1_sldr = Scale(self.controlPanel, from_=-pi, to= pi, orient=HORIZONTAL, resolution=0.05) 
+        self.j2_sldr = Scale(self.controlPanel, from_=-pi, to= pi, orient=HORIZONTAL, resolution=0.05) 
+        # Control Labels
+        self.j1_labl = Label(self.controlPanel, text="Joint 1")
+        self.j2_labl = Label(self.controlPanel, text="Joint 2")
+        # Pack all widgets
+        self.j1_sldr.grid(row=2, column=1); self.j2_sldr.grid(row=2, column=2); # pack sliders
+        self.j1_labl.grid(row=3, column=1); self.j2_labl.grid(row=3, column=2); # pack labels
+        # Init slider values
+        self.j1_sldr.set(0); self.j2_sldr.set(0); 
+        self.controlPanel.grid(row=1,column=2) # Pack the control panel
+        self.last = -infty
 
-topWin = Tkinter.Tk()
+    def get_sliders_as_list(self):
+        """ Return a list of all slider values from j1 to j6 """ 
+        return [ self.j1_sldr.get() , self.j2_sldr.get() ]
+        
+    def callback_destroy(self):
+        self.winRunning = False
+        self.rootWin.destroy()
+        exit()
+    
+    def update_Frames(self , currFrame):
+        for obj in currFrame.objs:
+            obj.update()
+        for frame in currFrame.subFrames:
+            self.update_Frames( frame )
 
-canvas = Tkinter.Canvas(topWin, bg='blue', height=250, width=300)
-coord = (10,50,240,210)
-arc = canvas.create_arc(coord,start=0,extent=150,fill='red')
+    def report_frames(self, currFrame):
+        """ Print the relative and lab poses of each of the serial frames in the simulation """
+        print "Rel:",str(currFrame)
+        print "Lab:",str(currFrame.labPose)
+        if len(currFrame.subFrames) < 1:
+            print
+        else:
+            for frame in currFrame.subFrames:
+                self.report_frames( frame )
+                
+    def report_segments(self, currFrame):
+        """ Print the relative and lab poses of each of the serial Segments in the simulation """
+        print "Rel:" , currFrame.objs[0].coords
+        print "Lab:" , currFrame.objs[0].labCoords
+        if len(currFrame.subFrames) < 1:
+            print
+        else:
+            for frame in currFrame.subFrames:
+                self.report_frames( frame )
 
-canvas.pack()
-topWin.mainloop()
-"""
-
-"""
-class SimApp(object):
-     def __init__(self):
-        self.root = Tk()
-        self.canvas = Canvas(self.root, width=400, height = 400)
-        self.canvas.pack()
-        self.alien1 = self.canvas.create_oval(20, 260, 120, 360, outline='blue') #,         fill='blue')
-        self.alien2 = self.canvas.create_oval(2, 2, 40, 40, outline='red') #, fill='red')
-        self.canvas.pack()
-        self.root.after(0, self.animation)
-        self.root.mainloop()
-
-     def animation(self):
-        track = 0
-        while True:
-            x = 5
-            y = 0
-            if track == 0:
-               for i in range(0,51):
-                    time.sleep(0.025)
-                    self.canvas.move(self.alien1, x, y)
-                    self.canvas.move(self.alien2, x, y)
-                    self.canvas.update()
-               track = 1
-               print "check"
-
-            else:
-               for i in range(0,51):
-                    time.sleep(0.025)
-                    self.canvas.move(self.alien1, -x, y)
-                    self.canvas.move(self.alien2, -x, y)
-                    self.canvas.update()
-               track = 0
-            print track
-
-#alien()
-"""
+    def run(self):
+        # 4. Draw world axes
+        for segment in self.staticSegments:
+            segment.update() # TODO: These will never change, draw them safely at the beginning
+        # 4. Loop function
+        # 4.a. Calc geometry
+        self.calcFunc( self.get_sliders_as_list() )
+        # 4.b. Send new coords to segments
+        self.simFrame.transform_contents() # one of these contains the redundant update
+        self.update_Frames( self.simFrame ) # Is this the redundant update?
+        # 4.c. Take input from widgets
+        
+        # 4.f. Update window
+        # if not self.winRunning: # This does not solve the problem of continuing to run after 
+        #    return # What if I return instead? - SOmetimes still tries to call 'update', but never updates cleanly
+        self.canvas.update() # don't know how to prevent these from being called again after the window is destroyed
+        self.rootWin.update_idletasks()
+        # self.rootWin.update()
+        # self.report_frames( self.simFrame ) # List all the Frame states to diagnose transforms
+        self.report_segments( self.simFrame ) # List all the Segment states to diagnose transforms
+        # 4.d. Wait remainder of 40ms
+        elapsed = time.time() * 1000 - self.last
+        if elapsed < 40:
+            # time.sleep( (40 - elapsed) / 1000.0 )
+            sleepTime = int(40 - elapsed) # / 1000.0
+        else:
+            sleepTime = 0
+        # 4.e. Mark beginning of next loop
+        self.last = time.time() * 1000    
+        print "Sleeping for",sleepTime,"ms"
+        self.rootWin.after( sleepTime , self.run )
+        # self.rootWin.after( 40 , self.run )
