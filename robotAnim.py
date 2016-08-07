@@ -332,7 +332,7 @@ class FrameApp(object):
         # self.rootWin.after( 40 , self.run )
 
 class LinkFrameApp(object):
-    """ A Tkinter display to display a new Frame/link-based robot model """
+    """ A Tkinter display to display a new FrameLink-based DH robot model """
     
     def __init__(self):
         global FLATORIGIN

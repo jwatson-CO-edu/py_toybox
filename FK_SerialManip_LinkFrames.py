@@ -6,9 +6,9 @@
 from __future__ import division # Future imports must be called before everything else, including triple-quote docs!
 
 """
-FrameTest.py , Built on Spyder for Python 2.7
-James Watson, 2016 July
-Testing representation of reference frames in the simplest implementation possible, find out what is going wrong
+FK_SerialManip_LinkFrames.py , Built on Spyder for Python 2.7
+James Watson, 2016 August
+Testing representation of reference frames in the simplest implementation possible
 """
 
 # == Init Environment ==================================================================================================
@@ -42,6 +42,44 @@ from robotAnim import * # Cheap Iso
 
 # == End Init ==========================================================================================================
 
+# DH Parameters and Joint Limits for the KUKA R6 R900
+KUKADH = [ # This is the Hollerbach formulation
+    {'alpha':   0.0, 'd':   0.0, 'a':    0.0, 'theta': None, 'type': None    }, # The -1 --> 0 transformation must be specified!
+    {'alpha':  pi/2, 'd': 400.0, 'a':  -25.0, 'theta': None, 'type': 'rotary'},
+    {'alpha':   0.0, 'd':   0.0, 'a': -455.0, 'theta': None, 'type': 'rotary'},
+    {'alpha':  pi/2, 'd':   0.0, 'a':  -35.0, 'theta': None, 'type': 'rotary'},
+    {'alpha': -pi/2, 'd': 420.0, 'a':    0.0, 'theta': None, 'type': 'rotary'},
+    {'alpha':  pi/2, 'd':   0.0, 'a':    0.0, 'theta': None, 'type': 'rotary'},
+    {'alpha':   0.0, 'd':  80.0, 'a':    0.0, 'theta': None, 'type': 'rotary'}
+]
+
+JNTLIM = [
+    ( radians(170) , radians(-170) ),
+    ( radians( 45) , radians(-190) ),
+    ( radians(156) , radians(-120) ),
+    ( radians(185) , radians(-185) ),
+    ( radians(120) , radians(-120) ),
+    ( radians(350) , radians(-350) )
+]
+
+def robot_from_DH( specification , formulation='Hollerbach' ):
+    """ Return a "stick-model" robot according to the DH parameters given in the 'specification' """
+    if formulation == 'Hollerbach':
+        # NOTE: This differs slightly from the class formulation in that the -1 --> 0 transformation must be specified
+        for jointNum , transform in enumerate(specification):
+            rotations = [ Rotation([0,1,0],0) ]
+            # FIXME: START HERE!
+            currLink = LinkFrame( [ transform['a'] , 0.0 , transform['d'] ] , 
+                                  [ Rotation( [0,0,1] , 0 ) ], 
+                                  Segment( [ [0.0 , 0.0 , 0.0] , Span1[:] ] ) )
+    else:
+        raise ValueError( "robot_from_DH: The formulation \"" + formulation +"\" is not recognized!" )
+
+# TODO:
+#    [ ] Compare the above specification to the first successful implementation
+#    [ ] Compare the above specification to the class specification
+#    [ ] Produce a series of properly connected LinkFrames from the above specification
+#    [ ] Place axes at the appropriate places for the Hollerbach formulation
 
 Span1 = [ 100 ,   0 , 100 ] # extent of link 1 in its own frame
 Span2 = [ 100 ,   0 ,   0 ] # extent of link 2 in its own frame
