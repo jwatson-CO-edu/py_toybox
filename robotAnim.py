@@ -40,9 +40,9 @@ def add_first_valid_dir_to_path(dirList):
     if not loadedOne:
         print "None of the specified directories were loaded"
 # List all the places where the research environment could be
-add_first_valid_dir_to_path( [ '/media/jwatson/FILEPILE/Python/ResearchEnv',
-                               '/home/jwatson/regrasp_planning/researchenv',
-                               'F:\Python\ResearchEnv' ] )
+#add_first_valid_dir_to_path( [ '/media/jwatson/FILEPILE/Python/ResearchEnv',
+#                               '/home/jwatson/regrasp_planning/researchenv',
+#                               'F:\Python\ResearchEnv' ] )
 from ResearchEnv import * # Load the custom environment
 from ResearchUtils.Vector import *
 from Tkinter import *
@@ -67,8 +67,8 @@ def cheap_iso_transform(R3triple):
            np.multiply( cheap_iso_transform.zBasis , R3triple[2] ) # use 'np_add' if this concatenates coords
 
 cheap_iso_transform.zBasis = [ 0.0 , 1.0 ] 
-cheap_iso_transform.xBasis = polr_2_cart( [1.0 , 2.0/3 * pi] )
-cheap_iso_transform.yBasis = polr_2_cart( [1.0 , 1.0/3 * pi] )
+cheap_iso_transform.xBasis = polr_2_cart_0Y( [1.0 , 2.0/3 * pi] )
+cheap_iso_transform.yBasis = polr_2_cart_0Y( [1.0 , 1.0/3 * pi] )
 
 # = Rendering Helpers =
 
@@ -170,7 +170,7 @@ class SegmentApp(object):
         self.controlPanel.grid(row=1,column=2) # Pack the control panel
     
     def get_sliders_as_list(self):
-        """ Return a list of all slider values from j1 to j6 """ # TODO: ITERATIVE TROUBLESHOOTING
+        """ Return a list of all slider values from j1 to j6 """ 
         return [ self.j1_sldr.get() , self.j2_sldr.get() , self.j3_sldr.get() , self.j4_sldr.get() , self.j5_sldr.get() , self.j6_sldr.get() ]
         
     def callback_destroy(self):
@@ -363,7 +363,7 @@ class LinkFrameApp(object):
         scaledVecs = [ np.multiply( vec , self.orgnScale ) for vec in orgnVecs] # Scale the bases for good UI
         c = ['red','green','blue']
         self.staticSegments = []
-        print "FrameApp.canvas" , self.canvas , self.canvas.__class__
+        dbgLog(-1, "LinkFrameApp.canvas" , self.canvas , self.canvas.__class__)
         for vecDex , vector in enumerate(scaledVecs):
             self.staticSegments.append( Segment( [ [0,0,0] , vector ] , TKcanvas=self.canvas, color=c[vecDex]) )
             
@@ -371,22 +371,35 @@ class LinkFrameApp(object):
         """ Control sliders """ 
         self.controlPanel = Frame(self.rootWin) # A panel to hold the controls, has its own packing environment
         # Control Sliders
-        self.j1_sldr = Scale(self.controlPanel, from_=-pi, to= pi, orient=HORIZONTAL, resolution=0.05) 
-        self.j2_sldr = Scale(self.controlPanel, from_=-pi, to= pi, orient=HORIZONTAL, resolution=0.05) 
+        self.j1_sldr = Scale(self.controlPanel, from_=-170, to=170, orient=HORIZONTAL) #Theta1 > 170 or Theta1 < -170:
+        self.j2_sldr = Scale(self.controlPanel, from_=-190, to= 45, orient=HORIZONTAL) #Theta2 >  45 or Theta2 < -190:
+        self.j3_sldr = Scale(self.controlPanel, from_=-120, to=156, orient=HORIZONTAL) #Theta3 > 156 or Theta3 < -120:
+        self.j4_sldr = Scale(self.controlPanel, from_=-185, to=185, orient=HORIZONTAL) #Theta4 > 185 or Theta4 < -185:
+        self.j5_sldr = Scale(self.controlPanel, from_=-120, to=120, orient=HORIZONTAL) #Theta5 > 120 or Theta5 < -120:
+        self.j6_sldr = Scale(self.controlPanel, from_=-350, to=350, orient=HORIZONTAL) #Theta6 > 350 or Theta5 < -350:
         # Control Labels
         self.j1_labl = Label(self.controlPanel, text="Joint 1")
         self.j2_labl = Label(self.controlPanel, text="Joint 2")
+        self.j3_labl = Label(self.controlPanel, text="Joint 3")
+        self.j4_labl = Label(self.controlPanel, text="Joint 4")
+        self.j5_labl = Label(self.controlPanel, text="Joint 5")
+        self.j6_labl = Label(self.controlPanel, text="Joint 6")
         # Pack all widgets
-        self.j1_sldr.grid(row=2, column=1); self.j2_sldr.grid(row=2, column=2); # pack sliders
-        self.j1_labl.grid(row=3, column=1); self.j2_labl.grid(row=3, column=2); # pack labels
+        self.j1_sldr.grid(row=2, column=1); self.j2_sldr.grid(row=2, column=2); self.j3_sldr.grid(row=2, column=3); # Joint controls 1-3
+        self.j1_labl.grid(row=3, column=1); self.j2_labl.grid(row=3, column=2); self.j3_labl.grid(row=3, column=3); # Slider labels  1-3
+        self.j4_sldr.grid(row=4, column=1); self.j5_sldr.grid(row=4, column=2); self.j6_sldr.grid(row=4, column=3); # Joint controls 4-6 
+        self.j4_labl.grid(row=5, column=1); self.j5_labl.grid(row=5, column=2); self.j6_labl.grid(row=5, column=3); # Slider labels  4-6
         # Init slider values
-        self.j1_sldr.set(0); self.j2_sldr.set(0); 
+        self.j1_sldr.set(0); self.j2_sldr.set(-90); self.j3_sldr.set(0);
+        self.j4_sldr.set(0); self.j5_sldr.set(0); self.j6_sldr.set(0);
         self.controlPanel.grid(row=1,column=2) # Pack the control panel
+        # Init animation loop timer
         self.last = -infty
 
     def get_sliders_as_list(self):
-        """ Return a list of all slider values from j1 to j6 """ 
-        return [ self.j1_sldr.get() , self.j2_sldr.get() ]
+        """ Return a list of all slider values from j1 to j6 """ # TODO: ITERATIVE TROUBLESHOOTING
+        return [ radians( self.j1_sldr.get() ) ]#, radians( self.j2_sldr.get() ) , radians( self.j3_sldr.get() ) , 
+               # radians( self.j4_sldr.get() ) , radians( self.j5_sldr.get() ) , radians( self.j6_sldr.get() ) ]
         
     def callback_destroy(self):
         self.winRunning = False
@@ -411,8 +424,9 @@ class LinkFrameApp(object):
                 
     def report_segments(self, currFrame):
         """ Print the relative and lab poses of each of the serial Segments in the simulation """
-        print "Rel:" , currFrame.objs[0].coords
-        print "Lab:" , currFrame.objs[0].labCoords
+        for obj in currFrame.objs:
+            print "Rel:" , obj.coords
+            print "Lab:" , obj.labCoords
         if len(currFrame.subFrames) < 1:
             print
         else:
@@ -432,22 +446,18 @@ class LinkFrameApp(object):
         # 4.c. Take input from widgets
         
         # 4.f. Update window
-        # if not self.winRunning: # This does not solve the problem of continuing to run after 
-        #    return # What if I return instead? - SOmetimes still tries to call 'update', but never updates cleanly
-        self.canvas.update() # don't know how to prevent these from being called again after the window is destroyed
+        self.canvas.update() 
         self.rootWin.update_idletasks()
-        # self.rootWin.update()
-        # self.report_frames( self.simFrame ) # List all the Frame states to diagnose transforms
-        self.report_segments( self.simFrame ) # List all the Segment states to diagnose transforms
+        if get_dbg_lvl() == -1:
+            self.report_segments( self.simFrame ) # List all the Segment states to diagnose transforms
         # 4.d. Wait remainder of 40ms
         elapsed = time.time() * 1000 - self.last
         if elapsed < 40:
-            # time.sleep( (40 - elapsed) / 1000.0 )
-            sleepTime = int(40 - elapsed) # / 1000.0
+            sleepTime = int(40 - elapsed) 
         else:
             sleepTime = 0
         # 4.e. Mark beginning of next loop
-        self.last = time.time() * 1000    
-        print "Sleeping for",sleepTime,"ms"
+        self.last = time.time() * 1000  
+        if get_dbg_lvl() == -1:
+            print "Sleeping for",sleepTime,"ms"
         self.rootWin.after( sleepTime , self.run )
-        # self.rootWin.after( 40 , self.run )
