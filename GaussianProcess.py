@@ -85,9 +85,45 @@ from ResearchUtils.Plotting import *
     ^ Any affine transformation on a multivariate Gaussian is Gaussian
     ^ Ax + \mu ~ N( \mu , C ) , where x is [x_1 , ... , x_n] ~ N(0,I_n)
     ^ A * transpose(A) = C # FIXME: HOW TO FIND A?
+    
+* geometric intuition for eignevalues: 
+  ^ Let X ~ N(0,I_d), let C be the covariance matrix
+    ^ A covariance matrix is always symmetric and always positive semi-definite
+    ^ Any symmetric matrix can be diagonalized C = U * \Lambda * transpose(U)
+      ^_ U is the matrix [u_1 , ... , u_n] of unit eigenvectors, it is orthogonal
+      ^_ \Lambda = diag( [\lambda_1 , ... , \lambda_n] ) , the diagonal matrix of eigenvlaues of C, eigenvalues are non-degative for positive semi-definite matrix
+    ^ C = U * \Lambda * transpose(U) = U * \Lambda^{1/2} * \Lambda^{1/2} * transpose(U) = (U * \Lambda^{1/2}) * transpose(U * \Lambda^{1/2}) = A * transpose(A)
+      U * \Lambda^{1/2} = A
+      THIS IS THE A WE NEEDED TO SAMPLE FROM THE GAUSSIAN DISTRIBUTION
+      ^_ The major axes of the ellipsoid will be scaled by the square root of the associated eigenvalue, sqrt(\lambda_i) is the standard deviation along dimension i
+      ^_ U is a rotation of the ellipsoid, showing the degree to which variance in one dimension affects the other(s), the eigenvectors are the basis vectors for for the
+         distribution --> the major axes of the ellipsoid are aligned with the eigenvectors
+    ^ Y = A*X + \mu , Y ~ N( \mu , C )
+      ^_ \mu is an offset from the origin, the center of the distribution in Rn
+
+* Marginalization
+  Let X ~ N(\mu , C), x_a = [x_1 , ... , x_k], x_b = [x_{k+1} , ... , x_n]
+  ^ \mu = [ \mu_a , \mu_b ]
+  ^ C = [ [C_aa , C_ab] ,
+          [C_ba , C_bb] ]
+  ^ C_aa = [ [C_11 , ... , C_1k ] ,      And X_a ~ N( \mu_a , C_aa )      
+             [ ... , C_ij , ... ] ,    
+             [C_k1 , ... , C_kk ] ] 
+
+* Addition: Gaussian properties are preserved under addition of independent Gaussians
+  ^ X ~ N(\mu_x , C_x) , Y ~ (\mu_y , C_y) , X+Y = ( \mu_x + \mu_y , C_x + C_y )
+             
+* Conditional distribution
+  ^ The distribution of X_1 given that X_2 takes a certain value ( X_1 | X_2 = x_2) is a Gaussian, this is essentially
+    a cross-section of the bivariate Gaussian at X_2 = x_2, which is a univariate Gaussian
+  ^ ( X_a | X_b = x_b) ~ N(m,D) , where
+    m = \mu_a + C_ab * inverse(C_bb)( x_b - \mu_b )
+    D = C_aa - C_ab * inverse(C_bb) * C_ba
       
 * Quadratic Form in X
   transpose(X) * A * X , the level sets of a quadratic form are ellipsoids, when A is symmetric positive semi-definite
+  ^ Positive definite means the eigenvalues are positive
+  ^ transpose(x - \mu) * inverse(c) * (x - \mu) = transpose(x - \mu) * U * inverse(\Lambda) * transpose(U) * (x - \mu)
 ------------------------------------------------------------------------------------------------------------------------------------------------
 
 * A Gaussian process is full specified by its mean function and covariance function
