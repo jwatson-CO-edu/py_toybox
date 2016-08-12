@@ -72,33 +72,50 @@ def robot_from_DH( specification , formulation='Hollerbach' ):
         # NOTE: This differs slightly from the class formulation in that the -1 --> 0 transformation must be specified
         for jointNum , transform in enumerate(specification):
             dbgLog(1 , "Creating Link" , jointNum)
-            if specification[jointNum]['alpha'] != 0:
-                        rotations.append( Vector.Quaternion.k_rot_to_Quat( [1,0,0] , transform['alpha'] ) )
+            rotations = []
+            # if specification[jointNum + 1]['type'] == 'rotary':
+            if specification[jointNum]['type'] == 'rotary':
+                rotations.append( Rotation([0,0,1],0) )
+            elif specification[jointNum]['type'] == None:
+                pass
+            else:
+                # raise ValueError("robot_from_DH: Joint type " + specification[jointNum + 1]['type'] + " is not supported")
+                raise ValueError("robot_from_DH: Joint type " + specification[jointNum]['type'] + " is not supported")
+            # if specification[jointNum]['alpha'] != 0:
+            if jointNum > 0 and specification[jointNum - 1]['alpha'] != 0:
+                # rotations.append( Vector.Quaternion.k_rot_to_Quat( [1,0,0] , transform['alpha'] ) )
+                rotations.append( Vector.Quaternion.k_rot_to_Quat( [1,0,0] , specification[jointNum - 1]['alpha'] ) )
             # if (jointNum < len(specification) - 1):
-            if (jointNum > 0):
-                if specification[jointNum + 1]['type'] == 'rotary':
-                    rotations = [ Rotation([0,0,1],0) ]
-                    
-                else:
-                    raise ValueError("robot_from_DH: Joint type " + specification[jointNum + 1]['type'] + " is not supported")
+            #if (jointNum > 0):
+            
+            
             
             if jointNum > 0:
                 origin = [ specification[jointNum - 1]['a'] , 0.0 , specification[jointNum - 1]['d'] ] # Origin is at the end of the last link
-                segments = []
-                if transform['d'] != 0:
-                    segments.append( Vector.Segment( [ [ 0.0 , 0.0 , 0.0 ] , [ 0.0 , 0.0 , transform['d'] ] ] ) )
-                if transform['a'] != 0:
-                    segments.append( Vector.Segment( [ [ 0.0 , 0.0 , transform['d'] ] , [ transform['a'] , 0.0 , transform['d'] ] ] ) )
+                # origin = [ specification[jointNum]['a'] , 0.0 , specification[jointNum]['d'] ] # Origin is at the end of the last link
             else:
-                origin = [ 0.0 , 0.0 , 0.0 ]
-                segments = [] # Nothing to paint, only locating the origin of the robot
+                origin = [0.0 , 0.0 , 0.0]
+            segments = []
+            # if specification[jointNum + 1]['d'] != 0.0:
+            if specification[jointNum]['d'] != 0.0:
+                # segments.append( Vector.Segment( [ [ 0.0 , 0.0 , 0.0 ] , [ 0.0 , 0.0 , specification[jointNum + 1]['d'] ] ] ) )
+                segments.append( Vector.Segment( [ [ 0.0 , 0.0 , 0.0 ] , [ 0.0 , 0.0 , specification[jointNum]['d'] ] ] ) )
+            # if specification[jointNum + 1]['a'] != 0.0:
+            if specification[jointNum]['a'] != 0.0:
+                # segments.append( Vector.Segment( [ [ 0.0 , 0.0 , specification[jointNum + 1]['d'] ] , 
+                segments.append( Vector.Segment( [ [ 0.0 , 0.0 , specification[jointNum]['d'] ] , 
+                                                   # [ specification[jointNum + 1]['a'] , 0.0 , specification[jointNum + 1]['d'] ] ] ) )
+                                                   [ specification[jointNum]['a'] , 0.0 , specification[jointNum]['d'] ] ] ) )
+#            else:
+#                origin = [ 0.0 , 0.0 , 0.0 ]
+#                segments = [] # Nothing to paint, only locating the origin of the robot
             
             currLink = Vector.LinkFrame( origin , rotations , *segments ) # build a link frame from the above specifications
             if jointNum > 0: # If this is not the first link, then this link is a subframe of the last link
                 linkRefs[-1].attach_sub( currLink )
             
             linkRefs.append( currLink ) 
-            if len(linkRefs) == 2: break # TODO: ITERATIVE TROUBLESHOOTING            
+            if len(linkRefs) == 6: break # TODO: ITERATIVE TROUBLESHOOTING            
             
         return linkRefs # Assume the last frame is the effector frame
     # TODO: Implement support for other DH parameter formulations
@@ -151,8 +168,8 @@ for segment in foo.staticSegments:
 def segment_update_function( linkChain ):
     """ Set all the joint angles in 'linkChain' to those specified in 'angleList' """
     def segment_update( angleList ):
-        for jntDex in range(len(linkChain)-1):
-            linkChain[jntDex].set_theta( angleList[jntDex] )
+        for jntDex in range(1, len(linkChain)-1): # The first frame is from the lab to the robot
+            linkChain[jntDex].set_theta( angleList[jntDex-1] )
     return segment_update
     
 foo.calcFunc = segment_update_function( robotChain )

@@ -398,8 +398,8 @@ class LinkFrameApp(object):
 
     def get_sliders_as_list(self):
         """ Return a list of all slider values from j1 to j6 """ # TODO: ITERATIVE TROUBLESHOOTING
-        return [ radians( self.j1_sldr.get() ) ]#, radians( self.j2_sldr.get() ) , radians( self.j3_sldr.get() ) , 
-               # radians( self.j4_sldr.get() ) , radians( self.j5_sldr.get() ) , radians( self.j6_sldr.get() ) ]
+        return [ radians( self.j1_sldr.get() ) , radians( self.j2_sldr.get() ) , radians( self.j3_sldr.get() )  ,
+                 radians( self.j4_sldr.get() ) , radians( self.j5_sldr.get() ) ]#, radians( self.j6_sldr.get() ) ]
         
     def callback_destroy(self):
         self.winRunning = False
