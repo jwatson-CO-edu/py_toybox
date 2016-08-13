@@ -88,13 +88,12 @@ def robot_from_DH( specification , formulation='Hollerbach' ):
             # if (jointNum < len(specification) - 1):
             #if (jointNum > 0):
             
-            
-            
             if jointNum > 0:
-                origin = [ specification[jointNum - 1]['a'] , 0.0 , specification[jointNum - 1]['d'] ] # Origin is at the end of the last link
+                origin = [ specification[jointNum - 1]['a'] , 0.0 , specification[jointNum - 1]['d'] ] # [:] # Origin is at the end of the last link
                 # origin = [ specification[jointNum]['a'] , 0.0 , specification[jointNum]['d'] ] # Origin is at the end of the last link
             else:
-                origin = [0.0 , 0.0 , 0.0]
+                origin = [0.0 , 0.0 , 0.0] # [:]
+                
             segments = []
             # if specification[jointNum + 1]['d'] != 0.0:
             if specification[jointNum]['d'] != 0.0:
@@ -110,18 +109,25 @@ def robot_from_DH( specification , formulation='Hollerbach' ):
 #                origin = [ 0.0 , 0.0 , 0.0 ]
 #                segments = [] # Nothing to paint, only locating the origin of the robot
             
+            dbgLog(1, "Link",jointNum )
+            dbgLog(1, "\tOrigin:",origin )
+            dbgLog(1, "\tRotations",*[str(rot) for rot in rotations] )
+            dbgLog(1, "\tSegments",*[str(seg) for seg in segments] )
+            
             currLink = Vector.LinkFrame( origin , rotations , *segments ) # build a link frame from the above specifications
             if jointNum > 0: # If this is not the first link, then this link is a subframe of the last link
                 linkRefs[-1].attach_sub( currLink )
+                # pass
             
             linkRefs.append( currLink ) 
-            if len(linkRefs) == 6: break # TODO: ITERATIVE TROUBLESHOOTING            
+            # if len(linkRefs) == 6: break # TODO: ITERATIVE TROUBLESHOOTING            
             
-        return linkRefs # Assume the last frame is the effector frame
     # TODO: Implement support for other DH parameter formulations
     else:
         raise ValueError( "robot_from_DH: The formulation \"" + formulation + "\" is not recognized!" )
-
+        
+    return linkRefs # Assume the last frame is the effector frame        
+        
 robotChain = robot_from_DH( KUKADH )
 for link in robotChain:
     print link.__class__, len(link.subFrames), len(link.objs)
