@@ -30,6 +30,7 @@ def add_first_valid_dir_to_path(dirList):
             break
     if not loadedOne:
         print "None of the specified directories were loaded", dirList
+        
 # List all the places where the research environment could be
 add_first_valid_dir_to_path( [ '/media/jwatson/FILEPILE/Python/ResearchEnv',
                                '/home/jwatson/regrasp_planning/researchenv',
@@ -115,6 +116,7 @@ def robot_from_DH( specification , formulation='Hollerbach' ):
             dbgLog(1, "\tSegments",*[str(seg) for seg in segments] )
             
             currLink = Vector.LinkFrame( origin , rotations , *segments ) # build a link frame from the above specifications
+            
             if jointNum > 0: # If this is not the first link, then this link is a subframe of the last link
                 linkRefs[-1].attach_sub( currLink )
                 # pass
@@ -128,7 +130,8 @@ def robot_from_DH( specification , formulation='Hollerbach' ):
         
     return linkRefs # Assume the last frame is the effector frame        
         
-robotChain = robot_from_DH( KUKADH )
+robotChain = robot_from_DH( KUKADH ) # Generate the robot from the DH parameters
+
 for link in robotChain:
     print link.__class__, len(link.subFrames), len(link.objs)
     # Chain appears to be populated!
@@ -146,29 +149,30 @@ for link in robotChain:
 #               
 ## Link2.subFrames.append( Link3 )
 #Link2.attach_sub( EffectorFrame )  
-              
-def jnt_refs_serial_chain( rootLink ):
-    """ Return a list of references to Rotations that correspond to each of the links of the manipulator """
-    # NOTE: This function assumes that each frame has only one subframe
-    jntRefs = [] # [ rootLink.orientation ]
-    currLink = rootLink
-    
-    while len(currLink.subFrames) > 0:
-        print "At link:", currLink
-        print "This link has",len(currLink.subFrames),"subframes"
-        
-        # jntRefs.append( currLink.orientation ) # TODO: Find out if this attaches the reference or a copy
-        jntRefs.append( currLink ) # TODO: Find out if this attaches the reference or a copy
-        currLink = currLink.subFrames[0]
-    return jntRefs
+ 
+# Not used for LinkFrame             
+#def jnt_refs_serial_chain( rootLink ):
+#    """ Return a list of references to Rotations that correspond to each of the links of the manipulator """
+#    # NOTE: This function assumes that each frame has only one subframe
+#    jntRefs = [] # [ rootLink.orientation ]
+#    currLink = rootLink
+#    
+#    while len(currLink.subFrames) > 0:
+#        print "At link:", currLink
+#        print "This link has",len(currLink.subFrames),"subframes"
+#        
+#        # jntRefs.append( currLink.orientation ) # TODO: Find out if this attaches the reference or a copy
+#        jntRefs.append( currLink ) # TODO: Find out if this attaches the reference or a copy
+#        currLink = currLink.subFrames[0]
+#    return jntRefs
 
 foo = LinkFrameApp() # init the app object
 ##
 attach_geometry( robotChain[0] , foo.canvas ) # attach all the segments to the canvas
-color_all( robotChain[0] , 'white' )
-attach_transform( robotChain[0] , chain_R3_scrn )
+color_all( robotChain[0] , 'white' ) # Color all the links white
+attach_transform( robotChain[0] , chain_R3_scrn ) # Assign the Cheap Iso projection to all drawable objects
 ##
-for segment in foo.staticSegments:
+for segment in foo.staticSegments: # Assign the Cheap Iso projection to the world axes
     segment.transform = chain_R3_scrn
 
 def segment_update_function( linkChain ):
@@ -183,7 +187,8 @@ foo.simFrame = robotChain[0]
 ##    
 foo.rootWin.after(100,foo.run)  
 foo.rootWin.mainloop()
-    
+   
+   
 # == Abandoned Code ==
 
 

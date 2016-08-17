@@ -45,7 +45,8 @@ from robotAnim import * # Cheap Iso
 
 Span1 = [ 100 ,   0 , 100 ] # extent of link 1 in its own frame
 Span2 = [ 100 ,   0 ,   0 ] # extent of link 2 in its own frame
-#                             Link3 does not have an extent
+Span3 = [ 100 ,   0 ,   0 ] # extent of link 3 in its own frame
+#                             Link4 does not have an extent
 
 
 Link1 = Vector.LinkFrame( [ 0.0 , 0.0 , 0.0 ] , 
@@ -53,8 +54,12 @@ Link1 = Vector.LinkFrame( [ 0.0 , 0.0 , 0.0 ] ,
                           Segment( [ [0.0 , 0.0 , 0.0] , Span1[:] ] ) )
              
 Link2 = Vector.LinkFrame( Span1[:] , 
-                          [ Rotation([0,1,0],0) , Vector.Quaternion.k_rot_to_Quat( [1,0,0] , -pi/2 ) ] , 
+                          [ Rotation([0,0,1],0) , Vector.Quaternion.k_rot_to_Quat( [1,0,0] , -pi/2 ) ] , 
                           Segment( [ [0.0 , 0.0 , 0.0] , Span2[:] ] ) )
+                          
+Link3 = Vector.LinkFrame( Span2[:] , 
+                          [ Rotation([0,0,1],0) , Vector.Quaternion.k_rot_to_Quat( [1,0,0] , pi/2 ) ] , 
+                          Segment( [ [0.0 , 0.0 , 0.0] , Span3[:] ] ) )
              
 # Link2.parent = Link1 # this one is not currently used
 # Link1.subFrames.append( Link2 ) # this connection is important for downstream transformations
@@ -62,12 +67,14 @@ Link1.attach_sub( Link2 )
 
 print Link2.objs
 print Link1.subFrames
-
-EffectorFrame = Vector.Frame( Span2[:] , # There's no real need for this to be a LinkFrame
-                              Rotation([0,1,0],0) )
                
 # Link2.subFrames.append( Link3 )
-Link2.attach_sub( EffectorFrame )  
+Link2.attach_sub( Link3 ) 
+
+EffectorFrame = Vector.Frame( Span3[:] , # There's no real need for this to be a LinkFrame
+                              Rotation([0,1,0],0) ) 
+
+Link3.attach_sub( EffectorFrame ) 
               
 def jnt_refs_serial_chain( rootLink ):
     """ Return a list of references to Rotations that correspond to each of the links of the manipulator """
