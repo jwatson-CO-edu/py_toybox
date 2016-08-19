@@ -450,7 +450,7 @@ class LinkFrameApp(object):
         self.rootWin.update_idletasks()
         if get_dbg_lvl() == -1:
             self.report_segments( self.simFrame ) # List all the Segment states to diagnose transforms
-        if get_dbg_lvl() ==  1:
+        if get_dbg_lvl() == -1:
             self.report_frames( self.simFrame ) # List all the Segment states to diagnose transforms
         # 4.d. Wait remainder of 40ms
         elapsed = time.time() * 1000 - self.last

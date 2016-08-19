@@ -74,41 +74,27 @@ def robot_from_DH( specification , formulation='Hollerbach' ):
         for jointNum , transform in enumerate(specification):
             dbgLog(1 , "Creating Link" , jointNum)
             rotations = []
-            # if specification[jointNum + 1]['type'] == 'rotary':
             if specification[jointNum]['type'] == 'rotary':
                 rotations.append( Rotation([0,0,1],0) )
             elif specification[jointNum]['type'] == None:
                 pass
             else:
-                # raise ValueError("robot_from_DH: Joint type " + specification[jointNum + 1]['type'] + " is not supported")
                 raise ValueError("robot_from_DH: Joint type " + specification[jointNum]['type'] + " is not supported")
-            # if specification[jointNum]['alpha'] != 0:
             if jointNum > 0 and specification[jointNum - 1]['alpha'] != 0:
-                # rotations.append( Vector.Quaternion.k_rot_to_Quat( [1,0,0] , transform['alpha'] ) )
                 rotations.append( Vector.Quaternion.k_rot_to_Quat( [1,0,0] , specification[jointNum - 1]['alpha'] ) )
-            # if (jointNum < len(specification) - 1):
-            #if (jointNum > 0):
             
             if jointNum > 0:
                 origin = [ specification[jointNum - 1]['a'] , 0.0 , specification[jointNum - 1]['d'] ] # [:] # Origin is at the end of the last link
-                # origin = [ specification[jointNum]['a'] , 0.0 , specification[jointNum]['d'] ] # Origin is at the end of the last link
             else:
-                origin = [0.0 , 0.0 , 0.0] # [:]
+                origin = [0.0 , 0.0 , 0.0]
                 
             segments = []
-            # if specification[jointNum + 1]['d'] != 0.0:
+
             if specification[jointNum]['d'] != 0.0:
-                # segments.append( Vector.Segment( [ [ 0.0 , 0.0 , 0.0 ] , [ 0.0 , 0.0 , specification[jointNum + 1]['d'] ] ] ) )
                 segments.append( Vector.Segment( [ [ 0.0 , 0.0 , 0.0 ] , [ 0.0 , 0.0 , specification[jointNum]['d'] ] ] ) )
-            # if specification[jointNum + 1]['a'] != 0.0:
             if specification[jointNum]['a'] != 0.0:
-                # segments.append( Vector.Segment( [ [ 0.0 , 0.0 , specification[jointNum + 1]['d'] ] , 
                 segments.append( Vector.Segment( [ [ 0.0 , 0.0 , specification[jointNum]['d'] ] , 
-                                                   # [ specification[jointNum + 1]['a'] , 0.0 , specification[jointNum + 1]['d'] ] ] ) )
                                                    [ specification[jointNum]['a'] , 0.0 , specification[jointNum]['d'] ] ] ) )
-#            else:
-#                origin = [ 0.0 , 0.0 , 0.0 ]
-#                segments = [] # Nothing to paint, only locating the origin of the robot
             
             dbgLog(1, "Link",jointNum )
             dbgLog(1, "\tOrigin:",origin )
@@ -121,8 +107,16 @@ def robot_from_DH( specification , formulation='Hollerbach' ):
                 linkRefs[-1].attach_sub( currLink )
                 # pass
             
-            linkRefs.append( currLink ) 
-            # if len(linkRefs) == 6: break # TODO: ITERATIVE TROUBLESHOOTING            
+            linkRefs.append( currLink )
+
+        # Attach coordinate axes to each Frame            
+        for jointNum , transform in enumerate(specification):
+            if jointNum > 0:
+                axes = Vector.Axes( Vector.Pose( [ transform['a'] , 0.0 , transform['d'] ], Vector.Quaternion.no_turn_quat() ) , 75 )
+                linkRefs[jointNum].attach_sub( axes )
+
+#        axes = Vector.Axes( Vector.Pose( [ -25 , 0.0 , 400] , Vector.Quaternion.no_turn_quat() ) , 100 )
+#        linkRefs[1].attach_sub( axes )
             
     # TODO: Implement support for other DH parameter formulations
     else:
@@ -132,39 +126,26 @@ def robot_from_DH( specification , formulation='Hollerbach' ):
         
 robotChain = robot_from_DH( KUKADH ) # Generate the robot from the DH parameters
 
+def add_tool_frame( chain ):
+    """ Append a tool frame with tool axes to the end of the robot chain """
+    toolFrame = Vector.Axes( Vector.Pose( [0,0,0] , Vector.Quaternion.no_turn_quat()  ) , 75 )
+    chain[-1].attach_sub( toolFrame )
+    chain.append( toolFrame )
+    
+add_tool_frame( robotChain )
+print len(robotChain)
+print Vector.Axes.count
+
 for link in robotChain:
     print link.__class__, len(link.subFrames), len(link.objs)
     # Chain appears to be populated!
 
-# TODO:
 #    [X] Compare the above specification to the first successful implementation
 #    [X] Compare the above specification to the class specification
-#    [ ] Produce a series of properly connected LinkFrames from the above specification - Needs testing
-#    { } Display axes at the appropriate places for the Hollerbach formulation
+#    [X] Produce a series of properly connected LinkFrames from the above specification - Needs testing
+#    {X} Display axes at the appropriate places for the Hollerbach formulation
+#    [X] Figure out why the tool frame axes do not move
 
-
-
-#EffectorFrame = Vector.Frame( Span2[:] , # There's no real need for this to be a LinkFrame
-#                              Rotation([0,1,0],0) )
-#               
-## Link2.subFrames.append( Link3 )
-#Link2.attach_sub( EffectorFrame )  
- 
-# Not used for LinkFrame             
-#def jnt_refs_serial_chain( rootLink ):
-#    """ Return a list of references to Rotations that correspond to each of the links of the manipulator """
-#    # NOTE: This function assumes that each frame has only one subframe
-#    jntRefs = [] # [ rootLink.orientation ]
-#    currLink = rootLink
-#    
-#    while len(currLink.subFrames) > 0:
-#        print "At link:", currLink
-#        print "This link has",len(currLink.subFrames),"subframes"
-#        
-#        # jntRefs.append( currLink.orientation ) # TODO: Find out if this attaches the reference or a copy
-#        jntRefs.append( currLink ) # TODO: Find out if this attaches the reference or a copy
-#        currLink = currLink.subFrames[0]
-#    return jntRefs
 
 foo = LinkFrameApp() # init the app object
 ##
@@ -184,7 +165,6 @@ def segment_update_function( linkChain ):
     
 foo.calcFunc = segment_update_function( robotChain )
 foo.simFrame = robotChain[0]
-##    
 foo.rootWin.after(100,foo.run)  
 foo.rootWin.mainloop()
    
