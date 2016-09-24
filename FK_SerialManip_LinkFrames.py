@@ -35,6 +35,7 @@ def add_first_valid_dir_to_path(dirList):
 add_first_valid_dir_to_path( [ '/media/jwatson/FILEPILE/Python/ResearchEnv',
                                '/home/jwatson/regrasp_planning/researchenv',
                                'F:\Python\ResearchEnv',
+                               'E:\Python\ResearchEnv',
                                '/media/mawglin/FILEPILE/Python/ResearchEnv'] )
 
 from ResearchEnv import * # Load the custom environment
