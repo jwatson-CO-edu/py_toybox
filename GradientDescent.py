@@ -99,10 +99,8 @@ def function_gradient( f ):
             diff = np.zeros(len(Xn))
             diff[i] = delta
             argsHi = np.add( Xn , diff )
-            argsLo = np.subtract( Xn , diff )
-            # run = 2 * delta
-            # rise = f(x + delta) - f(x - delta)            
-            grad.append( ( f( *argsHi ) - f( *argsLo ) ) / (2 * delta) ) 
+            argsLo = np.subtract( Xn , diff )      
+            grad.append( ( f( *argsHi ) - f( *argsLo ) ) / (2 * delta) ) # rise = f(x + delta) - f(x - delta) / run = 2 * delta 
         return grad
     return gradient
 
