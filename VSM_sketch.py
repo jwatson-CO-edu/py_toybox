@@ -49,11 +49,39 @@ add_first_valid_dir_to_path( [ '/home/jwatson/regrasp_planning/src/researchenv',
 # ~ Special Libraries ~
 # ~ Local Libraries ~
 from ResearchEnv import * # Load the custom environment, this also loads UCBerkeleyUtil
-from Graph_Lite import *
+from ResearchUtils.Graph_Lite import *
 
 # == End Init ================================================================================================================== 140 char ==
 
 # "Graph.py" has become really heavy. It's time to get back to the bare bones of what works
+
+"""
+There are internal states
+There are external states
+There are features of the external states
+There are actions
+"""
+
+class Topic(object):
+    """ A message board for holding sequential states """
+    
+    def __init__( self ):
+	""" Set up the data Queue and list of callbacks """
+	self.data = Queue()
+	self.state = None
+	
+    def publish( self , msg ):
+	""" Push message to the Queue """
+	self.data.push( msg )
+	
+    def pop( self ):
+	""" Pop message from the Queue and send to all callbacks """
+	if not self.data.is_empty():
+	    self.state = self.data.pop()
+	
+    def changed( self ):
+	""" Return true if there is data waiting in the Queue, otherwise return False """
+	return self.data.is_empty()
 
 if __name__ == "__main__":
     pass
