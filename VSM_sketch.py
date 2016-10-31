@@ -66,22 +66,22 @@ class Topic(object):
     """ A message board for holding sequential states """
     
     def __init__( self ):
-	""" Set up the data Queue and list of callbacks """
-	self.data = Queue()
-	self.state = None
+        """ Set up the data Queue and list of callbacks """
+        self.data = Queue()
+        self.state = None
 	
     def publish( self , msg ):
-	""" Push message to the Queue """
-	self.data.push( msg )
+        """ Push message to the Queue """
+        self.data.push( msg )
 	
     def pop( self ):
-	""" Pop message from the Queue and send to all callbacks """
-	if not self.data.is_empty():
-	    self.state = self.data.pop()
+        """ Pop message from the Queue and send to all callbacks """
+        if not self.data.is_empty():
+            self.state = self.data.pop()
 	
     def changed( self ):
-	""" Return true if there is data waiting in the Queue, otherwise return False """
-	return self.data.is_empty()
+        """ Return true if there is data waiting in the Queue, otherwise return False """
+        return self.data.is_empty()
 
 if __name__ == "__main__":
     pass
