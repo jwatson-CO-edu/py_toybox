@@ -11,7 +11,7 @@ James Watson, 2016 October
 Quick sketch of the Variable State Machine, A flexible decision process for AI
 """
 
-# == Init Environment ========================================================================================================== 140 char ==
+# == Init Environment =================================================add_node========================================================= 140 char ==
 import sys, os.path
 SOURCEDIR = os.path.dirname(os.path.abspath(__file__)) # URL, dir containing source file: http://stackoverflow.com/a/7783326
 
