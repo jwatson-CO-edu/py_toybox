@@ -38,7 +38,8 @@ def add_first_valid_dir_to_path(dirList):
     else:
         raise ImportError("None of the specified directories were loaded") # Assume that not having this loaded is a bad thing
 # List all the places where the research environment could be
-add_first_valid_dir_to_path( [ '/home/jwatson/regrasp_planning/src/researchenv',
+add_first_valid_dir_to_path( [ '/media/jwatson/FILEPILE/ME-6225_Motion-Planning/Assembly_Planner/ResearchEnv' , 
+                               '/home/jwatson/regrasp_planning/src/researchenv',
                                '/media/jwatson/FILEPILE/Python/ResearchEnv',
                                'F:\Python\ResearchEnv',
                                'E:\Python\ResearchEnv',
@@ -83,5 +84,36 @@ class Topic(object):
         """ Return true if there is data waiting in the Queue, otherwise return False """
         return self.data.is_empty()
 
+
+class VSM_State( Node ):
+    """ Graph node for a VSM network """
+    
+    def __init__( self ):
+        super( VSM_Node , self ).__init__()
+        
+    def get_action( self ):
+        """ EMPTY: Get the action for this state """
+        return None
+
+
+# <0> Implement the simplest robot, go north
+
+class VSM_Agent(TaggedObject):
+    """ A single agent in a shared-VSM swarm """
+    
+    def __init__( self , initState = None ):
+        self.state = initState
+        
+    def tick( self ):
+        """ Calc actions for this timestep """
+        return self.state.get_action( self )
+
+
 if __name__ == "__main__":
-    pass
+    
+    # Set up a simple grid world
+    tinyWorld = GridGraph( 3 , 3 )
+    for node in tinyWorld.nodes: print node.alias , 
+    print
+    
+    
