@@ -91,10 +91,13 @@ class VSM_State( Node ):
     def __init__( self ):
         super( VSM_Node , self ).__init__()
         
-    def get_action( self ):
+    def get_action( self , agent ):
         """ EMPTY: Get the action for this state """
         return None
 
+    def next_state( self , agent ):
+        """ EMPTY: Choose a next state for the agent """
+        return None
 
 # <0> Implement the simplest robot, go north
 
@@ -102,7 +105,8 @@ class VSM_Agent(TaggedObject):
     """ A single agent in a shared-VSM swarm """
     
     def __init__( self , initState = None ):
-        self.state = initState
+        self.state = initState # Current state pointer
+        self.nextState = None #  Next state assigned by the VSM
         
     def tick( self ):
         """ Calc actions for this timestep """
