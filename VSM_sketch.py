@@ -120,4 +120,4 @@ if __name__ == "__main__":
     for node in tinyWorld.nodes: print node.alias , 
     print
     
-    
+    ant = VSM_Agent(  )
