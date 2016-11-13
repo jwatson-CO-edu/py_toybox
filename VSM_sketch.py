@@ -89,7 +89,7 @@ class VSM_State( Node ):
     """ Graph node for a VSM network """
     
     def __init__( self ):
-        super( VSM_Node , self ).__init__()
+        super( VSM_State , self ).__init__()
         
     def get_action( self , agent ):
         """ EMPTY: Get the action for this state """
@@ -120,4 +120,9 @@ if __name__ == "__main__":
     for node in tinyWorld.nodes: print node.alias , 
     print
     
+    decider = Graph()
+    goUp = VSM_State()
+    
     ant = VSM_Agent(  )
+    
+    
