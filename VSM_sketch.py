@@ -38,7 +38,8 @@ def add_first_valid_dir_to_path(dirList):
     else:
         raise ImportError("None of the specified directories were loaded") # Assume that not having this loaded is a bad thing
 # List all the places where the research environment could be
-add_first_valid_dir_to_path( [ '/media/jwatson/FILEPILE/ME-6225_Motion-Planning/Assembly_Planner/ResearchEnv' , 
+add_first_valid_dir_to_path( [ 'E:\ME-6225_Motion-Planning\Assembly_Planner\ResearchEnv' , 
+                               '/media/jwatson/FILEPILE/ME-6225_Motion-Planning/Assembly_Planner/ResearchEnv' , 
                                '/home/jwatson/regrasp_planning/src/researchenv',
                                '/media/jwatson/FILEPILE/Python/ResearchEnv',
                                'F:\Python\ResearchEnv',
@@ -84,6 +85,8 @@ class Topic(object):
         """ Return true if there is data waiting in the Queue, otherwise return False """
         return self.data.is_empty()
 
+class VSM_DSL(object): # TODO: Decide whether it is necessary to generate a domain specific language for each problem
+    pass
 
 class VSM_State( Node ):
     """ Graph node for a VSM network """
@@ -95,7 +98,7 @@ class VSM_State( Node ):
         """ EMPTY: Get the action for this state """
         return None
 
-    def next_state( self , agent ):
+    def next_state( self , agent , action ):
         """ EMPTY: Choose a next state for the agent """
         return None
 
@@ -120,9 +123,17 @@ if __name__ == "__main__":
     for node in tinyWorld.nodes: print node.alias , 
     print
     
-    decider = Graph()
-    goUp = VSM_State()
     
     ant = VSM_Agent(  )
+    
+    decisionG = Graph()
+    temp = VSM_State()
+    temp.connect_to( temp , pDir=True )
+    temp.get_action = lambda agent: 'NT'
+    temp.next_state = lambda agent , state: temp
+    print temp.get_action( ant )
+    print temp.next_state( ant , 'NT' )
+    
+    
     
     
