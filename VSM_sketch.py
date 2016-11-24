@@ -11,7 +11,7 @@ James Watson, 2016 October
 Quick sketch of the Variable State Machine, A flexible decision process for AI
 """
 
-# == Init Environment =================================================add_node========================================================= 140 char ==
+# == Init Environment ========================================================================================================== 140 char ==
 import sys, os.path
 SOURCEDIR = os.path.dirname(os.path.abspath(__file__)) # URL, dir containing source file: http://stackoverflow.com/a/7783326
 
@@ -39,6 +39,7 @@ def add_first_valid_dir_to_path(dirList):
         raise ImportError("None of the specified directories were loaded") # Assume that not having this loaded is a bad thing
 # List all the places where the research environment could be
 add_first_valid_dir_to_path( [ 'E:\ME-6225_Motion-Planning\Assembly_Planner\ResearchEnv' , 
+                               '/media/mawglin/FILEPILE/ME-6225_Motion-Planning/Assembly_Planner/ResearchEnv' ,
                                '/media/jwatson/FILEPILE/ME-6225_Motion-Planning/Assembly_Planner/ResearchEnv' , 
                                '/home/jwatson/regrasp_planning/src/researchenv',
                                '/media/jwatson/FILEPILE/Python/ResearchEnv',
@@ -58,10 +59,19 @@ from ResearchUtils.Graph_Lite import *
 # "Graph.py" has become really heavy. It's time to get back to the bare bones of what works
 
 """
-There are internal states
+ == NOTES ==
+There are internal statestransition_determ
 There are external states
 There are features of the external states
 There are actions
+
+ == LOG ==
+2016-11-24: For now, not asking Node or Graph to keep track of all the objects that it contains, keep model simple like 6225 until collisions
+            become important, or the the environment has to otherwise broadcast information to the agent. Then it might be useful to add agents
+            to nodes.
+            * COUNTERPOINT: Why not just have agents keep track of their state, and always ask the world for information about states and 
+                            transitions. Would that make things more efficient if only occupied states were calculated? This would also 
+                            eliminate the need to manage the double container<-->contained pointers of Node<-->Agent
 """
 
 class Topic(object):
@@ -127,12 +137,15 @@ if __name__ == "__main__":
     ant = VSM_Agent(  )
     
     decisionG = Graph()
+    world = GridGraph( 3 , 3 ) # Create a 3x3 grid world , von Neumann neighborhood
     temp = VSM_State()
     temp.connect_to( temp , pDir=True )
     temp.get_action = lambda agent: 'NT'
     temp.next_state = lambda agent , state: temp
     print temp.get_action( ant )
-    print temp.next_state( ant , 'NT' )
+    for i in xrange(4):
+        print temp.next_state( ant , 'NT' )
+        print decisionG.transition_determ( temp , temp.get_action( ant ) )
     
     
     
