@@ -145,7 +145,7 @@ if __name__ == "__main__":
     print temp.get_action( ant )
     for i in xrange(4):
         print temp.next_state( ant , 'NT' )
-        print decisionG.transition_determ( temp , temp.get_action( ant ) )
+        print world.transition_determ( ( 1 , 1 ) , temp.get_action( ant ) )
     
     
     
