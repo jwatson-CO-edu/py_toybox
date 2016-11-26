@@ -95,14 +95,27 @@ class Topic(object):
         """ Return true if there is data waiting in the Queue, otherwise return False """
         return self.data.is_empty()
 
-class VSM_DSL(object): # TODO: Decide whether it is necessary to generate a domain specific language for each problem
-    pass
+
+class VSM_Graph(Graph):
+    """ Holds the VSM , Intermediary between the decision graph and the problem simulator """
+
+    def __init__( self , simulator = None , pRootNode = None ):
+        """ Create a VSM graph with connections to the problem simulator """
+        Graph.__init__( self , rootNode = pRootNode )
+        self.probSim = simulator # Simulator of state transitions for the problem
+        
+    def simulate_sa( self , state , action ):
+        """ Ask the simulator for the result of a state-action pair """
+        return self.probSim.transition( state , action )
+        
+ 
+# TODO: Figure out if there is some kind of DSL needed to construct arbitrary actions       
 
 class VSM_State( Node ):
     """ Graph node for a VSM network """
     
-    def __init__( self ):
-        super( VSM_State , self ).__init__()
+    def __init__( self , graph = None ):
+        super( VSM_State , self ).__init__( pGraph = graph )
         
     def get_action( self , agent ):
         """ EMPTY: Get the action for this state """
@@ -138,10 +151,11 @@ if __name__ == "__main__":
     
     decisionG = Graph()
     world = GridGraph( 3 , 3 ) # Create a 3x3 grid world , von Neumann neighborhood
-    temp = VSM_State()
+    temp = VSM_State( decisionG )
     temp.connect_to( temp , pDir=True )
     temp.get_action = lambda agent: 'NT'
     temp.next_state = lambda agent , state: temp
+    decisionG.add_node( temp )
     print temp.get_action( ant )
     for i in xrange(4):
         print temp.next_state( ant , 'NT' )
