@@ -3,8 +3,8 @@
 
 """
 voxel-pyglet.py
-Robin Guzniczak , 2016 March
-A simple voxel engine originally by Robin Guzniczak , with additional comments from James Watson
+Robin Guzniczak & James Watson , 2017 March
+Extension of a simple voxel engine originally by Robin Guzniczak 
 Maybe pyglet would handy seeing how things are situated in 3D?
 
 ~~ NOTES ~~
@@ -13,16 +13,29 @@ Voxel Engine , C++ & Python: http://bytebash.com/tag/pyglet/
 ~~ TODO ~~
 [ ] Interactive camera , Fly
 [ ] Add FPS , position , and other metrics to the screen
-[ ] Backface culling , calc normals from edges and store # glEnable(GL_CULL_FACE) # http://nullege.com/codes/show/src@p@r@Printrun-HEAD@printrun@stlview.py/119/pyglet.gl.GL_CULL_FACE
-[ ] Interior voxel culling , Use Voxelyze as an example , This should only update if voxels are changed and not change with the view
-[ ] Visible frustum , There is a LOT of research on doing this quickly , probably take advantage of voxel setting and test by voxel centers , easy?
+[ ] Optimization I
+    [ ] Backface culling , calc normals from edges and store # glEnable(GL_CULL_FACE) 
+        # http://nullege.com/codes/show/src@p@r@Printrun-HEAD@printrun@stlview.py/119/pyglet.gl.GL_CULL_FACE
+    [ ] Interior voxel culling , Use Voxelyze as an example , This should only update if voxels are changed and not change with the view
+    [ ] Visible frustum , There is a LOT of research on doing this quickly , probably take advantage of voxel setting and test by voxel centers , easy?
 [ ] Interactive camera , Walk
 [ ] Generate terrain
 """
 
-import pyglet
+# == INIT ==================================================================================================================================
+
+# ~~ Imports ~~
+# ~ Standard ~
 import random
-from pyglet.gl import *
+# ~ Special ~
+import pyglet # 3D graphics for Python
+from pyglet.gl import * # Rendering controls
+from pyglet.window import key # kb & mouse interaction
+from pyglet.window import mouse
+
+# == END INIT ==============================================================================================================================
+
+# == Voxel Engine ==
 
 class VoxelEngine:
     """ The simplest voxel engine """
@@ -95,13 +108,17 @@ class VoxelEngine:
 			"""
 			glTranslated( -x , -y , -z ) # Reset the transform coordinates
 
+# == End Voxel ==
+
+
+# == Rendering ==
 
 class Window(pyglet.window.Window):
     """ Rendering window and event loop """
     
     def __init__(self):
 	""" Init a resizable window and event loop """
-	super( Window , self ).__init__( resizable = True, caption = 'Pyglet Voxel Demo')
+	super( Window , self ).__init__( resizable = True, caption = 'Pyglet Voxel Extension')
 	self.voxel = VoxelEngine( 20 , 25 , 20 ) # Init the voxel engine with world dimensions
 	glClearColor( 0.7 , 0.7 , 0.8 , 1 )
 	self.generate_island(  0 ,  5 ,  0 )
@@ -137,11 +154,43 @@ class Window(pyglet.window.Window):
 	glMatrixMode( GL_MODELVIEW )
 	glLoadIdentity()
 	# URL: https://www.opengl.org/discussion_boards/showthread.php/165839-Use-gluLookAt-to-navigate-around-the-world
-	gluLookAt( 24 , 20 , 20 , # eyex    , eyey    , eyez    : Camera location , point , XYZ
-	            0 , 10 ,  4 , # centerx , centery , centerz : Direction camera is pointing , vector , XYZ
-	            0 ,  1 ,  0 ) # upx     , upy     , upz     : Direction of "up" in the world frame , vector , XYZ
-	#                ^--------------------^-- Y is up because graphics people are silly , everyone knows Z is up
+	gluLookAt( *camera )
+	
+# == End Rendering ==
+
+
+# == Main and Interaction ==
 
 if __name__ == '__main__':
     window = Window()
+    
+    # = Camera and Controls =
+    
+    camera = [ 24 , 20 , 20 , # eyex    , eyey    , eyez    : Camera location , point , XYZ
+	        0 , 10 ,  4 , # centerx , centery , centerz : Direction camera is pointing , vector , XYZ
+	        0 ,  1 ,  0 ] # upx     , upy     , upz     : Direction of "up" in the world frame , vector , XYZ
+    #                ^--------------------^-- Y is up because graphics people are silly , sensible people know Z is up
+    #                                         I can set "up" to be anything I want!
+    
+    @window.event
+    def on_key_press( symbol , modifiers ):
+	global camera
+	print 'A key was pressed'
+	if symbol == key.UP:
+	    print 'The up arrow was pressed.'
+	    camera[0] += 1
+	elif symbol == key.DOWN:
+	    print 'The down arrow key was pressed.'   
+	    camera[0] -= 1
+	elif symbol == key.RIGHT:
+	    print 'The right arrow key was pressed.'
+	    camera[2] += 1
+	elif symbol == key.LEFT:
+	    print 'The left arrow  was pressed.'   
+	    camera[2] -= 1
+    
+    # = End Camera =
+    
     pyglet.app.run()
+
+# == End Main ==
