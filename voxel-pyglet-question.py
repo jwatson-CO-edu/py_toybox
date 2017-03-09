@@ -1,8 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-from __future__ import division
-
 """
 voxel-pyglet.py
 Robin Guzniczak & James Watson , 2017 March
@@ -30,37 +28,6 @@ Extension of a simple voxel engine originally by Robin Guzniczak
 """
 
 # == INIT ==================================================================================================================================
-import sys, os.path # To make changes to the PATH
-
-def first_valid_dir(dirList):
-    """ Return the first valid directory in 'dirList', otherwise return False if no valid directories exist in the list """
-    rtnDir = False
-    for drctry in dirList:
-        if os.path.exists( drctry ):
-			rtnDir = drctry 
-			break
-    return rtnDir
-        
-def add_first_valid_dir_to_path(dirList):
-    """ Add the first valid directory in 'dirList' to the system path """
-    # In lieu of actually installing the library, just keep a list of all the places it could be in each environment
-    validDir = first_valid_dir(dirList)
-    print __file__ , "is attempting to load a path ...",
-    if validDir:
-        if validDir in sys.path:
-            print "Already in sys.path:", validDir
-        else:
-            sys.path.append( validDir )
-            print 'Loaded:', str(validDir)
-    else:
-        raise ImportError("None of the specified directories were loaded") # Assume that not having this loaded is a bad thing
-# List all the places where the research environment could be
-envPaths = [ 'F:\Utah_Research\Assembly_Planner\AsmEnv' ,
-              '/media/mawglin/FILEPILE/Utah_Research/Assembly_Planner/AsmEnv',
-              '/media/jwatson/FILEPILE/Utah_Research/Assembly_Planner/AsmEnv']
-add_first_valid_dir_to_path( envPaths )
-add_first_valid_dir_to_path( [ os.path.join( path , 'VectorMath' ) for path in envPaths ] )
-
 # ~~ Imports ~~
 # ~ Standard ~
 from random import randint
@@ -70,8 +37,8 @@ from pyglet.gl import * # Rendering controls
 from pyglet.window import key # kb & mouse interaction
 from pyglet.window import mouse
 # ~ Local ~
-from Vector import *
-from Vector3D import *
+# from Vector import *
+# from Vector3D import *
 
 # == END INIT ==============================================================================================================================
 
@@ -121,10 +88,6 @@ class VoxelEngine:
 	    ( 168 , 142 ,  95 ) , # wood
 	    (  88 , 181 ,  74 ) , # leaves
         )
-	
-	# TODO: If it happens that pyglet does not have an easy to use depth buffer , then it might be fairly easy to paint voxels in 
-	#       Manhattan distance order from far to near to the camera
-	
 	# Loop through each address , draw voxel at address if a brick value has been stored at the address
 	for x in range( self.w ): # for each X addr across the width of the world
 	    for y in range( self.h ): # for each Y addr across the height of the world
@@ -157,45 +120,6 @@ class VoxelEngine:
 
 # == Rendering ==
 
-class Camera( Pose ):
-    """ A Pose representing the location and direction of the camera """
-    
-    def __init__( self , position , focus , upPnt , winWdth , winHght ):
-	""" Create a camera object at a 'position' , looking at a 'focus' point , with 'upPnt' in the vertical plane that includes the camera """
-	gazeDir = vec_dif_unt( focus , position ) # Unit vector for the direction the camera is looking
-	upDir = vec_dif_unt( upPnt , position ) # Assume a point in the vertical plane was specified , otherwise camera will be conked
-	yBasis = np.cross( upDir , gazeDir )
-	zBasis = np.cross( gazeDir , yBasis ) # Don't assume that the up point forms a proper basis
-	Pose.__init__( self , position , Quaternion.principal_rot_Quat( gazeDir , yBasis , zBasis ) )
-	self.winWdth = winWdth
-	self.winHght = winHght
-	self.gazeLen = 10
-	self.gazeVec = [ self.gazeLen , 0 , 0 ] # Look in the direction of the X basis vector
-	self.upVec = [ 0 , self.gazeLen , 0 ]   # Up in the direction of the Y basis vector
-	self.XsensYaw = 0.5 # X sensitivity # dx / windowWidth  * XsensYaw = radians YAW per window width moved
-	self.YsensPtc = 0.5 # Y sensitivity # dy / windowHeight * YsensPtc = radians PITCH per window height moved
-	
-    def window_rescale( self , winWdth , winHght ): # This is probably a bad idea because it changes UI unexpectedly?
-	""" When the window is rescaled , rescale the effect of mouse motion """ 
-	self.winWdth = winWdth
-	self.winHght = winHght	
-	
-    def turn_with_mouse( self , dx , dy ):
-	""" Add yaw and pitch to the camera given mouse motion """
-	self.orientation = Quaternion.serial_rots( self.orientation , # -------------------------------------------- Current orientation
-	                                           Quaternion.k_rot_to_Quat( [ 0 , 1 , 0 ] , 
-	                                                                     dx / self.winWdth * self.XsensYaw ) , # Apply YAW
-	                                           Quaternion.k_rot_to_Quat( [ 0 , 0 , 1 ] , 
-	                                                                     dy / self.winHght * self.YsensPtc ) ) # Apply PITCH
-	
-    def calc_glLookAt_args( self ):
-	""" Get a list of arguments for glLookAt that will represent this camera pose """
-	rtnVec = self.position[:]
-	rtnVec.extend( self.orientation.apply_to( self.gazeVec ) )
-	rtnVec.extend( self.orientation.apply_to( self.upVec ) )
-	return rtnVec
-	
-
 class Window(pyglet.window.Window):
     """ Rendering window and event loop """
     
@@ -225,9 +149,9 @@ class Window(pyglet.window.Window):
 
     def on_draw( self ):
 	""" Repaint the window , per-frame activity """
-	self.clear() # Erase window
-	self.setup_3D() # Set up the GL context
-	self.voxel.draw() # Ask the voxel engine to paint all of the voxel faces
+	self.clear()
+	self.setup_3D()
+	self.voxel.draw()
 
     def setup_3D( self ):
 	""" Setup the 3D matrix """
@@ -257,35 +181,22 @@ if __name__ == '__main__':
     #                ^--------------------^-- Y is up because graphics people are silly , sensible people know Z is up
     #                                         I can set "up" to be anything I want!
     
-    camObj = Camera( [ 24 , 20 , 20 ] , [ 0 , 10 ,  4 ] , [ 0 ,  1 ,  0 ] , window.width , window.height )
-    
     @window.event
     def on_key_press( symbol , modifiers ):
 	global camera
 	print 'A key was pressed'
 	if symbol == key.UP:
 	    print 'The up arrow was pressed.'
-	    camera[0] += 1
+	    camera[0] -= 1
 	elif symbol == key.DOWN:
 	    print 'The down arrow key was pressed.'   
-	    camera[0] -= 1
+	    camera[0] += 1
 	elif symbol == key.RIGHT:
 	    print 'The right arrow key was pressed.'
 	    camera[2] += 1
 	elif symbol == key.LEFT:
 	    print 'The left arrow  was pressed.'   
 	    camera[2] -= 1
-	# print "glLookAt:" , camObj.calc_glLookAt_args()
-	
-    @window.event
-    def on_mouse_press( x , y , button , modifiers ):
-	if button == mouse.LEFT:
-	    print 'The left mouse button was pressed.'   
-
-    @window.event
-    def on_mouse_motion( x , y , dx , dy ):
-	camObj.turn_with_mouse( dx , dy )
-	print "Mouse Look , glLookAt:" , camObj.calc_glLookAt_args()
     
     # = End Camera =
     
