@@ -1,0 +1,4 @@
+[submodule "pyCraft"]
+	path = pyCraft
+	url = /media/jwatson/FILEPILE/Python/py-toybox/Voxel/pyCraft/
+    ignore = dirty

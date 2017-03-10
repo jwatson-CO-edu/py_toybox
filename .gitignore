@@ -1,2 +1,13 @@
 *.py~
 *.pdf
+Voxel/pyCraft/
+Voxel/pyCraft/build
+Voxel/pyCraft/exMain.py
+Voxel/pyCraft/LICENSE
+Voxel/pyCraft/main
+Voxel/pyCraft/main.py
+Voxel/pyCraft/mcL.logbuch
+Voxel/pyCraft/modMain.py
+Voxel/pyCraft/README.md
+Voxel/pyCraft/testFoo.py
+Voxel/pyCraft/texture.png
