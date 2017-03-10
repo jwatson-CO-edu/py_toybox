@@ -64,6 +64,7 @@ add_first_valid_dir_to_path( [ os.path.join( path , 'VectorMath' ) for path in e
 # ~~ Imports ~~
 # ~ Standard ~
 from random import randint
+from math import atan2
 # ~ Special ~
 import pyglet # 3D graphics for Python
 from pyglet.gl import * # Rendering controls
@@ -154,6 +155,7 @@ class VoxelEngine:
 
 # == End Voxel ==
 
+# TODO: FIND OUT IF YOU CAN PROJECT A QUATERNION ONTO A CERTAIN AXIS TO FIND THE AMOUNT OF TURN ABOUT THAT AXIS
 
 # == Rendering ==
 
@@ -172,27 +174,40 @@ class Camera( Pose ):
 	self.gazeLen = 10
 	self.gazeVec = [ self.gazeLen , 0 , 0 ] # Look in the direction of the X basis vector
 	self.upVec = [ 0 , self.gazeLen , 0 ]   # Up in the direction of the Y basis vector
-	self.XsensYaw = 0.5 # X sensitivity # dx / windowWidth  * XsensYaw = radians YAW per window width moved
-	self.YsensPtc = 0.5 # Y sensitivity # dy / windowHeight * YsensPtc = radians PITCH per window height moved
+	self.XsensYaw = 0.05 # X sensitivity # dx / windowWidth  * XsensYaw = radians YAW per window width moved
+	self.YsensPtc = 0.05 # Y sensitivity # dy / windowHeight * YsensPtc = radians PITCH per window height moved
+	self.set_yaw_pitch_from_point( focus )
 	
     def window_rescale( self , winWdth , winHght ): # This is probably a bad idea because it changes UI unexpectedly?
 	""" When the window is rescaled , rescale the effect of mouse motion """ 
 	self.winWdth = winWdth
 	self.winHght = winHght	
 	
+    def set_yaw_pitch_from_point( self , lookPoint ):
+	""" Get the yaw / pitch that will point the camera at 'lookPoint' in the world frame """
+	relVec = np.subtract( lookPoint , self.position ) # Get the direction of the point relative to the camera origin
+	# YAW about the world Y axis
+	self.yaw = atan2( vec_proj( lookPoint , [0,0,1] ) , vec_proj( lookPoint , [1,0,0] ) )
+	# PITCH about the camera Z axis
+	dirOnPlane = np.multiply( lookPoint , [1,0,1] )
+	self.ptc = atan2( vec_proj( lookPoint , [0,1,0] ) , vec_proj( lookPoint , dirOnPlane ) )
+	
     def turn_with_mouse( self , dx , dy ):
 	""" Add yaw and pitch to the camera given mouse motion """
-	self.orientation = Quaternion.serial_rots( self.orientation , # -------------------------------------------- Current orientation
-	                                           Quaternion.k_rot_to_Quat( [ 0 , 1 , 0 ] , 
-	                                                                     dx / self.winWdth * self.XsensYaw ) , # Apply YAW
-	                                           Quaternion.k_rot_to_Quat( [ 0 , 0 , 1 ] , 
-	                                                                     dy / self.winHght * self.YsensPtc ) ) # Apply PITCH
+	self.yaw += dx / self.winWdth * self.XsensYaw
+	self.ptc += dy / self.winHght * self.YsensPtc
+	print "YAW:  " , self.yaw
+	print "PITCH:" , self.ptc
+	self.orientation = Quaternion.serial_rots( 
+	    Quaternion.k_rot_to_Quat( [ 0 , 0 , 1 ] , self.ptc  ) , # Apply PITCH
+	    Quaternion.k_rot_to_Quat( [ 0 , 1 , 0 ] , self.yaw  )   # Apply YAW
+	) 
 	
     def calc_glLookAt_args( self ):
 	""" Get a list of arguments for glLookAt that will represent this camera pose """
 	rtnVec = self.position[:]
-	rtnVec.extend( self.orientation.apply_to( self.gazeVec ) )
-	rtnVec.extend( self.orientation.apply_to( self.upVec ) )
+	rtnVec.extend( np.add( self.position , self.orientation.apply_to( self.gazeVec ) ) )
+	rtnVec.extend( np.add( self.position , self.orientation.apply_to( self.upVec ) ) )
 	return rtnVec
 	
 
@@ -258,6 +273,7 @@ if __name__ == '__main__':
     #                                         I can set "up" to be anything I want!
     
     camObj = Camera( [ 24 , 20 , 20 ] , [ 0 , 10 ,  4 ] , [ 0 ,  1 ,  0 ] , window.width , window.height )
+    initOrientation = str( camObj.orientation ) # Store the initial orientation
     
     @window.event
     def on_key_press( symbol , modifiers ):
@@ -284,11 +300,17 @@ if __name__ == '__main__':
 
     @window.event
     def on_mouse_motion( x , y , dx , dy ):
+	global camera
 	camObj.turn_with_mouse( dx , dy )
-	print "Mouse Look , glLookAt:" , camObj.calc_glLookAt_args()
+	camera = camObj.calc_glLookAt_args()
+	print "Mouse Look , glLookAt:" , camera
     
     # = End Camera =
     
+    # ~ Run Graphics Window ~
     pyglet.app.run()
+    
+    # ~ Post-Window Report ~
+    print "PRINT THIS AFTER THE LOOP EXITS"
 
 # == End Main ==
