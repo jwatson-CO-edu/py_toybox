@@ -155,6 +155,10 @@ class Window(pyglet.window.Window):
 
     def setup_3D( self ):
 	""" Setup the 3D matrix """
+	# Use 'GL_DEPTH_TEST' to ensure that OpenGL maintains a sensible drawing order for polygons no matter the viewing angle
+	glEnable( GL_DEPTH_TEST ) # Do these setup functions really have to be run every single frame? # TODO: Try moving these to the '__init__' , see what happens
+	# glEnable( GL_CULL_FACE ) # Uncomment to preform backface culling , however the present ordering of the vertices is somehow not right
+	#                            http://stackoverflow.com/questions/23320017/incorrect-occluded-front-face-culling-in-opengl
 	glMatrixMode( GL_PROJECTION )
 	glLoadIdentity()
 	gluPerspective( 70 , self.width / float( self.height ) , 0.1 , 200 )

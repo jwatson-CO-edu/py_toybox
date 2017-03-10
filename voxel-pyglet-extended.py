@@ -246,6 +246,8 @@ class Window(pyglet.window.Window):
 
     def setup_3D( self ):
 	""" Setup the 3D matrix """
+	# glEnable( GL.GL_DEPTH_TEST )
+	glEnable( GL_DEPTH_TEST )
 	glMatrixMode( GL_PROJECTION )
 	glLoadIdentity()
 	gluPerspective( 70 , self.width / float( self.height ) , 0.1 , 200 )
