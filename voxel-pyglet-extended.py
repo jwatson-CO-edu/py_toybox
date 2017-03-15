@@ -55,9 +55,10 @@ def add_first_valid_dir_to_path(dirList):
     else:
         raise ImportError("None of the specified directories were loaded") # Assume that not having this loaded is a bad thing
 # List all the places where the research environment could be
-envPaths = [ 'F:\Utah_Research\Assembly_Planner\AsmEnv' ,
-              '/media/mawglin/FILEPILE/Utah_Research/Assembly_Planner/AsmEnv',
-              '/media/jwatson/FILEPILE/Utah_Research/Assembly_Planner/AsmEnv']
+envPaths = [ 'D:\Utah_Research\Assembly_Planner\AsmEnv' ,
+             'F:\Utah_Research\Assembly_Planner\AsmEnv' ,
+             '/media/mawglin/FILEPILE/Utah_Research/Assembly_Planner/AsmEnv',
+             '/media/jwatson/FILEPILE/Utah_Research/Assembly_Planner/AsmEnv']
 add_first_valid_dir_to_path( envPaths )
 add_first_valid_dir_to_path( [ os.path.join( path , 'VectorMath' ) for path in envPaths ] )
 
