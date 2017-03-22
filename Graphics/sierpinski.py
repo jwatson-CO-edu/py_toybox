@@ -9,17 +9,7 @@
 ##as 4-tuples, with the upper left corner given first. For example, a rectangle covering all of
 ##an 800x600 pixel image is written as (0, 0, 800, 600).
 
-## Set variable EDGE to a power of 3
-EDGE = 729
 
-chunk = EDGE
-power = 0
-while chunk > 1 and chunk % 3 == 0:
-    power += 1
-    chunk = chunk / 3
-
-if chunk % 3 != 0 and chunk > 1:
-    print "square dimension was not a power of 3"
 
 import Image # imports the Python Image Library for image file management
 import ImageDraw # imports the Python Image Library for drawing operations
@@ -47,10 +37,25 @@ def split_square(coords,depth,pen):
        for member in squares:
            split_square(member,depth-1,pen)
 
-myFile = Image.new("RGB",(EDGE,EDGE)) # color parameter omitted, therefore filled with black
 
-thePen = ImageDraw.Draw(myFile,"RGB")
+if __name__ == "__main__":
+    
+    ## Set variable EDGE to a power of 3
+    EDGE = 3**8
+    
+    chunk = EDGE
+    power = 0
+    while chunk > 1 and chunk % 3 == 0:
+        power += 1
+        chunk = chunk / 3
+    
+    if chunk % 3 != 0 and chunk > 1:
+        print "square dimension was not a power of 3"    
 
-split_square([(0,0),(EDGE,EDGE)],power,thePen)
-
-myFile.save("carpet.jpg","JPEG")
+    myFile = Image.new("RGB",(EDGE,EDGE)) # color parameter omitted, therefore filled with black
+    
+    thePen = ImageDraw.Draw(myFile,"RGB")
+    
+    split_square([(0,0),(EDGE,EDGE)],power,thePen)
+    
+    myFile.save("carpet.png","PNG")

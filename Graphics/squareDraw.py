@@ -10,9 +10,7 @@
 ## -- TO DO --
 ## * Some orientations can be eliminated by specifying foreground and background colors
 
-EDGE = 200
 
-BINWARN = False # Flag for Python version of binary conversion warning.
 
 import Image # imports the Python Image Library for image file management
 import ImageDraw # imports the Python Image Library for drawing operations
@@ -118,69 +116,74 @@ def dec_to_str_bin(num, formLen = 8):
         rtnStr = "0" + rtnStr
     return rtnStr
 
-def sqr_auto(coords,pen,size = None,fillCol = None, bgCol = None, wolfCode = None, orient = None, seedSpace = 3):
-    """ Draws a 1-dimensional cellular automaton, defined by specifified Wolfram Code """
-    xLen = coords[1][0] - coords[0][0]
-    yLen = coords[1][1] - coords[0][1]
-    if not wolfCode:
-        wolfCode = random.randrange(256)
-    elif wolfCode < 0 or wolfCode > 255:
-        print "sqr_auto: Wolfram Code was not in range 0 - 255"
-    wolfCode = dec_to_str_bin(wolfCode)
-    wolfKey = {}
-    if len(wolfCode) == 8:
-        state = 0
-        for char in wolfCode:
-            key = dec_to_str_bin(state, formLen = 3)
-            if char == '1':
-                wolfKey[key] = 1
-            elif char == '0':
-                wolfKey[key] = 0
-            else:
-                print "sqr_auto: encountered invalid character " + char
-    else:
-        print "sqr_auto: Wolfram Code was of incorrect length"
-    if not orient:
-        orient = random.choice(['N','E','S','W'])
-    if not fillCol:
-        fillCol = (random.randrange(256),random.randrange(256),random.randrange(256))
-    if not bgCol:
-        bgCol = (random.randrange(256),random.randrange(256),random.randrange(256))
-    lastGen = []
-    if orient == 'N':
-        for i in range(xLen + 1):
-            if not random.randrange(seedSpace): # There are 1 to seedSpace odds of returning True
-                pen.point((coords[0][0] + i, coords[0][1]), fill = fillCol)
-                lastGen.append(1)
-            else:
-                pen.point((coords[0][0] + i, coords[0][1]), fill = bgCol)
-                lastGen.append(0)
-        for j in range(1, yLen + 1):
-            for k in range(xLen + 1)
-    elif orient == 'E':
-        pass
-    elif orient == 'S':
-        pass
-    elif orient == 'W':
-        pass
-    else:
-        print "sqr_auto: orient must be equal to 'N', 'E', 'S', or 'W'"
+#def sqr_auto(coords,pen,size = None,fillCol = None, bgCol = None, wolfCode = None, orient = None, seedSpace = 3):
+    #""" Draws a 1-dimensional cellular automaton, defined by specifified Wolfram Code """
+    #xLen = coords[1][0] - coords[0][0]
+    #yLen = coords[1][1] - coords[0][1]
+    #if not wolfCode:
+        #wolfCode = random.randrange(256)
+    #elif wolfCode < 0 or wolfCode > 255:
+        #print "sqr_auto: Wolfram Code was not in range 0 - 255"
+    #wolfCode = dec_to_str_bin(wolfCode)
+    #wolfKey = {}
+    #if len(wolfCode) == 8:
+        #state = 0
+        #for char in wolfCode:
+            #key = dec_to_str_bin(state, formLen = 3)
+            #if char == '1':
+                #wolfKey[key] = 1
+            #elif char == '0':
+                #wolfKey[key] = 0
+            #else:
+                #print "sqr_auto: encountered invalid character " + char
+    #else:
+        #print "sqr_auto: Wolfram Code was of incorrect length"
+    #if not orient:
+        #orient = random.choice(['N','E','S','W'])
+    #if not fillCol:
+        #fillCol = (random.randrange(256),random.randrange(256),random.randrange(256))
+    #if not bgCol:
+        #bgCol = (random.randrange(256),random.randrange(256),random.randrange(256))
+    #lastGen = []
+    #if orient == 'N':
+        #for i in range(xLen + 1):
+            #if not random.randrange(seedSpace): # There are 1 to seedSpace odds of returning True
+                #pen.point((coords[0][0] + i, coords[0][1]), fill = fillCol)
+                #lastGen.append(1)
+            #else:
+                #pen.point((coords[0][0] + i, coords[0][1]), fill = bgCol)
+                #lastGen.append(0)
+        #for j in range(1, yLen + 1):
+            #for k in range(xLen + 1)
+    #elif orient == 'E':
+        #pass
+    #elif orient == 'S':
+        #pass
+    #elif orient == 'W':
+        #pass
+    #else:
+        #print "sqr_auto: orient must be equal to 'N', 'E', 'S', or 'W'"
 
+if __name__ == "__main__":
 
-myFile = Image.new("RGB",(EDGE,EDGE), color = (255,255,255))
-thePen = ImageDraw.Draw(myFile,"RGB")
-
-regions = grid_divide([(0,0),(EDGE,EDGE)], size = 40)
-
-funcs = []
-funcs.append(sqr_fill)
-funcs.append(sqr_diag)
-funcs.append(sqr_rhom)
-
-for k in regions:
-    random.choice(funcs)(k,thePen) # randomly choose one of the drawing functions above
-
-##for k in regions:
-##    sqr_fill(k,thePen)
-
-myFile.save("randSquares.bmp","BMP")
+    EDGE = 200
+    
+    BINWARN = False # Flag for Python version of binary conversion warning.
+    
+    myFile = Image.new("RGB",(EDGE,EDGE), color = (255,255,255))
+    thePen = ImageDraw.Draw(myFile,"RGB")
+    
+    regions = grid_divide([(0,0),(EDGE,EDGE)], size = 40)
+    
+    funcs = []
+    funcs.append(sqr_fill)
+    funcs.append(sqr_diag)
+    funcs.append(sqr_rhom)
+    
+    for k in regions:
+        random.choice(funcs)(k,thePen) # randomly choose one of the drawing functions above
+    
+    ##for k in regions:
+    ##    sqr_fill(k,thePen)
+    
+    myFile.save("randSquares.png","png")

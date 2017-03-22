@@ -17,9 +17,9 @@ Extension of a simple voxel engine originally by Robin Guzniczak
     [ ] Rotate camera with mouse
     [ ] Hold arrow keys to keep flying
 [ ] Add FPS , position , and other metrics to the screen
-[ ] Fix the drawing order of the voxels
+[X] Fix the drawing order of the voxels # glEnable( GL_DEPTH_TEST )
 [ ] Optimization I
-    [ ] Backface culling , calc normals from edges and store # glEnable(GL_CULL_FACE) 
+    [X] Backface culling # glEnable( GL_CULL_FACE ) 
         # http://nullege.com/codes/show/src@p@r@Printrun-HEAD@printrun@stlview.py/119/pyglet.gl.GL_CULL_FACE
     [ ] Interior voxel culling , Use Voxelyze as an example , This should only update if voxels are changed and not change with the view
     [ ] Visible frustum , There is a LOT of research on doing this quickly , probably take advantage of voxel setting and test by voxel centers , easy?
@@ -65,21 +65,21 @@ class VoxelEngine:
 	""" Draw the voxels. """ # NOTE: This function iterates through all possible addresses within 'w'idth , 'h'eight , and 'depth' and
 	#                                renders voxels were a block value has been stored. Would be nice to have some kind of sparse lookup
 	vertices = (
-	    0 , 0 , 0 ,	# vertex 0
-	    0 , 0 , 1 ,	# vertex 1
-	    0 , 1 , 0 ,	# vertex 2
-	    0 , 1 , 1 ,	# vertex 3
-	    1 , 0 , 0 ,	# vertex 4
-	    1 , 0 , 1 ,	# vertex 5
-	    1 , 1 , 0 ,	# vertex 6
-	    1 , 1 , 1 ,	# vertex 7
+	    0 , 0 , 0 ,	# vertex 0    3-------2     # NOTE: Y+ is UP in the original voxel engine from Guzniczak
+	    0 , 0 , 1 ,	# vertex 1    !\      !\
+	    0 , 1 , 0 ,	# vertex 2    ! \     Y \
+	    0 , 1 , 1 ,	# vertex 3    !  7=======6
+	    1 , 0 , 0 ,	# vertex 4    1--|Z---0  |
+	    1 , 0 , 1 ,	# vertex 5     \ |     \ |
+	    1 , 1 , 0 ,	# vertex 6      \|      X|
+	    1 , 1 , 1 ,	# vertex 7       5=======4
 	)
-	indices = (
-	    0 , 1 , 3 , 2 , # top face
-	    4 , 5 , 7 , 6 , # bottom face
-	    0 , 4 , 6 , 2 , # left face
+	indices = ( #                                          NOTE: Vertices must have CCW order to point the normals towards exterior , 
+	    0 , 1 , 3 , 2 , # top face                               right hand rule , otherwise dot products computed for backface-culling 
+	    4 , 6 , 7 , 5 , # bottom face  # 4 , 5 , 7 , 6 ,         will have the wrong sign! faces vanish!
+	    0 , 2 , 6 , 4 , # left face    # 0 , 4 , 6 , 2 ,
 	    1 , 5 , 7 , 3 , # right face
-	    0 , 1 , 5 , 4 , # down face
+	    0 , 4 , 5 , 1 , # down face    # 0 , 1 , 5 , 4 , 
 	    2 , 3 , 7 , 6 , # up face
         )
 	colors = (
@@ -157,7 +157,7 @@ class Window(pyglet.window.Window):
 	""" Setup the 3D matrix """
 	# Use 'GL_DEPTH_TEST' to ensure that OpenGL maintains a sensible drawing order for polygons no matter the viewing angle
 	glEnable( GL_DEPTH_TEST ) # Do these setup functions really have to be run every single frame? # TODO: Try moving these to the '__init__' , see what happens
-	# glEnable( GL_CULL_FACE ) # Uncomment to preform backface culling , however the present ordering of the vertices is somehow not right
+	glEnable( GL_CULL_FACE ) # Uncomment to preform backface culling , however the present ordering of the vertices is somehow not right
 	#                            http://stackoverflow.com/questions/23320017/incorrect-occluded-front-face-culling-in-opengl
 	glMatrixMode( GL_PROJECTION )
 	glLoadIdentity()
