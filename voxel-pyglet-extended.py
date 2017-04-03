@@ -19,9 +19,9 @@ Extension of a simple voxel engine originally by Robin Guzniczak
     [ ] Rotate camera with mouse
     [ ] Hold arrow keys to keep flying
 [ ] Add FPS , position , and other metrics to the screen
-[ ] Fix the drawing order of the voxels
+[X] Fix the drawing order of the voxels # glEnable( GL_DEPTH_TEST )
 [ ] Optimization I
-    [ ] Backface culling , calc normals from edges and store # glEnable(GL_CULL_FACE) 
+    [X] Backface culling # glEnable( GL_CULL_FACE ) 
         # http://nullege.com/codes/show/src@p@r@Printrun-HEAD@printrun@stlview.py/119/pyglet.gl.GL_CULL_FACE
     [ ] Interior voxel culling , Use Voxelyze as an example , This should only update if voxels are changed and not change with the view
     [ ] Visible frustum , There is a LOT of research on doing this quickly , probably take advantage of voxel setting and test by voxel centers , easy?
@@ -100,21 +100,21 @@ class VoxelEngine:
 	""" Draw the voxels. """ # NOTE: This function iterates through all possible addresses within 'w'idth , 'h'eight , and 'depth' and
 	#                                renders voxels were a block value has been stored. Would be nice to have some kind of sparse lookup
 	vertices = (
-	    0 , 0 , 0 ,	# vertex 0
-	    0 , 0 , 1 ,	# vertex 1
-	    0 , 1 , 0 ,	# vertex 2
-	    0 , 1 , 1 ,	# vertex 3
-	    1 , 0 , 0 ,	# vertex 4
-	    1 , 0 , 1 ,	# vertex 5
-	    1 , 1 , 0 ,	# vertex 6
-	    1 , 1 , 1 ,	# vertex 7
+	    0 , 0 , 0 ,	# vertex 0    3-------2     # NOTE: Y+ is UP in the original voxel engine from Guzniczak
+	    0 , 0 , 1 ,	# vertex 1    !\      !\
+	    0 , 1 , 0 ,	# vertex 2    ! \     Y \
+	    0 , 1 , 1 ,	# vertex 3    !  7=======6
+	    1 , 0 , 0 ,	# vertex 4    1--|Z---0  |
+	    1 , 0 , 1 ,	# vertex 5     \ |     \ |
+	    1 , 1 , 0 ,	# vertex 6      \|      X|
+	    1 , 1 , 1 ,	# vertex 7       5=======4
 	)
-	indices = (
-	    0 , 1 , 3 , 2 , # top face
-	    4 , 5 , 7 , 6 , # bottom face
-	    0 , 4 , 6 , 2 , # left face
+	indices = ( #                                          NOTE: Vertices must have CCW order to point the normals towards exterior , 
+	    0 , 1 , 3 , 2 , # top face                               right hand rule , otherwise dot products computed for backface-culling 
+	    4 , 6 , 7 , 5 , # bottom face  # 4 , 5 , 7 , 6 ,         will have the wrong sign! faces vanish!
+	    0 , 2 , 6 , 4 , # left face    # 0 , 4 , 6 , 2 ,
 	    1 , 5 , 7 , 3 , # right face
-	    0 , 1 , 5 , 4 , # down face
+	    0 , 4 , 5 , 1 , # down face    # 0 , 1 , 5 , 4 , 
 	    2 , 3 , 7 , 6 , # up face
         )
 	colors = (
@@ -156,42 +156,52 @@ class VoxelEngine:
 
 # == End Voxel ==
 
-# TODO: FIND OUT IF YOU CAN PROJECT A QUATERNION ONTO A CERTAIN AXIS TO FIND THE AMOUNT OF TURN ABOUT THAT AXIS
 
 # == Rendering ==
 
 class Camera( Pose ):
     """ A Pose representing the location and direction of the camera """
     
-    def __init__( self , position , focus , upPnt , winWdth , winHght ):
+    # def __init__( self , position , focus , upPnt , winWdth , winHght ):
+    def __init__( self , position , gazeDir , upDir , winWdth , winHght ):
 	""" Create a camera object at a 'position' , looking at a 'focus' point , with 'upPnt' in the vertical plane that includes the camera """
-	gazeDir = vec_dif_unt( focus , position ) # Unit vector for the direction the camera is looking
-	upDir = vec_dif_unt( upPnt , position ) # Assume a point in the vertical plane was specified , otherwise camera will be conked
+	# gazeDir = vec_dif_unt( focus , position ) # Unit vector for the direction the camera is looking
+	# upDir = vec_dif_unt( upPnt , position ) # Assume a point in the vertical plane was specified , otherwise camera will be conked
 	yBasis = np.cross( upDir , gazeDir )
 	zBasis = np.cross( gazeDir , yBasis ) # Don't assume that the up point forms a proper basis
 	Pose.__init__( self , position , Quaternion.principal_rot_Quat( gazeDir , yBasis , zBasis ) )
 	self.winWdth = winWdth
 	self.winHght = winHght
-	self.gazeLen = 10
-	self.gazeVec = [ self.gazeLen , 0 , 0 ] # Look in the direction of the X basis vector
-	self.upVec = [ 0 , self.gazeLen , 0 ]   # Up in the direction of the Y basis vector
-	self.XsensYaw = 0.05 # X sensitivity # dx / windowWidth  * XsensYaw = radians YAW per window width moved
-	self.YsensPtc = 0.05 # Y sensitivity # dy / windowHeight * YsensPtc = radians PITCH per window height moved
-	self.set_yaw_pitch_from_point( focus )
+	self.gazeVec = [ 0 , 0 , 1 ] # Look in the direction of the Z basis vector
+	self.upVec =   [ 0 , 1 , 0 ] # Up in the direction of the Y basis vector
+	self.xBasis =  [ 1 , 0 , 0 ]
+	self.gazeLab = self.gazeVec[:]
+	self.upLab = self.upVec[:]
+	self.xLab = self.xBasis[:]
+	self.XsensYaw = 0.10 # X sensitivity # dx / windowWidth  * XsensYaw = radians YAW per window width moved
+	self.YsensPtc = 0.10 # Y sensitivity # dy / windowHeight * YsensPtc = radians PITCH per window height moved
+	self.set_yaw_pitch_from_vec( gazeDir )
 	
+    def update_dir( self ):
+	""" Update the gaze and up vectors """
+	self.gazeLab =  self.orientation.apply_to( self.gazeVec )
+	self.upLab =    self.orientation.apply_to( self.upVec )
+	self.xLab =     self.orientation.apply_to( self.xBasis )
+    
     def window_rescale( self , winWdth , winHght ): # This is probably a bad idea because it changes UI unexpectedly?
 	""" When the window is rescaled , rescale the effect of mouse motion """ 
 	self.winWdth = winWdth
 	self.winHght = winHght	
 	
-    def set_yaw_pitch_from_point( self , lookPoint ):
+    def set_yaw_pitch_from_vec( self , lookDir ):
 	""" Get the yaw / pitch that will point the camera at 'lookPoint' in the world frame """
-	relVec = np.subtract( lookPoint , self.position ) # Get the direction of the point relative to the camera origin
+	# relVec = np.subtract( lookPoint , self.position ) # Get the direction of the point relative to the camera origin
 	# YAW about the world Y axis
-	self.yaw = atan2( vec_proj( lookPoint , [0,0,1] ) , vec_proj( lookPoint , [1,0,0] ) )
-	# PITCH about the camera Z axis
-	dirOnPlane = np.multiply( lookPoint , [1,0,1] )
-	self.ptc = atan2( vec_proj( lookPoint , [0,1,0] ) , vec_proj( lookPoint , dirOnPlane ) )
+	[ rad , lookPitch , lookYaw ] = cart_2_radPtcYaw_YUP( lookDir )
+	print "YAW:  " , lookYaw
+	print "PITCH:" , lookPitch
+	self.yaw = lookYaw
+	self.ptc = lookPitch
 	
     def turn_with_mouse( self , dx , dy ):
 	""" Add yaw and pitch to the camera given mouse motion """
@@ -200,14 +210,20 @@ class Camera( Pose ):
 	print "YAW:  " , self.yaw
 	print "PITCH:" , self.ptc
 	self.orientation = Quaternion.serial_rots( 
-	    Quaternion.k_rot_to_Quat( [ 0 , 0 , 1 ] , self.ptc  ) , # Apply PITCH
-	    Quaternion.k_rot_to_Quat( [ 0 , 1 , 0 ] , self.yaw  )   # Apply YAW
+	    # Quaternion.k_rot_to_Quat( [ 1 , 0 , 0 ] , -self.ptc  ) , # Apply PITCH
+	    Quaternion.k_rot_to_Quat( [ 0 , 1 , 0 ] ,  self.yaw  ) , # Apply YAW
+	    Quaternion.k_rot_to_Quat( [ 1 , 0 , 0 ] , -self.ptc  ) , # Apply PITCH
 	) 
+	self.update_dir()
+	
+    def move_in_cam_frame( self , vec ):
+	""" Displace the camera by 'vec' in its own frame , assumes that the basis vectors have been calculated in the lab frame """
+	self.translate( transform_by_bases( vec , self.xLab , self.upLab , self.gazeLab ) )
 	
     def calc_glLookAt_args( self ):
 	""" Get a list of arguments for glLookAt that will represent this camera pose """
 	rtnVec = self.position[:]
-	rtnVec.extend( np.add( self.position , self.orientation.apply_to( self.gazeVec ) ) )
+	rtnVec.extend( np.add( self.position , self.gazeLab ) ) # FIXME: NUMPY ARRAY DOES NOT HAVE AN EXTEND METHOD!
 	rtnVec.extend( np.add( self.position , self.orientation.apply_to( self.upVec ) ) )
 	return rtnVec
 	
@@ -275,8 +291,9 @@ if __name__ == '__main__':
     #                ^--------------------^-- Y is up because graphics people are silly , sensible people know Z is up
     #                                         I can set "up" to be anything I want!
     
-    camObj = Camera( [ 24 , 20 , 20 ] , [ 0 , 10 ,  4 ] , [ 0 ,  1 ,  0 ] , window.width , window.height )
+    camObj = Camera( [ 24 , 20 , 20 ] , np.subtract( [ 0 , 10 ,  4 ] , [ 24 , 20 , 20 ] ) , [ 0 ,  10 ,  0 ] , window.width , window.height )
     initOrientation = str( camObj.orientation ) # Store the initial orientation
+    moveMag = 2
     
     @window.event
     def on_key_press( symbol , modifiers ):
@@ -284,16 +301,20 @@ if __name__ == '__main__':
 	print 'A key was pressed'
 	if symbol == key.UP:
 	    print 'The up arrow was pressed.'
-	    camera[0] += 1
+	    # camera[0] += 1
+	    camObj.move_in_cam_frame( [ 0 , 0 , moveMag ] )
 	elif symbol == key.DOWN:
 	    print 'The down arrow key was pressed.'   
-	    camera[0] -= 1
+	    # camera[0] -= 1
+	    camObj.move_in_cam_frame( [ 0 , 0 , -moveMag ] )
 	elif symbol == key.RIGHT:
 	    print 'The right arrow key was pressed.'
-	    camera[2] += 1
+	    # camera[2] += 1
+	    camObj.move_in_cam_frame( [ -moveMag , 0 , 0 ] )
 	elif symbol == key.LEFT:
 	    print 'The left arrow  was pressed.'   
-	    camera[2] -= 1
+	    # camera[2] -= 1
+	    camObj.move_in_cam_frame( [ moveMag , 0 , 0 ] )
 	# print "glLookAt:" , camObj.calc_glLookAt_args()
 	
     @window.event
