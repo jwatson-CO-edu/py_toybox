@@ -7,7 +7,7 @@ from __future__ import division # Future imports must be called before everythin
 
 """
 toyGA.py , Built on Wing 101 for Python 2.7
-Kanrun Huang & James Watson, 2017 April
+James Watson, 2017 April
 Test GA in the simplest case before moving on to Voxelyze
 """
 

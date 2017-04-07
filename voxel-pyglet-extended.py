@@ -15,8 +15,8 @@ Extension of a simple voxel engine originally by Robin Guzniczak
 ~~ TODO ~~
 [ ] Interactive camera , Fly
     [X] Simplest kb interaction to move camera
-    [ ] Sensible camera flight , such that the camera focus is a direction rather than a point , consider Vector3D!
-    [ ] Rotate camera with mouse
+    [~] Sensible camera flight , such that the camera focus is a direction rather than a point , consider Vector3D! - AWKWARD
+    [~] Rotate camera with mouse - AWKWARD
     [ ] Hold arrow keys to keep flying
 [ ] Add FPS , position , and other metrics to the screen
 [X] Fix the drawing order of the voxels # glEnable( GL_DEPTH_TEST )
@@ -178,8 +178,8 @@ class Camera( Pose ):
 	self.gazeLab = self.gazeVec[:]
 	self.upLab = self.upVec[:]
 	self.xLab = self.xBasis[:]
-	self.XsensYaw = 0.10 # X sensitivity # dx / windowWidth  * XsensYaw = radians YAW per window width moved
-	self.YsensPtc = 0.10 # Y sensitivity # dy / windowHeight * YsensPtc = radians PITCH per window height moved
+	self.XsensYaw = 0.50 # X sensitivity # dx / windowWidth  * XsensYaw = radians YAW per window width moved
+	self.YsensPtc = 0.50 # Y sensitivity # dy / windowHeight * YsensPtc = radians PITCH per window height moved
 	self.set_yaw_pitch_from_vec( gazeDir )
 	
     def update_dir( self ):
@@ -222,9 +222,11 @@ class Camera( Pose ):
 	
     def calc_glLookAt_args( self ):
 	""" Get a list of arguments for glLookAt that will represent this camera pose """
-	rtnVec = self.position[:]
-	rtnVec.extend( np.add( self.position , self.gazeLab ) ) # FIXME: NUMPY ARRAY DOES NOT HAVE AN EXTEND METHOD!
-	rtnVec.extend( np.add( self.position , self.orientation.apply_to( self.upVec ) ) )
+	rtnVec = [ self.position[0] , self.position[1] , self.position[2] ]
+	vec2 = np.add( self.position , self.gazeLab )
+	vec3 = np.add( self.position , self.orientation.apply_to( self.upVec ) )
+	rtnVec.extend( [ vec2[0] , vec2[1] , vec2[2] ] ) 
+	rtnVec.extend( [ vec3[0] , vec3[1] , vec3[2] ] )
 	return rtnVec
 	
 
