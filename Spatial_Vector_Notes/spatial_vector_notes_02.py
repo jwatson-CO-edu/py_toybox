@@ -50,6 +50,23 @@ def cross_forc( motionVec , forceVec ):
     """ Take the motion-by-force cross-product for spatial vectors """
     return concat_arr( np.cross( motionVec[:3] , forceVec[:3] ) + np.cross( motionVec[3:] , forceVec[3:] ) , 
                        np.cross( motionVec[:3] , forceVec[3:] ) )
+    
+def skew_sym_cross( vecR ):
+    """ Return the skew symmetic matrix for the equivalent cross operation: [r_cross][v] = cross( r , v ) """
+    return [ [  0       , -vecR[2] ,  vecR[1] ] , 
+             [  vecR[2] ,  0       , -vecR[0] ] ,
+             [ -vecR[1] ,  vecR[0] ,  0       ] ]
+
+def cross_motn_matx( motionVec ): # Acts on a motion vector --> produces a motion vector
+    """ Return the matrix for the equivalent cross operation: [motionVec_cross][v] = cross( motionVec , v ) """
+    return np.vstack( ( np.hstack( ( skew_sym_cross( motionVec[:3] ) , np.zeros( (3,3) )               ) ) , 
+                        np.hstack( ( skew_sym_cross( motionVec[3:] ) , skew_sym_cross( motionVec[:3] ) ) ) ) ) # 6x6
+    
+def cross_forc_matx( forceVec ): # Acts on a force vector --> produces a force vector
+    """ Return the matrix for the equivalent cross operation: [forceVec_cross][v] = cross_star( forceVec , v ) """
+    return np.vstack( ( np.hstack( ( skew_sym_cross( forceVec[:3] ) , skew_sym_cross( forceVec[3:] ) ) ) , 
+                        np.hstack( ( np.zeros( (3,3) )              , skew_sym_cross( forceVec[:3] ) ) ) ) ) # 6x6
+    
 
 # == End Plucker ==
 
@@ -100,11 +117,22 @@ X_Star_BA : The coordinate transformation matrix  A --> B ( Force Vectors )
 
 X_Star_BA = transpose( inverse( X_BA ) )
 
-X_BA = np.dot(  [ [ [E] , [0] ]         [ [ [1]       , [0]       ] 
-                  [ [0] , [E] ] ]   ,     [ [r_cross] , [1]       ] ]
-...
-FIXME: PAGE 9
-    
+X_BA      = np.dot(  [ [ [E] , [0] ]         [ [  [1]       ,  [0]       ] 
+                       [ [0] , [E] ] ]   ,     [ -[r_cross] ,  [1]       ] ]
+
+X_Star_BA = np.dot(  [ [ [E] , [0] ]         [ [  [1]       , -[r_cross] ] 
+                       [ [0] , [E] ] ]   ,     [  [0]       ,  [1]       ] ]
+
+E   : Coordinate transform from Cartesian basis C_A to C_B    
+[1] : Identity Matrix
+[0] : Zero Matrix
+
+The derivative of a coordinate vector is always its component-wise derivative. If the basis vectors vary 
+with [x], the derivative will vary from the case in which they do not by a term depending on the derivatives
+of the basis vectors. 
+
+
+
 """
 
 """
