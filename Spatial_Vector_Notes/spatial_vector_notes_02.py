@@ -131,8 +131,163 @@ The derivative of a coordinate vector is always its component-wise derivative. I
 with [x], the derivative will vary from the case in which they do not by a term depending on the derivatives
 of the basis vectors. 
 
+If m and f are fixed in a body B and are varying only because B is in motion , then
+
+mDot =      cross( v , m )
+fDot = cross_star( v , f )
+
+Spatial acceleration is just the time derivative of spatial velocity.
+
+O   : fixed point in space
+O'  : body-fixed point that happens to coincide with O athe current instant time
+B   : rigid body 
+w   : rotational velocity of B
+v_O : linear velocity of B
+
+r   : vector O-->O'
+      r = [0] at this instant , but r != [0] in general
+     
+v_{O'} = rDot , vDot_{O'} = rDotDot , so
+
+v_O    = v_{O'}    - cross( w    , r )
+vDot_O = vDot_{O'} - cross( wDot , r ) - cross( w , rDot )
+
+when r = [0]
+
+v_{O'}    = rDot    , v_O    = rDot
+vDot_{O'} = rDotDot , vDot_O = rDotDot - cross( w , rDot )
+
+So the formula for spatial acceleration is
+     d        d [ [ w   ] ,     [ [ wDot                        ] ,
+a = ---(v) = ---  [ v_O ] ]  =    [ rDotDot - cross( w , rDot ) ] ]
+     dt       dt
+     
+rDot is the velocity of a particular body-fixed partivle ,  but v_O is the velocity of a measured at O of
+the stream of body-fixed particles passing through 0.
+rDotDot is the acceleration of a a particular body-fixed particle , but vDot_O is the rate of change in the
+velocity ot which successive fixed-body particles stream through O.
+
+Spatial accelerations can be summed like velocities.  That is , the formulation includes coriolis accelerations.
+
+If 2 bodies B1 and B2 are connected by a joint such that the two velocities obey
+
+v_2 = v_1 + s * qDot
+s    : joint axis
+qDot : joint velocity
+
+then the relationship between their accelerations is obtained by acceleration
+
+a_2 = a_1 + sDot * qDot + s * qDotDot
+
+~~~ Inertia ~~~
+
+The spatial inertia of a rigid body is a tensor that maps its velocity to its momentum
+
+h = [I]v
+
+I rigid bodies B1 ... Bn are rigidly connected together to form a composite body , then the inertia of the 
+composite is
+
+[I_tot] = sum_{i=1}{N}( [I_i] )
+
+Spatial inertia is a symmetric , positive-definite matrix when expressed in any dual coordinate system
+(positive , semi-definite in some special cases)
+
+Expressed in Plucker Coordinates , the spatial inertia of a rigid body is
+
+[I] = [ [ [I_c] + m * dot( [c_cross] , transpose( [c_cross] ) ) , m * [c_cross] ] , 
+        [ m * transpose( [c_cross] )                            , m * [1]       ] ]
+m     : body mass
+c     : COM (3D vector)
+[I_c] : body's rotational inertia about its center of mass
+
+~ Coordinate Transform of Spatial Inertia ~
+
+I_b = dot( X_Star_BA , I_A , X_AB )
+
+X_BA      : The coordinate transformation matrix  A --> B ( Motion Vectors )
+X_Star_BA : The coordinate transformation matrix  A --> B ( Force Vectors )
+X_AB      : The coordinate transformation matrix  B --> A ( Motion Vectors )
+
+The above formula is valid for any dual coordinate system , not only Plucker coordinates.
+
+The time derivative of inertia is
+ d
+---[I] = cross_star( v , [I] ) - dot( [I] , [v_cross] )
+ dt
+ 
+The kinetic energy of a rigid body is
+
+E = 0.5 * dot( v , [I] , v )
 
 
+~~ Equations of Motion ~~
+
+      d
+f =  ---( dot( [I] , v ) ) = dot( [I] , a ) + cross_star( v , dot( I , v ) )
+      dt
+      
+Which can be rewritten in a simplified form:
+    
+f = dot( [I] , a ) + p
+
+p : bias force , known component
+f : total force , unknown component
+
+Example: Of the forces acting on a body consisted of an unknown force and a gravitational force , the bias 
+         force can be defined as follows
+         
+TODO: Need to find out if dot( v_cross_star , [I] , v )    is the same as
+                          cross_star( v , dot( [I] , v ) ) in general
+         
+p = cross_star( v , dot( [I] , v ) ) - f_g
+
+and
+
+f_g = dot( [I] , a_g )
+
+f_g : gravitational force
+a_g : acceleration due to gravity
+
+
+~~ Motion Constraints ~~
+
+In the simplest case , a motion constraint between two rigid bodies B1 and B2 resctricts their relative 
+velocity to a vector subspace  S \in M^6 , which can vary with time. If r is the dimensionality of S , 
+then the constrain allows r DOF of relative motion between the two bodies and imposes 6-r constraints.
+Let { s_1 ... s_r } be any set of vectors that span S (forming a basis on S).  The relative velocity between
+the two bodies can be expressed:
+    
+v_rel = v_2 - v_1 = \sum_{i=1}{r}( s_i * qDot_i )
+
+{ qDot_i } : A set of velocity variables , one for each DOF
+
+Usually { s_1 ... s_r } are gathered into a single 6 x r matrix [S] , such that
+
+v_rel = v_2 - v_1 = dot( [S] , [qDot] )
+
+[qDot] : An r-dimensional coordinate vector of the velocity variables
+
+Differentiate for relative acceleration:
+    
+a_rel = a_2 - a_1 = dot( [SDot] , [qDot] ) + dot( [S] , [qDotDot] )
+
+Motion constraints are implemented by constraint forces , and constraint forces all have the following
+special property: A constraint force does no work in any direction of motion permitted by the constraint:
+    
+dot( transpose( [S] ) , f_c ) = [0]
+
+f_c : A constraint force transmitted B1 --> B2 , -f_c acts B2 --> B1
+
+~ Powered Joints ~
+
+dot( transpose( [S] ) , f_J ) = [\tau]
+
+f_J    : Total force transmiited across the joint (active and constraint forces)
+[\tau] : Vector of generalized force variables
+
+[\tau] must be defined such that 
+dot( transpose( [\tau] ) , [qDot] ) is the instantaneous power delivered by the joint to the system
 """
 
 """
