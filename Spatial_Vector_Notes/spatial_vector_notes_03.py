@@ -119,9 +119,10 @@ class LinkModel(object):
     
     def __init__( self , pN ):
         """ Create a model with an empty list of links """
-        self.N = pN; # ------- Number of links in the mechanism
-        self.links = []; # --- Links of the model , stored in the order of q
-        self.names = set([]) # Set of all link names in the model
+        self.N = pN; # ------------------------------ Number of links in the mechanism
+        self.links = []; # -------------------------- Links of the model , stored in the order of q
+        self.names = set([]) # ---------------------- Set of all link names in the model
+        self.gravity = [ 0 , 0 , 0 , 0 , 0 , 9.81 ] # Default direction of gravity as a spatial vector
         
     def link_ref_by_name( self , linkName ):
         """ Get the reference to the link by its name , linear search """
@@ -158,10 +159,12 @@ def joint_xform( pitch , q ): # Featherstone: jcalc
 def inverse_dynamics( model , q , qDot , qDotDot ):
     """ Compute the inverse dynamics from the model , positions , speeds , and accelerations """
     for lnkDex , link in enumerate( model.links ): # For every link in the model , do
-        [ XJ , s_i ] = jcalc( link.pitch , q[ lnkDex ] ) # calc the SOMETHING jacobian for the associated joint
-        vJ = s_i * qDot[ lnkDex ] # Calc the coriolis term
+        [ XJ , s_i ] = joint_xform( link.pitch , q[ lnkDex ] ) # (FS: 'jcalc') calc the joint transformation and freedom (selection) matrix
+        vJ = np.dot( s_i * qDot[ lnkDex ] ) # Calc joint velocity
+        Xup = np.dot( XJ , link.xform ) # Transform the link coordinates into the world frame
+        if not link.parent:
+            
         
-        # FIXME : PAGE 6
     
 
 # == End Dynamics == 
