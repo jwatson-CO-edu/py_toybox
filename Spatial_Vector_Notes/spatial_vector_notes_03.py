@@ -28,12 +28,45 @@ import numpy as np
 # ~ Local ~
 localPaths = [ os.path.join( "C:" , os.sep , "Users" , "jwatson" , "Documents" , "Python Scripts" ) ] # List of paths to your custom modules
 add_valid_to_path( localPaths )
-from XOS_util import concat_arr
+from XOS_util import concat_arr , eq
 
 # == End Init ==============================================================================================================================
 
+# == 3D Vector Arithmetic ==
+
+def skew_sym_cross( vecR ):
+    """ Return the skew symmetic matrix for the equivalent cross operation: [r_cross][v] = cross( r , v ) """
+    return [ [  0       , -vecR[2] ,  vecR[1] ] , 
+             [  vecR[2] ,  0       , -vecR[0] ] ,
+             [ -vecR[1] ,  vecR[0] ,  0       ] ]
+    
+def x_rot( theta ):
+    """ Return the matrix that performs a rotation of 'theta' about the X axis """
+    return [ [  1            ,  0            ,  0            ] , 
+             [  0            ,  cos( theta ) ,  sin( theta ) ] , 
+             [  0            , -sin( theta ) ,  cos( theta ) ] ]
+    
+def y_rot( theta ):
+    """ Return the matrix that performs a rotation of 'theta' about the Y axis """
+    return [ [  cos( theta ) ,  0            , -sin( theta ) ] , 
+             [  0            ,  1            ,  0            ] , 
+             [  sin( theta ) ,  0            ,  cos( theta ) ] ]
+    
+def z_rot( theta ):
+    """ Return the matrix that performs a rotation of 'theta' about the Z axis """
+    return [ [  cos( theta ) ,  sin( theta ) ,  0            ] , 
+             [ -sin( theta ) ,  cos( theta ) ,  0            ] , 
+             [  0            ,  0            ,  1            ] ]
+
+# == End 3D Vector ==
+
 
 # == Plucker Coordinates and Operations ==
+
+def xlt( r ):
+    """ Rotational transform of Plucker coordinates """
+    return np.vstack( ( np.hstack( ( np.eye(3)                               , np.zeros( (3,3) ) ) ) ,
+                        np.hstack( ( np.multiply( skew_sym_cross( r ) , -1 ) , np.eye(3)         ) ) ) )
 
 def v_w_to_Plucker( v_p , w , P ):
     """ Transform a linear velocity 'v' through P and 
@@ -50,12 +83,6 @@ def cross_forc( motionVec , forceVec ):
     """ Take the motion-by-force cross-product for spatial vectors """
     return concat_arr( np.cross( motionVec[:3] , forceVec[:3] ) + np.cross( motionVec[3:] , forceVec[3:] ) , 
                        np.cross( motionVec[:3] , forceVec[3:] ) )
-    
-def skew_sym_cross( vecR ):
-    """ Return the skew symmetic matrix for the equivalent cross operation: [r_cross][v] = cross( r , v ) """
-    return [ [  0       , -vecR[2] ,  vecR[1] ] , 
-             [  vecR[2] ,  0       , -vecR[0] ] ,
-             [ -vecR[1] ,  vecR[0] ,  0       ] ]
 
 def cross_motn_matx( motionVec ): # Acts on a motion vector --> produces a motion vector
     """ Return the matrix for the equivalent cross operation: [motionVec_cross][v] = cross( motionVec , v ) """
@@ -73,18 +100,135 @@ def cross_forc_matx( forceVec ): # Acts on a force vector --> produces a force v
 
 # == Spatial Dynamics ==
 
-# FIXME : PAGE 2 # Write the function outline and fill in the details as the article progresses
+# TODO: Write the function outline and fill in the details as the article progresses
 
-# == End Dynamics
+class LinkSpatial:
+    """ Represents a rigid link using spatial coordinates """
+    def __init__( self , pName , pPitch ):
+        """ Rigid link struct """
+        self.name = pName # - String that uniquely identifies the link
+        self.pitch = pPitch # Describes the pitch (and therefore the type) of the associated joint
+        self.parent = None #- Reference to the parent link to which this link is attached
+        self.children = [] #- List of child links
+        self.linkIndex = 0 #- Index of link in q 
+        self.xform = None # - Plucker coordinate transform that describes the relative position of this joint in the parent frame
+        self.I = None # ----- Spatial inertia for this link
+
+class LinkModel(object):
+    """ Represents a serial-link manipulator composed of rigid links and defined with spatial vectors """
+    
+    def __init__( self , pN ):
+        """ Create a model with an empty list of links """
+        self.N = pN; # ------- Number of links in the mechanism
+        self.links = []; # --- Links of the model , stored in the order of q
+        self.names = set([]) # Set of all link names in the model
+        
+    def link_ref_by_name( self , linkName ):
+        """ Get the reference to the link by its name , linear search """
+        if linkName in self.names:
+            for lnk in self.links:
+                if lnk.name == linkName:
+                    return lnk
+        raise KeyError( "LinkModel.link_ref_by_name: No link found with name " + str( linkName ) )
+        
+    def add_and_attach( self , link , parentName = None ):
+        """ Add the link to the model , then  """
+        self.names.add( link.name )
+        self.links.append( link )
+        if parentName in self.names: # If there was a parent link specified and such a link has been added to the model
+            parent = self.link_ref_by_name( parentName ) # Fetch parent
+            link.parent = parent # Add the parent reference # NOTE: This will raise a KeyError if no such parent was stored
+            parent.children.append( link ) # Add the child reference
+            
+    # NOTE: Not implementing the ability to remove links at this time
+        
+def joint_xform( pitch , q ): # Featherstone: jcalc
+    """ Return the joint transform and subspace matrix for a joint with 'pitch' and joint variable 'q' """
+    if eq( pitch , 0.0 ): # Revolute Joint : Implements pure rotation
+        XJ  = x_rot( q ) 
+        s_i = [ 0 , 0 , 1 , 0 , 0 , 0 ]
+    elif pitch == infty: # Prismatic Joint : Implements pure translation
+        XJ  = xlt( [ 0 , 0 , q ] )
+        s_i = [ 0 , 0 , 0 , 0 , 0 , 1 ]
+    else: #                Helical Joint   : Implements a screwing motion
+        XJ  = np.dot( z_rot( q ) , xlt( [ 0 , 0 , q * pitch ] ) )
+        s_i = [ 0 , 0 , 1 , 0 , 0 , pitch ]
+    return XJ , s_i
+
+def inverse_dynamics( model , q , qDot , qDotDot ):
+    """ Compute the inverse dynamics from the model , positions , speeds , and accelerations """
+    for lnkDex , link in enumerate( model.links ): # For every link in the model , do
+        [ XJ , s_i ] = jcalc( link.pitch , q[ lnkDex ] ) # calc the SOMETHING jacobian for the associated joint
+        vJ = s_i * qDot[ lnkDex ] # Calc the coriolis term
+        
+        # FIXME : PAGE 6
+    
+
+# == End Dynamics == 
 
 """
 === REVIEW 3 , TUTORIAL 2 =====================================================================================
 
 ~~~ Inverse Dynamics , A Computational Example ~~~
 
+Spatial vectors can be used both for positional kinematics and for instantaneous kinematics.
+
 [tau] = ID( model , [q] , [qDot] , [qDotDot] )
 
-FIXME : PAGE 2
+ Body parent(i)            Body i
+,------------,            ,------------,
+|^          ^|   X_J[i]   |^           |
+|+-> X_T[i] +-> ......... |+->         |
+|F_p(i)     F_p(i),i      |F_i         |
+`------------`            `------------`
+F_i      : Coordinate frame of Body i
+F_p(i)   : Coordinate frame of Body parent(i)
+F_p(i),i : Coordinate frame of Joint i in the parent(i) frame
+X_T[i]   : Transform from F_p(i) to F_p(i),i , Joint location transform
+X_J[i]   : Transform from F_p(i),i to F_i    , Joint config transform
+
+F_i and F_p(i),i must coincide when the joint variable for i is 0
+F_i and F_p(i),i must comply with the joint-specific alignment requirements of joint i
+    * The Z-axes of F_i and F_p(i),i must coincide for revolute and helical joints
+A parent body can have any number of successor bodies
+
+~~ Joint Models ~~
+
+A joint is a kinematic constraint between two bodies.
+A mathematical model of a joint consists of two quantities:
+    X_J  : Coordinate transform
+           X_J(i) : Coordinate transform from F_p(i),i to F_i
+    S_i  : Motion subspace matrix (free modes matrix)
+    v_Ji : Velocity across the joint
+    
+v_Ji  = dot( S_i              , qDot_i )
+tau_i = dot( transpose( S_i ) , f_Ji   )
+
+If Joint i permits n_i degrees of freedon , S_i is a [ 6 X n_i ] matrix
+The total number of joint variables is:
+    
+n = \sum_{i=1}{N}( n_i )
+
+For this tutorial , the types of joints will be limited to those with 1DOF: { revolute , prismatic , helical }
+Revolute and prismatic joints can be treated as special cases of helical joints with zero and infinite pitch, respectively
+
+Power Balance Equation
+
+dot( tau_i , qDot_i ) = dot( f_Ji , v_Ji )
+
+----------------------------------------------------
+~~~~ Recursive Newton-Euler for Spatial Vectors ~~~~
+----------------------------------------------------
+
+v_i   = v_p(i) + dot( s_i , q_i )  , v_0 = 0  # The velocity of body i is the sum of the velocity of its parent and the velocity across joint i
+a_i   = a_p(i) + dot( s_i , qDotDot_i ) + cross( v_i ,                             # The accleration of body i is the sum of the acceleration 
+                                                 dot( s_i , qDot_i )  , a_0 = -a_g # of the parent and the acceleration across joint i
+f_Bi  = dot( I_i , a_i ) + cross_star( v_i ,                          # ^-- This trick is essentially an "acceleration offset"
+                                       dot( I_i , v_i ) ) # Equation of motion: The net force acting on body i is the force across joint i
+f_Ji  = f_Bi + \sum_{j \in c(i)}( f_Jj ) # Calculate the joint forces from the body forces
+tau_i = dot( transpose( s_i ) , f_Ji ) # Joint torque
+
+FIXME : PAGE 6
 
 """
 
