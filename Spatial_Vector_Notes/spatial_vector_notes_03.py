@@ -402,8 +402,148 @@ Consider an equation of the form
   [ v ] ]
 Where w and v are described as the angular and linear velocity of some link expressed in the lab frame coordinates.
 
-In translating this START HERE
-FIXME : PAGE 8
+In translating this from 3D vectors to spatial vectors, it is tempting to regard the left-hand expression to be the Plucker coordinates of 
+the spatial velocity expressed in frame 0.  However, this is probably incorrect, as the 3D vector v usually refers to some particular point
+in the end effector, and does not correspond to the origin of F_0.  Rather, the left-hand expression contains the Plucker coordinates of the 
+spatial velocity of the end-effector expressed in a coordinate system that is parallel to the absolute coordinates but has it's origin at the
+end-effector point referred to by v.
+
+~ Jacobians and Forces ~
+
+If a robot makes contact with its environment through body b, and the environment responds by exerting a force f_e on body b, then the effect
+of that force on the robot is equivalent to a joint-space force \tau_e, given by
+
+tau_e = dot( transpose( J_b ) , f_e )
+
+Naturally, the robot's control system can resist this force by adding -tau_e to its joint-force command
+
+~~ Acceleration ~~
+
+Nonrecursive version of the body acceleration calculation:
+    
+a_b = \sum_{i}{body->root}( dot( s_i , qDotDot_i ) + dot( sDot_i , qDot_i ) )
+
+If we assume that sDot_i = cross( v_i , s_i ) , then the above equation can be further expanded to:
+    
+a_b = \sum_{i}{body_b->root}( dot( s_i , qDotDot_i ) ) + 
+      \sum_{i}{body_b->root}( cross( \sum_{j}{body_i->root}( dot( s_j , qDot_j ) ) , dot( s_i , qDot_i ) ) ) 
+      
+    = \sum_{i}{body_b->root}( dot( s_i , qDotDot_i ) ) + 
+      \sum_{i}{body_b->root}( \sum_{j}{body_i->root}( cross(  dot( s_j , qDot_j ) , dot( s_i , qDot_i ) ) ) )
+      
+It is sometimes useful to define the velocity product acceleration term as 
+
+aVP_b = \sum_{i}{body_b->root}( \sum_{j}{body_i->root}( cross(  dot( s_j , qDot_j ) , dot( s_i , qDot_i ) ) ) )
+
+'aVP_b' might also include gravitational acceleration if we so choose. 
+
+Velocity product accelerations can be calculated efficiently by the recursive formula:
+    
+aVP_i = aVP_p + cross( v_i , dot( s_i , qDot_i ) )
+        ^-- Velocity product acceleration of the parent body
+
+Alternately, the acceleration of body b can be expressed as
+
+a_b = dot( J_b , qDotDot ) + dot( JDot_b , qDot )
+
+dot( JDot_b , qDot ) is not difficult to calculate if one remembers that 
+
+dot( JDot_b , qDot ) = aVP_b 
+
+and so
+
+a_b = dot( J_b , qDotDot ) + aVP_b 
+
+Constraints on mechanism loop closure, such as for two end effectors (l and r) on a branched robot gripping the same object, 
+can be formulated as
+
+dot( ( J_l - J_r ) , qDotDot ) = aVP_r - aVP_l
+
+If this formulation is used in simulation, then care must be taken to stabilize against the accumulation of position and velocity errors
+
+
+~~~~ Dynamics ~~~~
+
+~~~ Composite Rigid-Body Algorithm ~~~
+
+Canonical form of the joint-space motion of a kinematic tree:
+    
+tau = dot( [H] , qDot ) + [C]
+[H] : Joint-space inertia matrix
+[C] : Centrifugal + Coriolis + Gravitational 
+
+In the above code
+
+[C] = ID( model , q , qDot , [0] )
+
+The kinetic energy is given by
+
+T = KE = (0.5) * dot( transpose( qDot ) , [H] , qDot )
+       = (0.5) * \sum_{i=1}{n}( \sum_{j=1}{n}( dot( H_ij , qDot_i , qDot_j ) ) ) 
+       
+       writing in spatial vector notation
+       
+       = (0.5) * \sum_{k=1}{N}( dot( transpose( v_k ) , I_k , v_k ) )
+       
+       substituting yields
+       
+       = (0.5) * \sum_{k=1}{N}( dot( transpose( \sum_{i}{k->root}( dot( s_i , qDot_i ) ) ) , I_k , \sum_{j}{k->root}( dot( s_j , qDot_j ) ) ) )
+       
+       = (0.5) * \sum_{k=1}{N}( \sum_{i}{k->root}( \sum_{j}{k->root}( dot( transpose( s_i ) , I_k , s_j , qDot_i , qDot_j ) ) ) )
+       
+       The expression on the right-hand side is a sum over all i,j,k triples in whihc both i and j are on the k->root path
+       This is the same as
+       
+       = (0.5) * \sum_{i=1}{N}( \sum_{j=1}{N}( \sum_{k}{k \in (subtree i union subtree j)}( 
+                                                                               dot( transpose( s_i ) , I_k , s_j , qDot_i , qDot_j ) 
+                 ) ) )
+       
+For the class of robots under consideration (both eq true for all qDot and n=N) it follows that
+   
+[H_ij]= \sum_{k}{k \in (subtree i and subtree j)}( dot( transpose( s_i ) , I_k , s_j ) )
+
+And further simplifications to the inertia matrix can be made
+                                        / subtree i , if i \in subtree j
+1. ( subtree i ) union ( subtree j ) = {  subtree j , if j \in subtree i
+                                        \ 0         , otherwise
+
+2. Define a composite rigid-body inertia Ic_i that is the inertia of all the bodies in the subtree i treated as a single composite rigid body
+   Ic_i = \sum_{j \in subtree i}( I_j )
+   calculated using the recursive formula
+   Ic_i = I_i + \sum_{j \in children of i}( Ic_j )
+
+With the above in mind, we can write
+        / dot( transpose( s_i ) , Ic_i , s_j ) , if i \in subtree j
+H_ij = {  dot( transpose( s_i ) , Ic_j , s_j ) , if j \in subtree i
+        \ 0                                    , otherwise
+        
+** The Composite Rigid Body Algorithm is composed of the two above formulae **
+   
+        / dot( transpose( s_i ) , Ic_i , s_j ) , if i \in subtree j
+H_ij = {  dot( transpose( s_i ) , Ic_j , s_j ) , if j \in subtree i
+        \ 0                                    , otherwise
+with
+
+Ic_i = I_i + \sum_{j \in children of i}( Ic_j )     
+
+The algorithm can be expressed in link coordinates
+
+Ic_i = I_i + \sum_{j \in children of i}( dot( Xstar_{i->j} , Ic_j , X_{j->i} ) )
+
+f_{p(j)->i} = dot( Xstar_{p(j)->i} , f_{j->i} )
+
+FIXME : PAGE 10 , LEFT COLUMN
+
+%% Test Sequence %%
+
+[ ] 1. Transform a body
+    | | 1.a. Rotate
+    | | 1.b. Translate
+    | | 1.c. Screw
+[ ] 2. Implement a single joint
+    | | 2.a. Rotate
+    | | 2.b. Translate
+    | | 2.c. Screw
 """
 
 """
