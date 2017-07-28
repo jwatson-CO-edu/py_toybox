@@ -12,3 +12,10 @@ Voxel/pyCraft/README.md
 Voxel/pyCraft/testFoo.py
 Voxel/pyCraft/texture.png
 pygVoxel/pyCraft/
+TB_Utils.pyc
+Graphics/factorizer.pyc
+Multithread/multiple_workers.pyc
+Spatial_Vector_Notes/SpatialVectorRobot.pyc
+Graphics/pyglet/euclid.pyc
+Graphics/pyglet/shader.pyc
+*/*/*/*.pyc

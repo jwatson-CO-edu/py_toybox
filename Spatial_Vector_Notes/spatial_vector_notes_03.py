@@ -530,20 +530,78 @@ The algorithm can be expressed in link coordinates
 
 Ic_i = I_i + \sum_{j \in children of i}( dot( Xstar_{i->j} , Ic_j , X_{j->i} ) )
 
-f_{p(j)->i} = dot( Xstar_{p(j)->i} , f_{j->i} )
+f_{p(j)->i} = dot( Xstar_{p(j)->i} , f_{j->i} )  ,  f_{i->i} = dot( Ic_i , s_i )
 
-FIXME : PAGE 10 , LEFT COLUMN
+        / dot( transpose( f_{j->i} ) , s_j ) , if i \in subtree j
+H_ij = {  H_ji                               , if j \in subtree i
+        \ 0                                  , otherwise
+        
+The above show explicitly where the coordinate transforms are performed.
+Note that s_i , I_i , and Ic_i are expressed in linki coordinates.
+f_{j->i} is the spatial force, expressed in link j coordinates, that imparts an acceleration of s_i to a composite rigid body that is 
+composed of all the bodies in subtree i.  The algorithm requires the calculation of f_{i->i} for every i and f_{j->i} for every
+j \in {i->root}
 
-%% Test Sequence %%
 
-[ ] 1. Transform a body
-    | | 1.a. Rotate
-    | | 1.b. Translate
-    | | 1.c. Screw
-[ ] 2. Implement a single joint
-    | | 2.a. Rotate
-    | | 2.b. Translate
-    | | 2.c. Screw
+~~~ Articulated Body Algorithm ~~~
+
+This algo is O(n) , linear in n.
+
+At the outset, we know neither the acceleration of body i nor the force transmitted across joint i, but we know that the relationship 
+between them is linear, it must therefore be possible to express this relationship in the form
+
+f_i = dot( IA_i , a_i ) + pA_i
+
+IA_i : Articulated body inertia of body i
+pA_i : Bias force of body i
+
+Together these describe the acceleration response of body i to an applied spatial force, taking into account the influence of all the other
+bodies in subtree i. These terms have two special properties that form the basis of the Articulated Body Algorithm. These are:
+    
+1. They can be calculated recursively from the tips of the tree to the base
+2. Once calculated, they allow the calculation of accelerations of the bodies and joints from the base to the tips
+
+If we assume that body i has only one child, the following equations are relevant:
+    
+f_i - f_j = dot( I_i , a_i ) + p_i  ________ Equation of motion for body i , which has been written in terms of the rigid-body inertia I_i 
+                                             and bias force p_i , which make it obvious that the rigid-body and articulated body equations 
+                                             have the same algebraic form. 
+
+f_j = dot( IA_j , a_j ) + pA_i  ____________ Equation of motion Articulated body j , describing the relationship between f_j and a_j , taking
+                                             into acount the dynamics of every body and joint in subtree j.  We assume that IA_j and pA_i
+                                             are known.
+
+a_j = a_i + c_j + dot( s_j , qDotDot_j )  __ Acceleration constraint
+
+where
+
+tau_j = dot( transpose( s_j ) , f_j )  _____ Force constraint
+
+p_i = cross_star( v_i , dot( I_i , v_i ) )
+
+c_j = cross( v_j , dot( s_j , qDot_j ) )
+
+The objective is to use the above to obtain the unkowns f_i and a_i.
+
+( See paper for more detailed derivations ... )
+
+The next step is to drop the assumption that body i has only one child.  It is possible to apply the above procedure to each of the children
+in turn.  This can be done because spatial inertias are additive.
+
+IA_i = I_i + \sum_{j}{children(i)}( Ia_j )
+
+pA_i = p_i + \sum_{j}{children(i)}( pa_j )
+
+The definitions of Ia_j and pa_j remain unchanged.
+
+The Articulated Body Algorithm makes a total of 3 passes through the tree:
+    
+    1. base->tips : Calculate the velocity terms c_i and p_i
+    
+    2. tips->base : Calculate IA_i , pA_i , and related terms
+    
+    3. base->tips : Calculate accelerations
+
 """
 
 """
