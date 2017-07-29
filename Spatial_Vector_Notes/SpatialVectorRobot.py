@@ -9,13 +9,18 @@ SpatialVectorRobot.py
 James Watson , 2017 July , Written on Spyder 3 / Python 2.7
 Implementation of Spatial Vector (Featherstone) operations , Rigid Body Algorithm , Recursuve Newton-Euler , and Articulated Body Algorithm
 
+Dependencies: numpy , pyglet
+
 %% Test Sequence %%
 
-[ ] A. Install and switch to MARCHHARE
-[ ] 0. Render cuboid, using the primitive voxel engine as an example. Will use cuboids to construct robots
-    | | 0.a. Render multiple translated 
-    | | 0.b. Render multiple rotated
-    | | 0.c. Render axes , will need these to get an idea of the relative positions and orientations of things
+[N] A. Install and switch to MARCHHARE - This will not be done MARCHHARE is under development in a research environment and risk of accumulating
+       restrictions for its use is undesireable.
+[Y] 0. Render cuboid, using the primitive voxel engine as an example. Will use cuboids to construct robots - SUCCESS
+    |Y| 0.a. Render multiple translated - SUCCESS
+    |Y| 0.b. Render multiple rotated , OGL - SUCCESS
+    |Y| 0.c. Render multiple rotated , Coord Transformation - SUCCESS
+    |Y| 0.d. Compare rotations in Spatial Coordinates to rotations in OGL in order to compare correctness - SUCCESS
+    |Y| 0.e. Render axes , will need these to get an idea of the relative positions and orientations of things - SUCCESS
 [ ] 1. Transform a body , Use Pyglet for display
     | | 1.a. Rotate
     | | 1.b. Translate

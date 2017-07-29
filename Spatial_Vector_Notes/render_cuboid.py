@@ -16,13 +16,12 @@ Dependencies: Pyglet
 
 %% Test Sequence %%
 <clip>
-[ ] 0. Render cuboid, using the primitive voxel engine as an example. Will use cuboids to construct robots
+[Y] 0. Render cuboid, using the primitive voxel engine as an example. Will use cuboids to construct robots - SUCCESS
     |Y| 0.a. Render multiple translated - SUCCESS
     |Y| 0.b. Render multiple rotated , OGL - SUCCESS
-    | | 0.c. Render multiple rotated , Coord Transformation
-    | | 0.d. Compare rotations in Spatial Coordinates to rotations in OGL in order to compare correctness
+    |Y| 0.c. Render multiple rotated , Coord Transformation - SUCCESS
+    |Y| 0.d. Compare rotations in Spatial Coordinates to rotations in OGL in order to compare correctness - SUCCESS
     |Y| 0.e. Render axes , will need these to get an idea of the relative positions and orientations of things - SUCCESS
-    
 <\clip>
 
 ~~~ TODO ~~~
@@ -45,7 +44,7 @@ def add_valid_to_path( pathList ):
 # ~~ Imports ~~
 # ~ Standard ~
 import os , random
-from math import pi , cos , sin , degrees
+from math import pi , cos , sin , degrees , radians
 # ~ Special ~
 import numpy as np
 import pyglet
@@ -61,6 +60,14 @@ from SpatialVectorRobot import *
 
 # === Geometry ===
 
+# == Vector Operations ==
+
+def vec_unit( vec ):
+    """ Return a vector in the direction of 'vec' with unit length """
+    return np.divide( vec , np.linalg.norm( vec ) )
+
+# == End Vector ==
+
 # == Trigonometry ==
 
 def ver( theta ):
@@ -74,20 +81,27 @@ def verd( theta ):
 # == End Trig ==
 
 # == Geo 3D ==
+    
+def rot_matx_ang_axs( theta , k  ):
+    """ Return the rotation matrix for the given angle , axis , and position """
+    k = vec_unit( k )
+    return [ [ k[0]*k[0]*ver(theta) + cos(theta)      , k[0]*k[1]*ver(theta) - k[2]*sin(theta) , k[0]*k[2]*ver(theta) + k[1]*sin(theta) ] , 
+             [ k[1]*k[0]*ver(theta) + k[2]*sin(theta) , k[1]*k[1]*ver(theta) + cos(theta)      , k[1]*k[2]*ver(theta) - k[0]*sin(theta) ] , 
+             [ k[2]*k[0]*ver(theta) - k[1]*sin(theta) , k[2]*k[1]*ver(theta) + k[0]*sin(theta) , k[2]*k[2]*ver(theta) + cos(theta)      ] ]
 
-def homogeneous_Z( x , y , z , zTheta ):
+def homogeneous_Z( zTheta , pos ):
     """ Return the Homogeneous Transformation for the given parameters """
-    return np.vstack( ( np.hstack( (  z_rot( zTheta ) , [ [x] , [y] , [z] ]  ) ) ,
-                        np.hstack( ( [ 0 , 0 , 0 ]   , [1]  ) ) ) )
+    return np.vstack( ( np.hstack( (  z_rot( zTheta )  , [ [ pos[0] ] , [ pos[1] ] , [ pos[2] ] ]  ) ) ,
+                        np.hstack( (  [ 0 , 0 , 0 ]    , [ 1 ]                                     ) ) ) )
     
-def homog_ang_axs( theta , r , pos ):
+def homog_ang_axs( theta , k , pos ):
     """ Return the Homogeneous Transformation for the given angle , axis , and position """
-    # FIXME : START HERE , INTRO ROBOTICS PG 28 [26]
-    
+    return np.vstack( ( np.hstack( (  rot_matx_ang_axs( theta , k  ) , [ [ pos[0] ] , [ pos[1] ] , [ pos[2] ] ]  ) ) ,
+                        np.hstack( (  [ 0 , 0 , 0 ]                  , [ 1 ]                                     ) ) ) )
     
 def apply_homog( homogMat , vec3 ):
     """ Apply a homogeneous transformation to a 3D vector """
-    return ( np.dot( homogMat , [ vec3[0] , vec3[1] , vec3[2] , 0 ] ) )[:3]
+    return ( np.dot( homogMat , [ vec3[0] , vec3[1] , vec3[2] , 1 ] ) )[:3]
     
 # == End 3D ==
 
@@ -171,7 +185,7 @@ class Cuboid(object):
             l , w , h ,	# vertex 7       5=======4
         )
         
-        self.vertX = self.vertices[:] # List of transformed vertices
+        self.vertX = list( self.vertices ) # List of transformed vertices
         
         self.indices = ( #                                       NOTE: Vertices must have CCW order to point the normals towards exterior , 
              0 , 1 , 3 , 2 , # back face      3-----2    3-----2       right hand rule , otherwise dot products computed for backface-culling 
@@ -197,19 +211,37 @@ class Cuboid(object):
             1 , 0
         )
         
-        self.color     = (  88 , 181 ,  74 )
-        self.colorLine = (   0 ,   0 , 255 )
+        self.color     = (  88 , 181 ,  74 ) # Body color
+        self.colorLine = (   0 ,   0 , 255 ) # Line color
         
-        self.pos3D = pos
+        self.pos3D = pos # 3D position in the parent frame
         
-        self.thetaDeg = 0;
-        self.rotAxis = [ 0 , 0 , 1 ];
+        self.thetaDeg = 0.0
+        self.thetaRad = 0.0
+        self.rotAxis = [ 0.0 , 0.0 , 1.0 ]
+        
+        self.rotnByOGL = False # Flag for whether to apply rotation by OpenGL: True - OpenGL , False - Matrix Algebra
+        
+        
+    def xform_homog( self , xfrmMatx ):
+        """ Transform all of the vertices and store the result for rendering """
+        for i in xrange( 0 , len( self.vertices ) , 3 ):
+            self.vertX[ i : i+4 ] = apply_homog( xfrmMatx , self.vertices[ i : i+4 ] )
+        
+    def xform_Z_rot( self , thetaZrad ):
+        """ Rotate all of the vertices in the list about the local Z axis """
+        self.xform_homog( homogeneous_Z( thetaZrad , [ 0 , 0 , 0 ] ) )
+        
+    def xform_ang_axs( self , thetaRad , k ):
+        """ Rotate all of the vertices in the list about the local Z axis """
+        self.xform_homog( homog_ang_axs( thetaRad , k , [ 0 , 0 , 0 ] ) )
         
     def draw( self ):
         """ Render the cuboid in OGL , This function assumes that a graphics context already exists """
         print "Drawing cuboid!"
         glTranslated( *self.pos3D ) # This moves the origin of drawing , so that we can use the above coordinates at each draw location
-        glRotated( self.thetaDeg , *self.rotAxis )
+        if self.rotnByOGL:
+            glRotated( self.thetaDeg , *self.rotAxis )
         # glTranslated( 0 , 0 , 0  ) # This moves the origin of drawing , so that we can use the above coordinates at each draw location
         print "DEBUG:" , "Translated to" , 0 , 0 , 0
         glColor3ub( *self.color ) # Get the color according to the voxel type
@@ -218,7 +250,7 @@ class Cuboid(object):
             8 , # --------------------- Number of seqential triplet in vertex list
             GL_QUADS , # -------------- Draw quadrilaterals
             self.indices , # ---------- Indices where the coordinates are stored
-            ( 'v3f' , self.vertices ) # vertex list , OpenGL offers an optimized vertex list object , but this is not it
+            ( 'v3f' , self.vertX ) # vertex list , OpenGL offers an optimized vertex list object , but this is not it
         ) #   'v3i' # This is for integers I suppose!
                 
         glColor3ub( *self.colorLine )
@@ -227,7 +259,7 @@ class Cuboid(object):
             8 , # --------------------- Number of seqential triplet in vertex list
             GL_LINES , # -------------- Draw quadrilaterals
             self.linDices , # ---------- Indices where the coordinates are stored
-            ( 'v3f' , self.vertices ) # vertex list , OpenGL offers an optimized vertex list object , but this is not it
+            ( 'v3f' , self.vertX ) # vertex list , OpenGL offers an optimized vertex list object , but this is not it
         ) #   'v3i' # This is for integers I suppose!
                 
         print "DEBUG:" , "Indices"
@@ -243,8 +275,8 @@ class Cuboid(object):
         A VertexList is a list of vertices and their attributes, stored in an efficient manner that’s suitable for direct 
         upload to the video card. On newer video cards (supporting OpenGL 1.5 or later) the data is actually stored in video memory.
         """
-        # glTranslated( 0 , 0 , 0 ) # Reset the transform coordinates
-        glRotated( -self.thetaDeg , *self.rotAxis )
+        if self.rotnByOGL:
+            glRotated( -self.thetaDeg , *self.rotAxis )
         glTranslated( *np.multiply( self.pos3D , -1 ) ) # Reset the transform coordinates
         print "DEBUG:" , "Translated to" , 0 , 0 , 0
         print "Done drawing!"
@@ -293,16 +325,23 @@ class OGL_App( pyglet.window.Window ):
 if __name__ == "__main__":
     # Create display window , set up camera , begin main event loop
 
-    print homogeneous_Z( 1 , 2 , 3 , pi / 2 )
-#    print apply_homog( homogeneous_Z( 1 , 2 , 3 , pi / 2 ) , 
-#                       [ 3 , 3 , 3 ] )
+    print homogeneous_Z( pi / 2 , [ 1 , 2 , 3 ] )
+    print homog_ang_axs( pi / 2 , [ 0 , 0 , 1 ] , [ 1 , 2 , 3 ] ) # Yup , they look the same!
 
-    # window = OGL_App( [ Cuboid( 1 , 2 , 3 ) , Cuboid( 1 , 2 , 3 , [ 2 , 0 , 0 ] ) ] ) 
-    # window = OGL_App( [ CartAxes( 1 ) ] ) 
-    prism1 = Cuboid( 1 , 2 , 3 , [ -2 , 0 , 0 ] )
-    prism2 = Cuboid( 1 , 2 , 3 , [ 2 , 0 , 0 ] )
-    prism2.thetaDeg = 122.5
-    prism2.rotAxis = [ 0 , 0 , 1 ]
+    # Rotation to perform
+    turnDeg = 45
+    turnAxs = [ 1 , 1 , 1 ]
+    
+    # ~ Set up 1st cuboid to turn using matrix algebra ~
+    prism1 = Cuboid( 1 , 2 , 3 , [ -2 ,  0 ,  0 ] )
+    prism1.rotnByOGL = False
+    prism1.xform_ang_axs( radians( turnDeg ) , turnAxs )
+    
+    # ~ Set up 2nd cuboid to turn using OGL ~
+    prism2 = Cuboid( 1 , 2 , 3 , [  2 ,  0 ,  0 ] )
+    prism2.rotnByOGL = True
+    prism2.thetaDeg = turnDeg
+    prism2.rotAxis = turnAxs
     window = OGL_App( [ CartAxes( 1 ) , prism1 , prism2 ] ) 
     pyglet.app.run()
     
