@@ -15,8 +15,9 @@ Dependencies: Pyglet
 """
 %% Test Sequence %%
 <clip>
-[ ] 1. Transform a body , Using Pyglet for display
-    | | 1.a. Animate a single primitive that spins using already-implemented transforms
+[ ] 1. Transform a body using the joint transform(s) from the tutorial
+    |Y| 1.a. Animate a single primitive that spins using already-implemented transforms - SUCCESS , Although setting the period results in a higher
+             than expected framerate , framerate crashes when the window is moved
     | | 1.b. Rotate
     | | 1.c. Translate
     | | 1.d. Screw
@@ -45,8 +46,9 @@ import os , random
 from math import pi , cos , sin , degrees , radians
 # ~ Special ~
 import numpy as np
-import pyglet
-from pyglet.gl import *
+import pyglet # --------- Package for OpenGL
+from pyglet.gl import * #- OpenGL flags and state machine
+from pyglet import clock # Animation timing
 # ~ Local ~
 localPaths = [ os.path.join( "C:" , os.sep , "Users" , "jwatson" , "Documents" , "Python Scripts" ) ] # List of paths to your custom modules
 add_valid_to_path( localPaths )
@@ -364,16 +366,24 @@ if __name__ == "__main__":
     window = OGL_App( [ CartAxes( 1 ) , prism1 , prism2 ] ) 
     
     # ~ Set up animation ~
-    def update( periodSeconds ):
+    def update( updatePeriodSec ):
         """ Per-frame changes to make prior to redraw """
         prism1.thetaRad += pi / 60.0
-        prism1.xform_ang_axs( radians( turnDeg ) , turnAxs )
+        prism1.xform_ang_axs( prism1.thetaRad , turnAxs )
     
     # ~ Begin animation ~
-    pyglet.app.run()
-    pyglet.clock.schedule_interval( update , updatePeriodSec ) # update at target frame rate
-   
-    # TODO: TRY FORCING A LOOP?
+    
+    # Create a loop with 'schedule_interval'
     # http://nullege.com/codes/show/src%40c%40h%40chemshapes-HEAD%40host%40pygletHG%40contrib%40layout%40examples%40interpreter.py/116/pyglet.clock.schedule_interval/python
+    
+    clock.schedule_interval( update , updatePeriodSec ) # update at target frame rate
+    window.set_visible()
+    
+    while not window.has_exit:
+        window.dispatch_events() # Handle window events
+        clock.tick() # Call the update function
+        # glClear( GL_COLOR_BUFFER_BIT )
+        window.on_draw() # Redraw the scene
+        window.flip()
 
 # == End Main ==============================================================================================================================
