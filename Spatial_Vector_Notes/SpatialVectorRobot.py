@@ -58,15 +58,26 @@ def add_valid_to_path( pathList ):
 import os
 from math import cos , sin
 # ~ Special ~
+import numpy as np
 # ~ Local ~
-localPaths = [ os.path.join( "C:" , os.sep , "Users" , "jwatson" , "Documents" , "Python Scripts" ) ] # List of paths to your custom modules
-add_valid_to_path( localPaths )
+# localPaths = [ os.path.join( "C:" , os.sep , "Users" , "jwatson" , "Documents" , "Python Scripts" ) ] # List of paths to your custom modules
+# add_valid_to_path( localPaths )
+
+# ~~ Aliases & Shortcuts ~~
+infty = float('inf') # infinity
 
 # ~~ Setup ~~
 
 # == End Init ==============================================================================================================================
 
 # == Utility Functions ==
+
+
+
+def eq( op1 , op2 ):
+    """ Return True if 'op1' and 'op2' are within 'EPSILON' of each other , otherwise return False """
+    return abs( op1 - op2 ) <= eq.EPSILON
+eq.EPSILON = 1e-7
 
 def left_divide( A , b ):
     """ Least-squares solution to an under to over-determined linear system  
@@ -221,14 +232,14 @@ class LinkModel(object):
         
 def joint_xform( pitch , q ): # Featherstone: jcalc
     """ Return the joint transform and subspace matrix for a joint with 'pitch' and joint variable 'q' """
-    if eq( pitch , 0.0 ): # Revolute Joint : Implements pure rotation
-        XJ  = x_rot( q ) 
+    if eq( pitch , 0.0 ): # Revolute Joint : Implements pure rotation 
+        XJ  = x_rot( q ) # Returns 3x3 matrix # TODO : Check if this needs to be a Z-Rotation
         s_i = [ 0 , 0 , 1 , 0 , 0 , 0 ]
     elif pitch == infty: # Prismatic Joint : Implements pure translation
-        XJ  = xlt( [ 0 , 0 , q ] )
+        XJ  = xlt( [ 0 , 0 , q ] ) # Returns 6x6 matrix
         s_i = [ 0 , 0 , 0 , 0 , 0 , 1 ]
     else: #                Helical Joint   : Implements a screwing motion
-        XJ  = np.dot( z_rot( q ) , xlt( [ 0 , 0 , q * pitch ] ) )
+        XJ  = np.dot( z_rot( q ) , xlt( [ 0 , 0 , q * pitch ] ) ) # FIXME : ValueError: shapes (3,3) and (6,6) not aligned: 3 (dim 1) != 6 (dim 0)
         s_i = [ 0 , 0 , 1 , 0 , 0 , pitch ]
     return XJ , s_i
 

@@ -18,6 +18,7 @@ Dependencies: Pyglet
 [ ] 1. Transform a body using the joint transform(s) from the tutorial
     |Y| 1.a. Animate a single primitive that spins using already-implemented transforms - SUCCESS , Although setting the period results in a higher
              than expected framerate , framerate crashes when the window is moved
+        { } 1.a.1. Fix the helical joint calculation
     | | 1.b. Rotate
     | | 1.c. Translate
     | | 1.d. Screw
@@ -53,6 +54,9 @@ from pyglet import clock # Animation timing
 localPaths = [ os.path.join( "C:" , os.sep , "Users" , "jwatson" , "Documents" , "Python Scripts" ) ] # List of paths to your custom modules
 add_valid_to_path( localPaths )
 from SpatialVectorRobot import *
+
+# ~~ Aliases & Shortcuts ~~
+infty = float('inf') # infinity
 
 # ~~ Setup ~~
 
@@ -246,14 +250,14 @@ class Cuboid(object):
         
     def draw( self ):
         """ Render the cuboid in OGL , This function assumes that a graphics context already exists """
-        print "Drawing cuboid!"
+        # print "DEBUG:" , "Drawing cuboid!"
         glTranslated( *self.pos3D ) # This moves the origin of drawing , so that we can use the above coordinates at each draw location
         if self.rotnByOGL:
             glRotated( self.thetaDeg , *self.rotAxis )
         # glTranslated( 0 , 0 , 0  ) # This moves the origin of drawing , so that we can use the above coordinates at each draw location
-        print "DEBUG:" , "Translated to" , 0 , 0 , 0
+        # print "DEBUG:" , "Translated to" , 0 , 0 , 0
         glColor3ub( *self.color ) # Get the color according to the voxel type
-        print "DEBUG:" , "Set color to" , self.color
+        # print "DEBUG:" , "Set color to" , self.color
         pyglet.graphics.draw_indexed( 
             8 , # --------------------- Number of seqential triplet in vertex list
             GL_QUADS , # -------------- Draw quadrilaterals
@@ -270,10 +274,10 @@ class Cuboid(object):
             ( 'v3f' , self.vertX ) # vertex list , OpenGL offers an optimized vertex list object , but this is not it
         ) #   'v3i' # This is for integers I suppose!
                 
-        print "DEBUG:" , "Indices"
-        print self.indices      
-        print "DEBUG:" , "Vertices"
-        print self.vertices      
+        # print "DEBUG:" , "Indices"
+        # print self.indices      
+        # print "DEBUG:" , "Vertices"
+        # print self.vertices      
         """ URL: http://pyglet.readthedocs.io/en/pyglet-1.2-maintenance/programming_guide/graphics.html#vertex-lists
         
         There is a significant overhead in using pyglet.graphics.draw and pyglet.graphics.draw_indexed due to pyglet 
@@ -286,8 +290,8 @@ class Cuboid(object):
         if self.rotnByOGL:
             glRotated( -self.thetaDeg , *self.rotAxis )
         glTranslated( *np.multiply( self.pos3D , -1 ) ) # Reset the transform coordinates
-        print "DEBUG:" , "Translated to" , 0 , 0 , 0
-        print "Done drawing!"
+        # print "DEBUG:" , "Translated to" , 0 , 0 , 0
+        # print "DEBUG:" , "Done drawing!"
 
 # == End Cuboid ==
 
@@ -307,6 +311,7 @@ class OGL_App( pyglet.window.Window ):
                          0 ,  0 ,  1 ] # upx     , upy     , upz     : Direction of "up" in the world frame , vector , XYZ
         
         self.renderlist = objList
+        self.showFPS = False
         
     def setup_3D( self ):
         """ Setup the 3D matrix """
@@ -327,10 +332,11 @@ class OGL_App( pyglet.window.Window ):
         """ Repaint the window , per-frame activity """
         self.clear()
         self.setup_3D()
-        print "DEBUG:" , "There are" , len( self.renderlist ) , "items in 'self.renderlist'"
+        # print "DEBUG:" , "There are" , len( self.renderlist ) , "items in 'self.renderlist'"
         for obj in self.renderlist:
             obj.draw()
-        print pyglet.clock.get_fps() # Print the framerate
+        if self.showFPS:
+            print "FPS:" , pyglet.clock.get_fps() # Print the framerate
 
 # == End OGL_App ==
             
@@ -346,8 +352,22 @@ if __name__ == "__main__":
     updateHz = 30.0 # Target frame rate
     updatePeriodSec = 1.0 / updateHz 
 
+    # ~ Review XForm Output ~
+
+    print "Z Rotation , Homogeneous Coordinates"
     print homogeneous_Z( pi / 2 , [ 1 , 2 , 3 ] )
+    print "Angle-Axis Rotation , Homogeneous Coordinates"
     print homog_ang_axs( pi / 2 , [ 0 , 0 , 1 ] , [ 1 , 2 , 3 ] ) # Yup , they look the same!
+    print "Joint XForm , Rotational"
+    [ XJ , s ] = joint_xform( 0.0 , pi / 2 )
+    print XJ
+    print "Joint XForm , Prismatic"
+    [ XJ , s ] = joint_xform( infty , 2 )
+    print XJ
+    print "Joint XForm , Helical"
+    [ XJ , s ] = joint_xform( 4 , pi / 2 )
+    print XJ
+
 
     # Rotation to perform
     turnDeg = 45
