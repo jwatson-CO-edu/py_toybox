@@ -5,9 +5,9 @@
 from __future__ import division # MUST be run before all other expressions , including docstrings!
 
 """
-render_cuboid.py
-James Watson , 2017 July , Written on Spyder 3 / Python 2.7
-Render a cuboid of a type to be used for Spatial Vector investigations
+test03_robot_joints.py
+James Watson , 2017 August , Written on Spyder 3 / Python 2.7
+Test and control 1DOF kinematics
 
 Dependencies: Pyglet
 """
@@ -15,14 +15,12 @@ Dependencies: Pyglet
 """
 %% Test Sequence %%
 <clip>
-[Y] 1. Transform a body using the joint transform(s) from the tutorial
-    |Y| 1.a. Animate a single primitive that spins using already-implemented transforms - SUCCESS , Although setting the period results in a higher
-             than expected framerate , framerate crashes when the window is moved
-        {Y} 1.a.1. Fix the helical joint calculation - COMPLETE , Although , in the formulation presented in [2] , the transform matrix differed
-                   in size depending on the type of joint implemented. It is not known at this time if this seeming inconsistency is intentional
-    |Y| 1.b. Rotate    , 0 pitch
-    |Y| 1.c. Translate , infty pitch
-    |Y| 1.d. Screw     , finite pitch
+[ ] 2. Implement a single joint
+    | | 2.a. Rotate
+    | | 2.b. Translate
+    | | 2.c. Screw
+    | | 2.d. Implement a control interface with per-joint slider and text input
+    { } 2.e. Start thinking about how to implement DH Parameters
 <\clip>
 
 ~~~ TODO ~~~
@@ -305,22 +303,11 @@ if __name__ == "__main__":
     updateHz = 30.0 # Target frame rate
     updatePeriodSec = 1.0 / updateHz 
 
-    # ~ Review XForm Output ~
-
-    print "Z Rotation , Homogeneous Coordinates"
-    print homogeneous_Z( pi / 2 , [ 1 , 2 , 3 ] )
-    print "Angle-Axis Rotation , Homogeneous Coordinates"
-    print homog_ang_axs( pi / 2 , [ 0 , 0 , 1 ] , [ 1 , 2 , 3 ] ) # Yup , they look the same!
-    print "Joint XForm , Rotational"
-    [ XJ_s , s_i , XJ_h ] = joint_xform( 0.0 , pi / 2 )
-    print XJ_h
-    print "Joint XForm , Prismatic"
-    [ XJ_s , s_i , XJ_h ] = joint_xform( infty , 2 )
-    print XJ_h
-    print "Joint XForm , Helical"
-    [ XJ_s , s_i , XJ_h ] = joint_xform( 4 , pi / 2 )
-    print XJ_h
-
+    # 1. Set up one link with a rotational joint
+    # 2. Update q
+    # 2.A. Set q
+    # 3. Perform FK
+    # 4. Render!
 
     # Rotation to perform
     turnDeg = 45

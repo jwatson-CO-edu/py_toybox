@@ -21,14 +21,19 @@ Dependencies: numpy , pyglet
     |Y| 0.c. Render multiple rotated , Coord Transformation - SUCCESS
     |Y| 0.d. Compare rotations in Spatial Coordinates to rotations in OGL in order to compare correctness - SUCCESS
     |Y| 0.e. Render axes , will need these to get an idea of the relative positions and orientations of things - SUCCESS
-[ ] 1. Transform a body , Use Pyglet for display
-    | | 1.a. Rotate
-    | | 1.b. Translate
-    | | 1.c. Screw
+[Y] 1. Transform a body using the joint transform(s) from the tutorial
+    |Y| 1.a. Animate a single primitive that spins using already-implemented transforms - SUCCESS , Although setting the period results in a higher
+             than expected framerate , framerate crashes when the window is moved
+        {Y} 1.a.1. Fix the helical joint calculation - COMPLETE , Although , in the formulation presented in [2] , the transform matrix differed
+                   in size depending on the type of joint implemented. It is not known at this time if this seeming inconsistency is intentional
+    |Y| 1.b. Rotate    , 0 pitch
+    |Y| 1.c. Translate , infty pitch
+    |Y| 1.d. Screw     , finite pitch
 [ ] 2. Implement a single joint
     | | 2.a. Rotate
     | | 2.b. Translate
     | | 2.c. Screw
+    | | 2.d. Implement a control interface with per-joint slider and text input
 [ ] 3. Implement a Robot from Robot Intro , Forward Kinematics
     | | 3.a. Position
     | | 3.b. Speed
@@ -72,8 +77,6 @@ infty = float('inf') # infinity
 
 # == Utility Functions ==
 
-
-
 def eq( op1 , op2 ):
     """ Return True if 'op1' and 'op2' are within 'EPSILON' of each other , otherwise return False """
     return abs( op1 - op2 ) <= eq.EPSILON
@@ -87,13 +90,29 @@ def left_divide( A , b ):
 
 # == End Utility ==
 
-# == 3D Vector Arithmetic ==
+# === Geometry ===
 
-def skew_sym_cross( vecR ):
-    """ Return the skew symmetic matrix for the equivalent cross operation: [r_cross][v] = cross( r , v ) """
-    return [ [  0       , -vecR[2] ,  vecR[1] ] , 
-             [  vecR[2] ,  0       , -vecR[0] ] ,
-             [ -vecR[1] ,  vecR[0] ,  0       ] ]
+# == Vector Operations ==
+
+def vec_unit( vec ):
+    """ Return a vector in the direction of 'vec' with unit length """
+    return np.divide( vec , np.linalg.norm( vec ) )
+
+# == End Vector ==
+
+# == Trigonometry ==
+
+def ver( theta ):
+    """ Versine , radians """
+    return 1 - cos( theta )
+
+def verd( theta ):
+    """ Versine , degrees """
+    return degrees( 1 - cos( theta ) )
+
+# == End Trig ==
+
+# == Geo 3D ==
     
 def x_rot( theta ):
     """ Return the matrix that performs a rotation of 'theta' about the X axis """
@@ -112,6 +131,51 @@ def z_rot( theta ):
     return [ [  cos( theta ) ,  sin( theta ) ,  0            ] , 
              [ -sin( theta ) ,  cos( theta ) ,  0            ] , 
              [  0            ,  0            ,  1            ] ]
+    
+def rot_matx_ang_axs( theta , k  ):
+    """ Return the rotation matrix for the given angle , axis , and position """
+    k = vec_unit( k )
+    return [ [ k[0]*k[0]*ver(theta) + cos(theta)      , k[0]*k[1]*ver(theta) - k[2]*sin(theta) , k[0]*k[2]*ver(theta) + k[1]*sin(theta) ] , 
+             [ k[1]*k[0]*ver(theta) + k[2]*sin(theta) , k[1]*k[1]*ver(theta) + cos(theta)      , k[1]*k[2]*ver(theta) - k[0]*sin(theta) ] , 
+             [ k[2]*k[0]*ver(theta) - k[1]*sin(theta) , k[2]*k[1]*ver(theta) + k[0]*sin(theta) , k[2]*k[2]*ver(theta) + cos(theta)      ] ]
+
+def homogeneous_Z( zTheta , pos ):
+    """ Return the Homogeneous Transformation for the given parameters """
+    return np.vstack( ( np.hstack( (  z_rot( zTheta )  , [ [ pos[0] ] , [ pos[1] ] , [ pos[2] ] ]  ) ) ,
+                        np.hstack( (  [ 0 , 0 , 0 ]    , [ 1 ]                                     ) ) ) )
+    
+def homog_ang_axs( theta , k , pos ):
+    """ Return the Homogeneous Transformation for the given angle , axis , and position """
+    return np.vstack( ( np.hstack( (  rot_matx_ang_axs( theta , k  ) , [ [ pos[0] ] , [ pos[1] ] , [ pos[2] ] ]  ) ) ,
+                        np.hstack( (  [ 0 , 0 , 0 ]                  , [ 1 ]                                     ) ) ) )
+    
+def apply_homog( homogMat , vec3 ):
+    """ Apply a homogeneous transformation to a 3D vector """
+    return ( np.dot( homogMat , [ vec3[0] , vec3[1] , vec3[2] , 1 ] ) )[:3]
+
+def skew_sym_cross( vecR ):
+    """ Return the skew symmetic matrix for the equivalent cross operation: [r_cross][v] = cross( r , v ) """
+    return [ [  0       , -vecR[2] ,  vecR[1] ] , 
+             [  vecR[2] ,  0       , -vecR[0] ] ,
+             [ -vecR[1] ,  vecR[0] ,  0       ] ]
+
+def homog_xfrom( E , r ):
+    """ Return the combination of rotation matrix 'E' and displacement vector 'r' as a 4x4 homogeneous transformation matrix """
+    return np.vstack( ( np.hstack( (  E                              , [ [ r[0] ] , [ r[1] ] , [ r[2] ] ]  ) ) ,
+                        np.hstack( (  [ 0 , 0 , 0 ]                  , [ 1 ]                               ) ) ) )
+
+def spatial_xfrom( E , r ): # See Page 141 of [3]
+    """ Return the combination of rotation matrix 'E' and displacement vector 'r' as a 6x6 spatial transformation matrix """
+    return np.vstack( ( np.hstack( (  E                                                   , np.zeros( ( 3 , 3 ) )  ) ) , 
+                        np.hstack( (  np.cross( E , np.transpose( skew_sym_cross( r ) ) ) , E                      ) ) ) )
+    
+# == End 3D ==
+
+# === End Geometry ===
+
+# == 3D Vector Arithmetic ==
+
+
 
 # == End 3D Vector ==
 
@@ -229,20 +293,46 @@ class LinkModel(object):
         assert( len( q ) == len( self.links ) , "LinkModel.set_q: 'len(q)' must equal the number of links!" )
         for lnkDex , link in enumerate( self.links ):
             link.q = q[ lnkDex ]
+       
+"""
+~~~~~~~ FIXME ~~~~~~~
+
+ISSUE : IN THE ORIGINAL FORMATION OF 'jcalc' in [2] , THE TRANSFORMATION MATRIX 'XJ' HAS A DIFFERENT SHAPE DEPENDING ON THE JOINT TYPE
+        SPECIFIED. THIS SEEMS INCONSISTENT AND AT THIS POINT IT IS NOT COMPLETELY CLEAR IF THIS SHAPE DIFFERENCE IS CARRIED THROUGHOUT THE
+        IMPLEMENTATION.
         
+[Y] Make the transform available in both homogeneous and spatial forms 
+[ ] Test until until advantages and drawbacks of differing sizes become clear
+"""
+# TODO : TEST THIS
 def joint_xform( pitch , q ): # Featherstone: jcalc
     """ Return the joint transform and subspace matrix for a joint with 'pitch' and joint variable 'q' """
+    # See page 135 of [3] for the homogeneous transformations for each type
     if eq( pitch , 0.0 ): # Revolute Joint : Implements pure rotation 
-        XJ  = x_rot( q ) # Returns 3x3 matrix # TODO : Check if this needs to be a Z-Rotation
+        # XJ  = z_rot( q ) # Returns 3x3 matrix 
+        E = z_rot( q ); r = [ 0 , 0 , 0 ]
         s_i = [ 0 , 0 , 1 , 0 , 0 , 0 ]
+        XJ_s = spatial_xfrom( E , r )
+        XJ_h = homog_xfrom( E , r )
     elif pitch == infty: # Prismatic Joint : Implements pure translation
-        XJ  = xlt( [ 0 , 0 , q ] ) # Returns 6x6 matrix
+        # XJ  = xlt( [ 0 , 0 , q ] ) # Returns 6x6 matrix
+        E = [ [ 1 , 0 , 0 ] , 
+              [ 0 , 1 , 0 ] , 
+              [ 0 , 0 , 1 ] ]
+        r = [ 0 , 0 , q ]
         s_i = [ 0 , 0 , 0 , 0 , 0 , 1 ]
+        XJ_s = spatial_xfrom( E , r )
+        XJ_h = homog_xfrom( E , r )
     else: #                Helical Joint   : Implements a screwing motion
-        XJ  = np.dot( z_rot( q ) , xlt( [ 0 , 0 , q * pitch ] ) ) # FIXME : ValueError: shapes (3,3) and (6,6) not aligned: 3 (dim 1) != 6 (dim 0)
+        # XJ  = np.dot( z_rot( q ) , xlt( [ 0 , 0 , q * pitch ] ) ) # FIXME : ValueError: shapes (3,3) and (6,6) not aligned: 3 (dim 1) != 6 (dim 0)
+        E = z_rot( q ); r = [ 0 , 0 , pitch * q ]
         s_i = [ 0 , 0 , 1 , 0 , 0 , pitch ]
-    return XJ , s_i
-
+        XJ_s = spatial_xfrom( E , r )
+        XJ_h = homog_xfrom( E , r )
+    return XJ_s , s_i , XJ_h
+    #      ^,           ^-- May need this?
+    #       `-- Assume Featherstone intends this to be XJ in Figure 4 of [2]
+    
 # = End Classes =
 
 # = Spatial Dynamics =
@@ -279,7 +369,7 @@ def FK( model , bodyIndex , q ): # ( Featherstone: bodypos )
     X = np.eye(6) # Init pose frame
     body = model.links[ bodyIndex ] # Fetch the link by index
     while body: 
-        [ XJ , s_i ] = joint_xform( body.pitch , q[ bodyIndex ] )
+        [ XJ_s , s_i , XJ_h ] = joint_xform( body.pitch , q[ bodyIndex ] )
         X = np_dot( X , XJ , body.xform )
         body = body.parent # This will become 'None' after the root link has been processed
         
@@ -333,3 +423,12 @@ if __name__ == "__main__":
     pass
 
 # == End Main ==============================================================================================================================
+    
+
+# === References ===
+"""
+[1] Featherstone, Roy. "A beginner's guide to 6-d vectors (part 1)." IEEE robotics & automation magazine 17.3 (2010): 83-94.
+[2] Featherstone, Roy. "A beginner's guide to 6-D vectors (part 2)[tutorial]." IEEE robotics & automation magazine 17.4 (2010): 88-99.
+[3] Featherstone, Roy. "Robot dynamics algorithms." (1984).
+"""
+# === End Ref ===
