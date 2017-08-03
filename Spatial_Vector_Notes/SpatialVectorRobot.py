@@ -98,6 +98,13 @@ def vec_unit( vec ):
     """ Return a vector in the direction of 'vec' with unit length """
     return np.divide( vec , np.linalg.norm( vec ) )
 
+def np_dot( *args ): 
+    """ Perform 'np.dot' on more than two args """
+    if len( args ) > 2: # If there are more than 2 args, add the first arg to recur on remainder of args
+        return np.dot( args[0] , np_dot( *args[1:] ) ) # Note the star operator is needed for recursive call, unpack to positional args
+    else: # base case, there are 2 args*, use vanilla 'np.add'
+        return np.dot( args[0] , args[1] ) # *NOTE: This function assumes there are at least two args, if only 1 an error will occur
+
 # == End Vector ==
 
 # == Trigonometry ==
@@ -152,6 +159,10 @@ def homog_ang_axs( theta , k , pos ):
 def apply_homog( homogMat , vec3 ):
     """ Apply a homogeneous transformation to a 3D vector """
     return ( np.dot( homogMat , [ vec3[0] , vec3[1] , vec3[2] , 1 ] ) )[:3]
+
+def apply_spatl_3D( spatlMat , vec3 ):
+    """ Apply a spatial transformation to a 3D vector """
+    return np.dot( spatlMat , [ vec3[0] , vec3[1] , vec3[2] , 0 , 0 , 0 ] )[:3]
 
 def skew_sym_cross( vecR ):
     """ Return the skew symmetic matrix for the equivalent cross operation: [r_cross][v] = cross( r , v ) """
@@ -236,20 +247,23 @@ class LinkSpatial:
     """ Represents a rigid link and the associated joint using spatial coordinates """
     def __init__( self , pName , pPitch ):
         """ Rigid link struct """
-        self.name = pName # - String that uniquely identifies the link
-        self.pitch = pPitch # Describes the pitch (and therefore the type) of the associated joint
-        self.parent = None #- Reference to the parent link to which this link is attached
-        self.children = [] #- List of child links
-        self.linkIndex = 0 #- Index of link in q 
-        self.xform = None # - Plucker coordinate transform that describes the relative position of this joint in the parent frame
-        self.I = None # ----- Spatial inertia for this link
-        self.q = 0 # -------- Joint configuration ---> These used for caching and for preserving state across timesteps
-        self.qDot = 0 # ----- Joint Velocity        /
-        self.qDotDot = 0 # -- Joint Acceleration  _/
-        self.v = 0 # -------- Link Spatial Velocity     ---> These are the result of dynamics calculations
-        self.a = 0 # -------- Link Spatial Acceleration   /
-        self.f = 0 # -------- Joint Spatial Force        /
-        self.tau = 0 # ------ Torque about this joint  _/
+        self.name = pName # -- String that uniquely identifies the link
+        self.pitch = pPitch #- Describes the pitch (and therefore the type) of the associated joint
+        self.parent = None # - Reference to the parent link to which this link is attached
+        self.children = [] # - List of child links
+        self.linkIndex = 0 # - Index of link in q 
+        self.xform = None # -- Plucker coordinate transform that describes the relative position of this joint in the parent frame
+        self.I = None # ------ Spatial inertia for this link
+        self.q = 0 # --------- Joint configuration ---> These used for caching and for preserving state across timesteps
+        self.qDot = 0 # ------ Joint Velocity        /
+        self.qDotDot = 0 # --- Joint Acceleration  _/
+        self.v = 0 # --------- Link Spatial Velocity     ---> These are the result of dynamics calculations
+        self.a = 0 # --------- Link Spatial Acceleration   /
+        self.f = 0 # --------- Joint Spatial Force        /
+        self.tau = 0 # ------- Torque about this joint  _/
+        self.graphics = None # Graphic reprsentation of the link , Contains all of the draw routines , ex: Cuboid
+        # NOTE : At this time , not asking LinkSpatial to do any of the graphics setup. This is probably best for keeping the implementation
+        #        as simple and display-agnostic as possible
         
     def calc_link_I( self , mass , COM , I_COM ):
         """ Calculate and set the link rotational inertial about the joint """
@@ -366,12 +380,17 @@ def inverse_dynamics( model ): # , q , qDot , qDotDot ):
 def FK( model , bodyIndex , q ): # ( Featherstone: bodypos )
     """ Compute the pose for a given config 'q' """
     # NOTE: This function does not depend on the presently stored q state , returned pose depends only on given 'q'
-    X = np.eye(6) # Init pose frame
+    # NOTE: This function assumes that every link between 'bodyIndex' and the root has 'xform' set
+    X_tot = np.eye(6) # Total transform , the returned value # Base case: No links , Unity xform
     body = model.links[ bodyIndex ] # Fetch the link by index
-    while body: 
-        [ XJ_s , s_i , XJ_h ] = joint_xform( body.pitch , q[ bodyIndex ] )
-        X = np_dot( X , XJ , body.xform )
+    while body: # While the reference 'body' points to a link object
+        [ XJ_s , s_i , XJ_h ] = joint_xform( body.pitch , q[ bodyIndex ] ) # Calculate the joint transform given the current joint config
+        # print "DEBUG: " , X_tot
+        # print "DEBUG: " , XJ_s
+        # print "DEBUG: " , body.xform
+        X_tot = np_dot( X_tot , XJ_s , body.xform ) # Apply the joint transform and body transform to the accumulated transform
         body = body.parent # This will become 'None' after the root link has been processed
+    return X_tot # After the root has been processed , there are no more transformations to perform , return
         
 def jacobn_manip( model , bodyIndex , q ): # ( Featherstone: bodyJac )
     """ Compute the manipulator jacobian up to the specified link in the tree """

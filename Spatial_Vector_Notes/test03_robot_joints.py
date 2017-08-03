@@ -16,11 +16,12 @@ Dependencies: Pyglet
 %% Test Sequence %%
 <clip>
 [ ] 2. Implement a single joint
-    | | 2.a. Rotate
-    | | 2.b. Translate
-    | | 2.c. Screw
-    | | 2.d. Implement a control interface with per-joint slider and text input
-    { } 2.e. Start thinking about how to implement DH Parameters
+    |Y| 2.a. Make the center of the Cuboid settable - COMPLETE , Also corrected some errors in the vertices calculations
+    | | 2.b. Rotate
+    | | 2.c. Translate
+    | | 2.d. Screw
+    | | 2.e. Implement a control interface with per-joint slider and text input
+    { } 2.f. Start thinking about how to implement DH Parameters
 <\clip>
 
 ~~~ TODO ~~~
@@ -109,18 +110,18 @@ class CartAxes(object):
             glColor3ub( *self.colors[i] )
             
             pyglet.graphics.draw_indexed( 
-                10 , # --------------------- Number of seqential triplet in vertex list
+                10 , # -------------------- Number of seqential triplet in vertex list
                 GL_LINES , # -------------- Draw quadrilaterals
-                self.vectors[i] , # ---------- Indices where the coordinates are stored
+                self.vectors[i] , # ------- Indices where the coordinates are stored
                 ( 'v3f' , self.vertices ) # vertex list , OpenGL offers an optimized vertex list object , but this is not it
-            ) 
+            )
             
             pyglet.graphics.draw_indexed( 
-                10 , # --------------------- Number of seqential triplet in vertex list
-                GL_TRIANGLES , # -------------- Draw quadrilaterals
-                self.arrows[i] , # ---------- Indices where the coordinates are stored
+                10 , # -------------------- Number of seqential triplet in vertex list
+                GL_TRIANGLES , # ---------- Draw quadrilaterals
+                self.arrows[i] , # -------- Indices where the coordinates are stored
                 ( 'v3f' , self.vertices ) # vertex list , OpenGL offers an optimized vertex list object , but this is not it
-            ) 
+            )
             
 # == End CartAxes ==
 
@@ -137,7 +138,9 @@ class Cuboid(object):
         
         # FIXME : This object needs a transform to the parent frame
         
-        self.vertices = ( # List of untransformed vertices
+        self.center = [ 0.0 , 0.0 , 0.0 ] # Origin shift for this shape
+        
+        self.vertexList = ( # List of untransformed vertices
             0 , 0 , 0 ,	# vertex 0    3-------2     # NOTE: Z+ is UP
             l , 0 , 0 ,	# vertex 1    !\      !\
             0 , 0 , h ,	# vertex 2    ! \     Z \
@@ -148,7 +151,7 @@ class Cuboid(object):
             l , w , h ,	# vertex 7       5=======4
         )
         
-        self.vertX = list( self.vertices ) # List of transformed vertices
+        self.vertX = list( self.vertexList ) # List of transformed vertices
         
         self.indices = ( #                                       NOTE: Vertices must have CCW order to point the normals towards exterior , 
              0 , 1 , 3 , 2 , # back face      3-----2    3-----2       right hand rule , otherwise dot products computed for backface-culling 
@@ -186,10 +189,27 @@ class Cuboid(object):
         self.rotnByOGL = False # Flag for whether to apply rotation by OpenGL: True - OpenGL , False - Matrix Algebra
         
         
+    def calc_verts_rela( self , cntr = [] ):
+        """ Calc the relative positions of vertices given the center , Set a new center if specified """
+        if len( cntr ) == 3:
+            self.center = cntr
+        self.vertices = list( self.vertexList )
+        for i in xrange( 0 , len( self.vertices ) , 3 ):
+            # print "DEBUG :" , self.vertices[ i : i+3 ]
+            # print "DEBUG :" , self.center
+            self.vertices[ i : i+3 ] = np.subtract( self.vertices[ i : i+3 ] , self.center )
+        self.vertices = tuple( self.vertices )
+        
+    def set_center( self , cntr ):
+        """ Set center to that specified , Calc the relative positions of vertices given the center """
+        assert( len( cntr ) == 3 , "Cuboid.set_center: Center must be a 3D vector , got " + str( cntr ) )
+        self.calc_verts_rela( cntr )
+        
     def xform_homog( self , homogXform ):
         """ Transform all of the vertices and store the result for rendering """
         for i in xrange( 0 , len( self.vertices ) , 3 ):
-            self.vertX[ i : i+4 ] = apply_homog( homogXform , self.vertices[ i : i+4 ] )
+            # print "DEBUG :" , self.vertices[ i : i+3 ]
+            self.vertX[ i : i+3 ] = apply_homog( homogXform , self.vertices[ i : i+3 ] )
         
     def xform_Z_rot( self , thetaZrad ):
         """ Rotate all of the vertices in the list about the local Z axis """
@@ -304,30 +324,30 @@ if __name__ == "__main__":
     updatePeriodSec = 1.0 / updateHz 
 
     # 1. Set up one link with a rotational joint
+    # ~ Set up 1st cuboid to turn using matrix algebra ~
+    prism1 = Cuboid( 0.5 , 1 , 3 , [ 6 ,  0 ,  0 ] )
+    prism1.rotnByOGL = False
+    prism1.set_center( [ 0.5/2.0 , 1/2.0 , 0 ] )
+    link1 = LinkSpatial( "link1" , 0 ) # This link is attached to the world by a rotational joint
+    link1.xform = spatial_xfrom( np.eye( 3 ) , prism1.center )
+    q = 0
+    # 1.A. Set up a robot that contains the one link 
+    robot = LinkModel() # LinkModel starts without any links
+    robot.add_and_attach( link1 ) # Add 'link1' as the base link
+    robot.set_q( [ q ] )
+    
+    print FK( robot , 0 , [ q ] )
+    print np.dot( FK( robot , 0 , [ pi / 8 ] ) , [ 4 , 0 , 0 , 0 , 0 , 0 ] )
+    print apply_spatl_3D( FK( robot , 0 , [ pi / 8 ] ) , [ 4 , 0 , 0 ] )
+    
+    # FIXME : START HERE!
+    
     # 2. Update q
     # 2.A. Set q
     # 3. Perform FK
     # 4. Render!
 
-    # Rotation to perform
-    turnDeg = 45
-    turnAxs = [ 1 , 1 , 1 ]
-    q = 0
-    pitch = [ 0 , 0.40 , infty ]
-    
-    # ~ Set up 1st cuboid to turn using matrix algebra ~
-    prism1 = Cuboid( 0.5 , 1 , 3 , [ 6 ,  0 ,  0 ] )
-    prism1.rotnByOGL = False
-    
-    # ~ Set up 1st cuboid to turn using matrix algebra ~
-    prism2 = Cuboid( 0.5 , 1 , 3 , [ 4 ,  0 ,  0 ] )
-    prism2.rotnByOGL = False
-    
-    # ~ Set up 1st cuboid to turn using matrix algebra ~
-    prism3 = Cuboid( 0.5 , 1 , 3 , [ 2 ,  0 ,  0 ] )
-    prism3.rotnByOGL = False
-    
-    window = OGL_App( [ CartAxes( 1 ) , prism1 , prism2 , prism3 ] ) 
+    window = OGL_App( [ CartAxes( 1 ) , prism1 ] ) 
     
     # ~ Set up animation ~
     def update( updatePeriodSec ):
@@ -337,8 +357,8 @@ if __name__ == "__main__":
         q += pi / 60.0
         # print "DEBUG , q:" , q
         # 2. Apply transform for each of the cuboids
-        for cubDex , cuboid in enumerate( [ prism1 , prism2 , prism3 ] ):
-            cuboid.xform_homog( joint_xform( pitch[ cubDex ] , q )[2] )
+        for cubDex , cuboid in enumerate( [ prism1 ] ):
+            cuboid.xform_homog( joint_xform( 0 , q )[2] )
     
     # ~ Begin animation ~
     
@@ -359,6 +379,18 @@ if __name__ == "__main__":
 
         
 # == Spare Parts ===========================================================================================================================
+        
+#    # ~ Set up 1st cuboid to turn using matrix algebra ~
+#    prism2 = Cuboid( 0.5 , 1 , 3 , [ 4 ,  0 ,  0 ] )
+#    prism2.rotnByOGL = False
+#    prism2.set_center( [ 0.5/2.0 , 1/2.0 , 0 ] )
+#    
+#    # ~ Set up 1st cuboid to turn using matrix algebra ~
+#    prism3 = Cuboid( 0.5 , 1 , 3 , [ 2 ,  0 ,  0 ] )
+#    prism3.rotnByOGL = False
+#    prism3.set_center( [ 0.5/2.0 , 1/2.0 , 0 ] )
+        
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         
 ## ~ Set up 1st cuboid to turn using matrix algebra ~
 #prism1 = Cuboid( 0.5 , 1 , 3 , [ 6 ,  0 ,  0 ] )
