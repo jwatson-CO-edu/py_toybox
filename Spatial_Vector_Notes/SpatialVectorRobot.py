@@ -162,7 +162,8 @@ def apply_homog( homogMat , vec3 ):
 
 def apply_spatl_3D( spatlMat , vec3 ):
     """ Apply a spatial transformation to a 3D vector """
-    return np.dot( spatlMat , [ vec3[0] , vec3[1] , vec3[2] , 0 , 0 , 0 ] )[:3]
+    # return np.dot( spatlMat , [ vec3[0] , vec3[1] , vec3[2] , 0 , 0 , 0 ] )[:3]
+    return np.dot( spatlMat , [ 0 , 0 , 0 , vec3[0] , vec3[1] , vec3[2] ] )[3:]
 
 def skew_sym_cross( vecR ):
     """ Return the skew symmetic matrix for the equivalent cross operation: [r_cross][v] = cross( r , v ) """
@@ -385,9 +386,9 @@ def FK( model , bodyIndex , q ): # ( Featherstone: bodypos )
     body = model.links[ bodyIndex ] # Fetch the link by index
     while body: # While the reference 'body' points to a link object
         [ XJ_s , s_i , XJ_h ] = joint_xform( body.pitch , q[ bodyIndex ] ) # Calculate the joint transform given the current joint config
-        # print "DEBUG: " , X_tot
-        # print "DEBUG: " , XJ_s
-        # print "DEBUG: " , body.xform
+        print "DEBUG: " , X_tot
+        print "DEBUG: " , XJ_s
+        print "DEBUG: " , body.xform
         X_tot = np_dot( X_tot , XJ_s , body.xform ) # Apply the joint transform and body transform to the accumulated transform
         body = body.parent # This will become 'None' after the root link has been processed
     return X_tot # After the root has been processed , there are no more transformations to perform , return

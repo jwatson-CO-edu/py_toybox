@@ -17,7 +17,12 @@ Dependencies: Pyglet
 <clip>
 [ ] 2. Implement a single joint
     |Y| 2.a. Make the center of the Cuboid settable - COMPLETE , Also corrected some errors in the vertices calculations
-    | | 2.b. Rotate
+    
+    ISSUE : LINK ROTATES IN THE OPPOSITE DIRECTION FROM EXPECTED FOR POSITIVE 'q'
+    
+        ! ! Find out what reference frame it is supposed to be transforming
+    
+    |Y| 2.b. Rotate - COMPLETE , rotates but opposite of expected , See above
     | | 2.c. Translate
     | | 2.d. Screw
     | | 2.e. Implement a control interface with per-joint slider and text input
@@ -206,11 +211,17 @@ class Cuboid(object):
         self.calc_verts_rela( cntr )
         
     def xform_homog( self , homogXform ):
-        """ Transform all of the vertices and store the result for rendering """
+        """ Transform all of the vertices with 'homogXform' (4x4) and store the result for rendering """
         for i in xrange( 0 , len( self.vertices ) , 3 ):
             # print "DEBUG :" , self.vertices[ i : i+3 ]
             self.vertX[ i : i+3 ] = apply_homog( homogXform , self.vertices[ i : i+3 ] )
-        
+    
+    def xform_spatl( self , spatlXform ):
+        """ Transform all of the vertices with 'spatlXform' (6x6) and store the result for rendering """
+        for i in xrange( 0 , len( self.vertices ) , 3 ):
+            # print "DEBUG :" , self.vertices[ i : i+3 ]
+            self.vertX[ i : i+3 ] = apply_spatl_3D( spatlXform , self.vertices[ i : i+3 ] )
+    
     def xform_Z_rot( self , thetaZrad ):
         """ Rotate all of the vertices in the list about the local Z axis """
         self.xform_homog( homogeneous_Z( thetaZrad , [ 0 , 0 , 0 ] ) )
@@ -271,9 +282,9 @@ class Cuboid(object):
 class OGL_App( pyglet.window.Window ):
     """ Bookkeepping for Pyglet rendering """
     
-    def __init__( self , objList = [] ):
+    def __init__( self , objList = [] , caption = 'Pyglet Rendering Window' ):
         """ Instantiate the environment with a list of objhects to render """
-        super( OGL_App , self ).__init__( resizable = True, caption = 'Transform a Cuboid' )
+        super( OGL_App , self ).__init__( resizable = True, caption = caption )
         glClearColor( 0.7 , 0.7 , 0.8 , 1 ) # Set the BG color for the OGL window
         
         # URL: https://www.opengl.org/discussion_boards/showthread.php/165839-Use-gluLookAt-to-navigate-around-the-world
@@ -311,6 +322,24 @@ class OGL_App( pyglet.window.Window ):
 
 # == End OGL_App ==
             
+# == class OGL_Robot ==
+            
+class OGL_Robot( LinkModel ):
+    """ Representation of a serial , branched , rigid manipulator expressed in spatial coordinates and displayed using pyglet """
+    
+    def __init__( self ):
+        """ Constructor """
+        LinkModel.__init__( self ) # Init parent class
+        
+    def apply_FK_all( self , qList ):
+        """ Apply joint transforms associated with 'qList' to each link , transforming all graphics """
+        # NOTE : This method is extremely inefficient and benefits neither from obvious recursive techniques nor elimination of 0-products
+        # TODO : Fix the above issues
+        for linkDex , link in enumerate( self.links ):
+            link.graphics.xform_spatl( FK( self , linkDex , qList ) )
+        
+# == End OGL_Robot ==
+            
 # === End OpenGL ===
 
 
@@ -328,11 +357,16 @@ if __name__ == "__main__":
     prism1 = Cuboid( 0.5 , 1 , 3 , [ 6 ,  0 ,  0 ] )
     prism1.rotnByOGL = False
     prism1.set_center( [ 0.5/2.0 , 1/2.0 , 0 ] )
-    link1 = LinkSpatial( "link1" , 0 ) # This link is attached to the world by a rotational joint
+    
+    # link1 = LinkSpatial( "link1" , 0 ) # This link is attached to the world by a rotational joint
+    link1 = LinkSpatial( "link1" , infty ) # This link is attached to the world by a prismatic joint
+    
     link1.xform = spatial_xfrom( np.eye( 3 ) , prism1.center )
+    link1.graphics = prism1
     q = 0
     # 1.A. Set up a robot that contains the one link 
-    robot = LinkModel() # LinkModel starts without any links
+    # robot = LinkModel() # LinkModel starts without any links
+    robot = OGL_Robot()
     robot.add_and_attach( link1 ) # Add 'link1' as the base link
     robot.set_q( [ q ] )
     
@@ -340,14 +374,12 @@ if __name__ == "__main__":
     print np.dot( FK( robot , 0 , [ pi / 8 ] ) , [ 4 , 0 , 0 , 0 , 0 , 0 ] )
     print apply_spatl_3D( FK( robot , 0 , [ pi / 8 ] ) , [ 4 , 0 , 0 ] )
     
-    # FIXME : START HERE!
+    # foo = OGL_Robot()
     
-    # 2. Update q
-    # 2.A. Set q
-    # 3. Perform FK
+    
     # 4. Render!
 
-    window = OGL_App( [ CartAxes( 1 ) , prism1 ] ) 
+    window = OGL_App( [ CartAxes( 1 ) , prism1 ] , caption = "1DOF Robot" ) 
     
     # ~ Set up animation ~
     def update( updatePeriodSec ):
@@ -355,10 +387,17 @@ if __name__ == "__main__":
         global q
         # 1. Update q
         q += pi / 60.0
-        # print "DEBUG , q:" , q
-        # 2. Apply transform for each of the cuboids
-        for cubDex , cuboid in enumerate( [ prism1 ] ):
-            cuboid.xform_homog( joint_xform( 0 , q )[2] )
+        # 2. Set q
+        robot.set_q( [ q ] )
+        # 3. Perform FK
+        robot.apply_FK_all( [ q ] )
+        
+        
+#        # print "DEBUG , q:" , q
+#        # 2. Apply transform for each of the cuboids
+#        for cubDex , cuboid in enumerate( [ prism1 ] ):
+#            cuboid.xform_spatl( joint_xform( 0 , q )[0] )
+#            # cuboid.xform_homog( joint_xform( 0 , q )[2] )
     
     # ~ Begin animation ~
     
