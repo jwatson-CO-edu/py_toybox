@@ -161,11 +161,6 @@ def apply_homog( homogMat , vec3 ):
     """ Apply a homogeneous transformation to a 3D vector """
     return ( np.dot( homogMat , [ vec3[0] , vec3[1] , vec3[2] , 1 ] ) )[:3]
 
-def apply_spatl_3D( spatlMat , vec3 ):
-    """ Apply a spatial transformation to a 3D vector """
-    # return np.dot( spatlMat , [ vec3[0] , vec3[1] , vec3[2] , 0 , 0 , 0 ] )[:3]
-    return np.dot( spatlMat , [ 0 , 0 , 0 , vec3[0] , vec3[1] , vec3[2] ] )[3:]
-
 def skew_sym_cross( vecR ):
     """ Return the skew symmetic matrix for the equivalent cross operation: [r_cross][v] = cross( r , v ) """
     return [ [  0       , -vecR[2] ,  vecR[1] ] , 
@@ -177,18 +172,24 @@ def homog_xfrom( E , r ):
     return np.vstack( ( np.hstack( (  E                              , [ [ r[0] ] , [ r[1] ] , [ r[2] ] ]  ) ) ,
                         np.hstack( (  [ 0 , 0 , 0 ]                  , [ 1 ]                               ) ) ) )
 
-def spatl_xfrom( E , r ): # See Page 141 of [3]
-    """ Return the combination of rotation matrix 'E' and displacement vector 'r' as a 6x6 spatial transformation matrix """
-    return np.vstack( ( np.hstack( (  E                                                   , np.zeros( ( 3 , 3 ) )  ) ) , 
-                        # np.hstack( (  np.cross( E , np.transpose( skew_sym_cross( r ) ) ) , E                      ) ) ) )
-                        np.hstack( (  np.dot( E , np.transpose( skew_sym_cross( r ) ) ) , E                      ) ) ) )
-                        # np.hstack( (  np.transpose( skew_sym_cross( np.dot( E , r ) ) )   , E                      ) ) ) )
+def sp_trn_xfrm( r ):
+    """ Return the spatial transformation that corresponds to a translation of R3 vector 'r' """
+    return np.vstack( (  np.hstack( (  E                     , np.zeros( ( 3 , 3 ) )  ) ) , 
+                         np.hstack( (  np.zeros( ( 3 , 3 ) ) , E                      ) ) ) ) 
+
+def sp_rot_xfrm( E ):
+    """ Return the spatial transformation that corresponds to a 3x3 rotation matrix 'E' """
+    return np.vstack( (  np.hstack( (  np.ones( ( 3 , 3 ) )                    , np.zeros( ( 3 , 3 ) )  ) ) , 
+                         np.hstack( (  np.multiply( skew_sym_cross( r ) , -1 ) , np.ones( ( 3 , 3 ) )   ) ) ) )
     
-def spatl_xform_alt( E , r ):
-    return np.dot( np.vstack( (  np.hstack( (  E                     , np.zeros( ( 3 , 3 ) )  ) ) , 
-                                 np.hstack( (  np.zeros( ( 3 , 3 ) ) , E                      ) ) ) ) , 
-                   np.vstack( (  np.hstack( (  np.ones( ( 3 , 3 ) )                , np.zeros( ( 3 , 3 ) )  ) ) , 
-                                 np.hstack( (  np.transpose( skew_sym_cross( r ) ) , np.ones( ( 3 , 3 ) )   ) ) ) ))
+def apply_spatl_3D( spatlMat , vec3 ):
+    """ Apply a spatial transformation to a 3D vector , Return a 3D vector """
+    # return np.dot( spatlMat , [ vec3[0] , vec3[1] , vec3[2] , 0 , 0 , 0 ] )[:3]
+    return np.dot( spatlMat , [ 0 , 0 , 0 , vec3[0] , vec3[1] , vec3[2] ] )[3:]
+
+def apply_sp_tr_rt( E , r , vec3 ):
+    """ Apply a spatial rotation and spatial translation , in turn , to a 3D vector , Return a 3D vector """
+    return np_dot( E , r , [ 0 , 0 , 0 , vec3[0] , vec3[1] , vec3[2] ] )[3:]
     
     
 # == End 3D ==
@@ -341,6 +342,8 @@ def joint_xform( pitch , q ): # Featherstone: jcalc
         # XJ  = z_rot( q ) # Returns 3x3 matrix 
         E = z_rot( q ); r = [ 0 , 0 , 0 ]
         s_i = [ 0 , 0 , 1 , 0 , 0 , 0 ]
+        XJ_s = spatl_xform_alt( E , r )
+        XJ_h = homog_xfrom( E , r )
         
     # ISSUE : PRISMATIC JOINT TRANSFORM DOES NOT RESULT IN A TRANSLATION
     
@@ -351,14 +354,17 @@ def joint_xform( pitch , q ): # Featherstone: jcalc
               [ 0 , 0 , 1 ] ]
         r = [ 0 , 0 , q ]
         s_i = [ 0 , 0 , 0 , 0 , 0 , 1 ]
+        # XJ_s = spatl_xform_alt( E , r )
+        XJ_s = sp_trn_xfrm( r )
+        XJ_h = homog_xfrom( E , r )
         
     else: #                Helical Joint   : Implements a screwing motion
         # XJ  = np.dot( z_rot( q ) , xlt( [ 0 , 0 , q * pitch ] ) ) # FIXME : ValueError: shapes (3,3) and (6,6) not aligned: 3 (dim 1) != 6 (dim 0)
         E = z_rot( q ); r = [ 0 , 0 , pitch * q ]
         s_i = [ 0 , 0 , 1 , 0 , 0 , pitch ]
-        
-    XJ_s = spatl_xform_alt( E , r )
-    XJ_h = homog_xfrom( E , r )
+        XJ_s = spatl_xform_alt( E , r )
+        XJ_h = homog_xfrom( E , r )
+    
     return XJ_s , s_i , XJ_h
     #      ^,           ^-- May need this?
     #       `-- Assume Featherstone intends this to be XJ in Figure 4 of [2]
