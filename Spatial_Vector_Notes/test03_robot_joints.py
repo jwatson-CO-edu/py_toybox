@@ -9,7 +9,7 @@ test03_robot_joints.py
 James Watson , 2017 August , Written on Spyder 3 / Python 2.7
 Test and control 1DOF kinematics
 
-Dependencies: Pyglet
+Dependencies: SpatialVectorRobot , Pyglet
 """
 
 """
@@ -21,6 +21,11 @@ Dependencies: Pyglet
     ISSUE : LINK ROTATES IN THE OPPOSITE DIRECTION FROM EXPECTED FOR POSITIVE 'q'
     
         ! ! Find out what reference frame it is supposed to be transforming
+        
+    ISSUE : PRISMATIC JOINT TRANSFORM DOES NOT RESULT IN A TRANSLATION
+    
+        ! ! Take a close look about how pure translation happens in a homogeneous transformation
+        ! ! Develop a spatial transformation matrix that will also cause a pure translation ( Look at DRAKE from MIT , Search below )
     
     |Y| 2.b. Rotate - COMPLETE , rotates but opposite of expected , See above
     | | 2.c. Translate
@@ -62,6 +67,7 @@ from SpatialVectorRobot import *
 
 # ~~ Aliases & Shortcuts ~~
 infty = float('inf') # infinity
+endl  = os.linesep # - Line separator (OS Specific)
 
 # ~~ Setup ~~
 
@@ -361,7 +367,7 @@ if __name__ == "__main__":
     # link1 = LinkSpatial( "link1" , 0 ) # This link is attached to the world by a rotational joint
     link1 = LinkSpatial( "link1" , infty ) # This link is attached to the world by a prismatic joint
     
-    link1.xform = spatial_xfrom( np.eye( 3 ) , prism1.center )
+    link1.xform = spatl_xfrom( np.eye( 3 ) , prism1.center )
     link1.graphics = prism1
     q = 0
     # 1.A. Set up a robot that contains the one link 
@@ -370,9 +376,17 @@ if __name__ == "__main__":
     robot.add_and_attach( link1 ) # Add 'link1' as the base link
     robot.set_q( [ q ] )
     
-    print FK( robot , 0 , [ q ] )
-    print np.dot( FK( robot , 0 , [ pi / 8 ] ) , [ 4 , 0 , 0 , 0 , 0 , 0 ] )
-    print apply_spatl_3D( FK( robot , 0 , [ pi / 8 ] ) , [ 4 , 0 , 0 ] )
+    print "Homog Xform:    " , endl , homog_ang_axs( 0 , [ 1 , 0 , 0 ] , [ 0 , 0 , 4 ] )
+    print "Homog Vector:   " , endl , [ 4 , 0 , 0 , 1 ]
+    print "Mult. Homog:    " , endl , np.dot( homog_ang_axs( 0 , [ 1 , 0 , 0 ] , [ 0 , 0 , 4 ] ) , [ 4 , 0 , 0 , 1 ] )
+    print
+    print "Spatial Xform:    " , endl , spatl_xfrom(     np.eye( 3 ) , [ 0 , 0 , 4 ] )
+    print "Spatial Xform Alt:" , endl , spatl_xform_alt( np.eye( 3 ) , [ 0 , 0 , 4 ] )
+    
+    
+    # print "FK Xform:       " , endl , FK( robot , 0 , [ q ] )
+    # print "Rotate Vector:  " , endl , np.dot( FK( robot , 0 , [ pi / 8 ] ) , [ 0 , 0 , 0 , 4 , 0 , 0 ] )
+    # print "Apply to Vector:" , endl , apply_spatl_3D( FK( robot , 0 , [ pi / 8 ] ) , [ 4 , 0 , 0 ] )
     
     # foo = OGL_Robot()
     

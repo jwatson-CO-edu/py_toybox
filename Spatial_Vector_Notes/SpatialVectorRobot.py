@@ -70,6 +70,7 @@ import numpy as np
 
 # ~~ Aliases & Shortcuts ~~
 infty = float('inf') # infinity
+endl  = os.linesep # - Line separator (OS Specific)
 
 # ~~ Setup ~~
 
@@ -176,10 +177,19 @@ def homog_xfrom( E , r ):
     return np.vstack( ( np.hstack( (  E                              , [ [ r[0] ] , [ r[1] ] , [ r[2] ] ]  ) ) ,
                         np.hstack( (  [ 0 , 0 , 0 ]                  , [ 1 ]                               ) ) ) )
 
-def spatial_xfrom( E , r ): # See Page 141 of [3]
+def spatl_xfrom( E , r ): # See Page 141 of [3]
     """ Return the combination of rotation matrix 'E' and displacement vector 'r' as a 6x6 spatial transformation matrix """
     return np.vstack( ( np.hstack( (  E                                                   , np.zeros( ( 3 , 3 ) )  ) ) , 
-                        np.hstack( (  np.cross( E , np.transpose( skew_sym_cross( r ) ) ) , E                      ) ) ) )
+                        # np.hstack( (  np.cross( E , np.transpose( skew_sym_cross( r ) ) ) , E                      ) ) ) )
+                        np.hstack( (  np.dot( E , np.transpose( skew_sym_cross( r ) ) ) , E                      ) ) ) )
+                        # np.hstack( (  np.transpose( skew_sym_cross( np.dot( E , r ) ) )   , E                      ) ) ) )
+    
+def spatl_xform_alt( E , r ):
+    return np.dot( np.vstack( (  np.hstack( (  E                     , np.zeros( ( 3 , 3 ) )  ) ) , 
+                                 np.hstack( (  np.zeros( ( 3 , 3 ) ) , E                      ) ) ) ) , 
+                   np.vstack( (  np.hstack( (  np.ones( ( 3 , 3 ) )                , np.zeros( ( 3 , 3 ) )  ) ) , 
+                                 np.hstack( (  np.transpose( skew_sym_cross( r ) ) , np.ones( ( 3 , 3 ) )   ) ) ) ))
+    
     
 # == End 3D ==
 
@@ -194,8 +204,10 @@ def spatial_xfrom( E , r ): # See Page 141 of [3]
 
 # == Plucker Coordinates and Operations ==
 
+# FIXME : THERE ARE DIFFERENT TRANSFORMS FOR TRANSLATION AND ROTATION!
+
 def xlt( r ):
-    """ Rotational transform of Plucker coordinates """
+    """ Translational transform of Plucker coordinates """
     return np.vstack( ( np.hstack( ( np.eye(3)                               , np.zeros( (3,3) ) ) ) ,
                         np.hstack( ( np.multiply( skew_sym_cross( r ) , -1 ) , np.eye(3)         ) ) ) )
 
@@ -319,6 +331,8 @@ ISSUE : IN THE ORIGINAL FORMATION OF 'jcalc' in [2] , THE TRANSFORMATION MATRIX 
 [Y] Make the transform available in both homogeneous and spatial forms 
 [ ] Test until until advantages and drawbacks of differing sizes become clear
 """
+
+# FIXME : THERE ARE DIFFERENT TRANSFORMS FOR TRANSLATION AND ROTATION!
 # TODO : TEST THIS
 def joint_xform( pitch , q ): # Featherstone: jcalc
     """ Return the joint transform and subspace matrix for a joint with 'pitch' and joint variable 'q' """
@@ -327,8 +341,9 @@ def joint_xform( pitch , q ): # Featherstone: jcalc
         # XJ  = z_rot( q ) # Returns 3x3 matrix 
         E = z_rot( q ); r = [ 0 , 0 , 0 ]
         s_i = [ 0 , 0 , 1 , 0 , 0 , 0 ]
-        XJ_s = spatial_xfrom( E , r )
-        XJ_h = homog_xfrom( E , r )
+        
+    # ISSUE : PRISMATIC JOINT TRANSFORM DOES NOT RESULT IN A TRANSLATION
+    
     elif pitch == infty: # Prismatic Joint : Implements pure translation
         # XJ  = xlt( [ 0 , 0 , q ] ) # Returns 6x6 matrix
         E = [ [ 1 , 0 , 0 ] , 
@@ -336,14 +351,14 @@ def joint_xform( pitch , q ): # Featherstone: jcalc
               [ 0 , 0 , 1 ] ]
         r = [ 0 , 0 , q ]
         s_i = [ 0 , 0 , 0 , 0 , 0 , 1 ]
-        XJ_s = spatial_xfrom( E , r )
-        XJ_h = homog_xfrom( E , r )
+        
     else: #                Helical Joint   : Implements a screwing motion
         # XJ  = np.dot( z_rot( q ) , xlt( [ 0 , 0 , q * pitch ] ) ) # FIXME : ValueError: shapes (3,3) and (6,6) not aligned: 3 (dim 1) != 6 (dim 0)
         E = z_rot( q ); r = [ 0 , 0 , pitch * q ]
         s_i = [ 0 , 0 , 1 , 0 , 0 , pitch ]
-        XJ_s = spatial_xfrom( E , r )
-        XJ_h = homog_xfrom( E , r )
+        
+    XJ_s = spatl_xform_alt( E , r )
+    XJ_h = homog_xfrom( E , r )
     return XJ_s , s_i , XJ_h
     #      ^,           ^-- May need this?
     #       `-- Assume Featherstone intends this to be XJ in Figure 4 of [2]
@@ -386,9 +401,9 @@ def FK( model , bodyIndex , q ): # ( Featherstone: bodypos )
     body = model.links[ bodyIndex ] # Fetch the link by index
     while body: # While the reference 'body' points to a link object
         [ XJ_s , s_i , XJ_h ] = joint_xform( body.pitch , q[ bodyIndex ] ) # Calculate the joint transform given the current joint config
-        print "DEBUG: " , X_tot
-        print "DEBUG: " , XJ_s
-        print "DEBUG: " , body.xform
+        print "DEBUG: " , endl ,  X_tot
+        # print "DEBUG: " , XJ_s
+        # print "DEBUG: " , body.xform
         X_tot = np_dot( X_tot , XJ_s , body.xform ) # Apply the joint transform and body transform to the accumulated transform
         body = body.parent # This will become 'None' after the root link has been processed
     return X_tot # After the root has been processed , there are no more transformations to perform , return
