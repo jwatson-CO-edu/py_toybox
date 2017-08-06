@@ -123,25 +123,25 @@ def verd( theta ):
 # == Geo 3D ==
     
 def x_rot( theta ):
-    """ Return the matrix that performs a rotation of 'theta' about the X axis """
+    """ Return the 3x3 matrix that performs a rotation of 'theta' about the X axis """
     return [ [  1            ,  0            ,  0            ] , 
              [  0            ,  cos( theta ) ,  sin( theta ) ] , 
              [  0            , -sin( theta ) ,  cos( theta ) ] ]
     
 def y_rot( theta ):
-    """ Return the matrix that performs a rotation of 'theta' about the Y axis """
+    """ Return the 3x3 matrix that performs a rotation of 'theta' about the Y axis """
     return [ [  cos( theta ) ,  0            , -sin( theta ) ] , 
              [  0            ,  1            ,  0            ] , 
              [  sin( theta ) ,  0            ,  cos( theta ) ] ]
     
 def z_rot( theta ):
-    """ Return the matrix that performs a rotation of 'theta' about the Z axis """
+    """ Return the 3x3 matrix that performs a rotation of 'theta' about the Z axis """
     return [ [  cos( theta ) ,  sin( theta ) ,  0            ] , 
              [ -sin( theta ) ,  cos( theta ) ,  0            ] , 
              [  0            ,  0            ,  1            ] ]
     
 def rot_matx_ang_axs( theta , k  ):
-    """ Return the rotation matrix for the given angle , axis , and position """
+    """ Return the 3x3 rotation matrix for the given angle , axis , and position """
     k = vec_unit( k )
     return [ [ k[0]*k[0]*ver(theta) + cos(theta)      , k[0]*k[1]*ver(theta) - k[2]*sin(theta) , k[0]*k[2]*ver(theta) + k[1]*sin(theta) ] , 
              [ k[1]*k[0]*ver(theta) + k[2]*sin(theta) , k[1]*k[1]*ver(theta) + cos(theta)      , k[1]*k[2]*ver(theta) - k[0]*sin(theta) ] , 
@@ -174,13 +174,18 @@ def homog_xfrom( E , r ):
 
 def sp_trn_xfrm( r ):
     """ Return the spatial transformation that corresponds to a translation of R3 vector 'r' """
-    return np.vstack( (  np.hstack( (  E                     , np.zeros( ( 3 , 3 ) )  ) ) , 
-                         np.hstack( (  np.zeros( ( 3 , 3 ) ) , E                      ) ) ) ) 
+#    return np.vstack( (  np.hstack( (  np.ones( ( 3 , 3 ) )                    , np.zeros( ( 3 , 3 ) )  ) ) , 
+#                         np.hstack( (  np.multiply( skew_sym_cross( r ) , -1 ) , np.ones( ( 3 , 3 ) )   ) ) ) )
+    return np.vstack( (  np.hstack( (  np.eye( 3 )                             , np.zeros( ( 3 , 3 ) )  ) ) , 
+                         np.hstack( (  np.multiply( skew_sym_cross( r ) , -1 ) , np.eye( 3 )            ) ) ) )
 
 def sp_rot_xfrm( E ):
     """ Return the spatial transformation that corresponds to a 3x3 rotation matrix 'E' """
-    return np.vstack( (  np.hstack( (  np.ones( ( 3 , 3 ) )                    , np.zeros( ( 3 , 3 ) )  ) ) , 
-                         np.hstack( (  np.multiply( skew_sym_cross( r ) , -1 ) , np.ones( ( 3 , 3 ) )   ) ) ) )
+    return np.vstack( (  np.hstack( (  E                     , np.zeros( ( 3 , 3 ) )  ) ) , 
+                         np.hstack( (  np.zeros( ( 3 , 3 ) ) , E                      ) ) ) )     
+
+def spatl_xfrom_TEST( E , r ):
+    return np.dot( sp_rot_xfrm( E ) , sp_trn_xfrm( r ) )
     
 def apply_spatl_3D( spatlMat , vec3 ):
     """ Apply a spatial transformation to a 3D vector , Return a 3D vector """
@@ -337,12 +342,15 @@ ISSUE : IN THE ORIGINAL FORMATION OF 'jcalc' in [2] , THE TRANSFORMATION MATRIX 
 # TODO : TEST THIS
 def joint_xform( pitch , q ): # Featherstone: jcalc
     """ Return the joint transform and subspace matrix for a joint with 'pitch' and joint variable 'q' """
+    
     # See page 135 of [3] for the homogeneous transformations for each type
+    
     if eq( pitch , 0.0 ): # Revolute Joint : Implements pure rotation 
         # XJ  = z_rot( q ) # Returns 3x3 matrix 
         E = z_rot( q ); r = [ 0 , 0 , 0 ]
         s_i = [ 0 , 0 , 1 , 0 , 0 , 0 ]
-        XJ_s = spatl_xform_alt( E , r )
+        # XJ_s = spatl_xform_alt( E , r )
+        XJ_s = sp_rot_xfrm( E )
         XJ_h = homog_xfrom( E , r )
         
     # ISSUE : PRISMATIC JOINT TRANSFORM DOES NOT RESULT IN A TRANSLATION
@@ -407,7 +415,7 @@ def FK( model , bodyIndex , q ): # ( Featherstone: bodypos )
     body = model.links[ bodyIndex ] # Fetch the link by index
     while body: # While the reference 'body' points to a link object
         [ XJ_s , s_i , XJ_h ] = joint_xform( body.pitch , q[ bodyIndex ] ) # Calculate the joint transform given the current joint config
-        print "DEBUG: " , endl ,  X_tot
+        # print "DEBUG: " , endl ,  X_tot
         # print "DEBUG: " , XJ_s
         # print "DEBUG: " , body.xform
         X_tot = np_dot( X_tot , XJ_s , body.xform ) # Apply the joint transform and body transform to the accumulated transform

@@ -367,7 +367,8 @@ if __name__ == "__main__":
     # link1 = LinkSpatial( "link1" , 0 ) # This link is attached to the world by a rotational joint
     link1 = LinkSpatial( "link1" , infty ) # This link is attached to the world by a prismatic joint
     
-    link1.xform = spatl_xfrom( np.eye( 3 ) , prism1.center )
+    # link1.xform = spatl_xfrom( np.eye( 3 ) , prism1.center )
+    link1.xform = spatl_xfrom_TEST( np.eye( 3 ) , prism1.center ) 
     link1.graphics = prism1
     q = 0
     # 1.A. Set up a robot that contains the one link 
@@ -380,8 +381,10 @@ if __name__ == "__main__":
     print "Homog Vector:   " , endl , [ 4 , 0 , 0 , 1 ]
     print "Mult. Homog:    " , endl , np.dot( homog_ang_axs( 0 , [ 1 , 0 , 0 ] , [ 0 , 0 , 4 ] ) , [ 4 , 0 , 0 , 1 ] )
     print
-    print "Spatial Xform:    " , endl , spatl_xfrom(     np.eye( 3 ) , [ 0 , 0 , 4 ] )
-    print "Spatial Xform Alt:" , endl , spatl_xform_alt( np.eye( 3 ) , [ 0 , 0 , 4 ] )
+    print "Spatial Translation:    " , endl , sp_trn_xfrm( [ 0 , 0 , 4 ] )
+    print "Translate test 1  " , endl , np.dot( sp_trn_xfrm( [ 0 , 0 , 4 ] ) , [ 0 , 0 , 0 , 4 , 0 , 0 ] )
+    print "Translate test 2  " , endl , np.dot( sp_trn_xfrm( [ 0 , 0 , 4 ] ) , [ 4 , 0 , 0 , 0 , 0 , 0 ] )
+    # print "Spatial Xform Alt:" , endl , spatl_xform_alt( np.eye( 3 ) , [ 0 , 0 , 4 ] )
     
     
     # print "FK Xform:       " , endl , FK( robot , 0 , [ q ] )
