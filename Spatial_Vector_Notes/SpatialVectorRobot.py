@@ -35,9 +35,10 @@ Dependencies: numpy , pyglet
     | | 2.c. Screw
     | | 2.d. Implement a control interface with per-joint slider and text input
 [ ] 3. Implement a Robot from Robot Intro , Forward Kinematics
-    | | 3.a. Position
-    | | 3.b. Speed
-    | | 3.c. Acceleration
+    | | 3.a. Move OGL classes and functions to their own file
+    | | 3.b. Position
+    | | 3.c. Speed
+    | | 3.d. Acceleration
 [ ] 4. Implement a Robot from Robot Intro , Dynamics
     | | 4.a. Gravity
     | | 4.b. Coriolis
@@ -140,6 +141,12 @@ def z_rot( theta ):
              [ -sin( theta ) ,  cos( theta ) ,  0            ] , 
              [  0            ,  0            ,  1            ] ]
     
+def z_trn( theta ):
+    """ Return the 3x3 matrix that performs a rotational transformation of 'theta' about the Z axis """
+    return [ [  cos( theta ) , -sin( theta ) ,  0            ] , 
+             [  sin( theta ) ,  cos( theta ) ,  0            ] , 
+             [  0            ,  0            ,  1            ] ]
+    
 def rot_matx_ang_axs( theta , k  ):
     """ Return the 3x3 rotation matrix for the given angle , axis , and position """
     k = vec_unit( k )
@@ -174,28 +181,14 @@ def homog_xfrom( E , r ):
 
 def sp_trn_xfrm( r ):
     """ Return the spatial transformation that corresponds to a translation of R3 vector 'r' """
-#    return np.vstack( (  np.hstack( (  np.ones( ( 3 , 3 ) )                    , np.zeros( ( 3 , 3 ) )  ) ) , 
-#                         np.hstack( (  np.multiply( skew_sym_cross( r ) , -1 ) , np.ones( ( 3 , 3 ) )   ) ) ) )
     return np.vstack( (  np.hstack( (  np.eye( 3 )                             , np.zeros( ( 3 , 3 ) )  ) ) , 
-                         np.hstack( (  np.multiply( skew_sym_cross( r ) , -1 ) , np.eye( 3 )            ) ) ) )
+                         # np.hstack( (  np.multiply( skew_sym_cross( r ) , -1 ) , np.eye( 3 )            ) ) ) )
+                         np.hstack( (  skew_sym_cross( r )                     , np.eye( 3 )            ) ) ) )
 
 def sp_rot_xfrm( E ):
     """ Return the spatial transformation that corresponds to a 3x3 rotation matrix 'E' """
     return np.vstack( (  np.hstack( (  E                     , np.zeros( ( 3 , 3 ) )  ) ) , 
-                         np.hstack( (  np.zeros( ( 3 , 3 ) ) , E                      ) ) ) )     
-
-def spatl_xfrom_TEST( E , r ):
-    return np.dot( sp_rot_xfrm( E ) , sp_trn_xfrm( r ) )
-    
-def apply_spatl_3D( spatlMat , vec3 ):
-    """ Apply a spatial transformation to a 3D vector , Return a 3D vector """
-    # return np.dot( spatlMat , [ vec3[0] , vec3[1] , vec3[2] , 0 , 0 , 0 ] )[:3]
-    return np.dot( spatlMat , [ 0 , 0 , 0 , vec3[0] , vec3[1] , vec3[2] ] )[3:]
-
-def apply_sp_tr_rt( E , r , vec3 ):
-    """ Apply a spatial rotation and spatial translation , in turn , to a 3D vector , Return a 3D vector """
-    return np_dot( E , r , [ 0 , 0 , 0 , vec3[0] , vec3[1] , vec3[2] ] )[3:]
-    
+                         np.hstack( (  np.zeros( ( 3 , 3 ) ) , E                      ) ) ) )    
     
 # == End 3D ==
 
@@ -338,44 +331,45 @@ ISSUE : IN THE ORIGINAL FORMATION OF 'jcalc' in [2] , THE TRANSFORMATION MATRIX 
 [ ] Test until until advantages and drawbacks of differing sizes become clear
 """
 
-# FIXME : THERE ARE DIFFERENT TRANSFORMS FOR TRANSLATION AND ROTATION!
-# TODO : TEST THIS
-def joint_xform( pitch , q ): # Featherstone: jcalc
-    """ Return the joint transform and subspace matrix for a joint with 'pitch' and joint variable 'q' """
+def joint_spatl( pitch , q ): # Featherstone: jcalc
+    """ Return the joint spatial transform and subspace matrix for a joint with 'pitch' and joint variable 'q' """
+    
+    if eq( pitch , 0.0 ): # Revolute Joint : Implements pure rotation 
+        E = z_trn( q ); r = [ 0 , 0 , 0 ]
+        s_i = [ 0 , 0 , 1 , 0 , 0 , 0 ]
+        XJ_s = sp_rot_xfrm( E )
+        
+    elif pitch == infty: # Prismatic Joint : Implements pure translation
+        E = np.eye( 3 ); r = [ 0 , 0 , q ]
+        s_i = [ 0 , 0 , 0 , 0 , 0 , 1 ]
+        XJ_s = sp_trn_xfrm( r )
+        
+    else: #                Helical Joint   : Implements a screwing motion
+        E = z_trn( q ); r = [ 0 , 0 , pitch * q ]
+        s_i = [ 0 , 0 , 1 , 0 , 0 , pitch ]
+        XJ_s = np.dot( sp_rot_xfrm( E ) , sp_trn_xfrm( r ) )
+    
+    return XJ_s , s_i 
+    #      ^-- Assume Featherstone intends this to be XJ in Figure 4 of [2]
+
+def joint_homog( pitch , q ): 
+    """ Return the joint homogeneous transform matrix for a joint with 'pitch' and joint variable 'q' """
     
     # See page 135 of [3] for the homogeneous transformations for each type
     
     if eq( pitch , 0.0 ): # Revolute Joint : Implements pure rotation 
-        # XJ  = z_rot( q ) # Returns 3x3 matrix 
-        E = z_rot( q ); r = [ 0 , 0 , 0 ]
-        s_i = [ 0 , 0 , 1 , 0 , 0 , 0 ]
-        # XJ_s = spatl_xform_alt( E , r )
-        XJ_s = sp_rot_xfrm( E )
-        XJ_h = homog_xfrom( E , r )
-        
-    # ISSUE : PRISMATIC JOINT TRANSFORM DOES NOT RESULT IN A TRANSLATION
+        E = z_trn( q )
+        r = [ 0 , 0 , 0 ]
     
     elif pitch == infty: # Prismatic Joint : Implements pure translation
-        # XJ  = xlt( [ 0 , 0 , q ] ) # Returns 6x6 matrix
-        E = [ [ 1 , 0 , 0 ] , 
-              [ 0 , 1 , 0 ] , 
-              [ 0 , 0 , 1 ] ]
+        E = np.eye( 3 )
         r = [ 0 , 0 , q ]
-        s_i = [ 0 , 0 , 0 , 0 , 0 , 1 ]
-        # XJ_s = spatl_xform_alt( E , r )
-        XJ_s = sp_trn_xfrm( r )
-        XJ_h = homog_xfrom( E , r )
-        
+
     else: #                Helical Joint   : Implements a screwing motion
-        # XJ  = np.dot( z_rot( q ) , xlt( [ 0 , 0 , q * pitch ] ) ) # FIXME : ValueError: shapes (3,3) and (6,6) not aligned: 3 (dim 1) != 6 (dim 0)
-        E = z_rot( q ); r = [ 0 , 0 , pitch * q ]
-        s_i = [ 0 , 0 , 1 , 0 , 0 , pitch ]
-        XJ_s = spatl_xform_alt( E , r )
-        XJ_h = homog_xfrom( E , r )
-    
-    return XJ_s , s_i , XJ_h
-    #      ^,           ^-- May need this?
-    #       `-- Assume Featherstone intends this to be XJ in Figure 4 of [2]
+        E = z_trn( q )
+        r = [ 0 , 0 , pitch * q ]
+
+    return homog_xfrom( E , r )
     
 # = End Classes =
 
@@ -407,18 +401,19 @@ def inverse_dynamics( model ): # , q , qDot , qDotDot ):
 
 # = Forward Kinematics =
 
-def FK( model , bodyIndex , q ): # ( Featherstone: bodypos )
-    """ Compute the pose for a given config 'q' """
+def FK( model , bodyIndex , q ): # ( Featherstone: bodypos ) # This is modified from 'bodypos' and operates on homogeneous transforms instead
+    """ Compute the pose ( as a homogeneous transform ) for a given config 'q' """
     # NOTE: This function does not depend on the presently stored q state , returned pose depends only on given 'q'
     # NOTE: This function assumes that every link between 'bodyIndex' and the root has 'xform' set
-    X_tot = np.eye(6) # Total transform , the returned value # Base case: No links , Unity xform
+    X_tot = np.eye(4) # Total transform , the returned value # Base case: No links , Unity xform
     body = model.links[ bodyIndex ] # Fetch the link by index
     while body: # While the reference 'body' points to a link object
-        [ XJ_s , s_i , XJ_h ] = joint_xform( body.pitch , q[ bodyIndex ] ) # Calculate the joint transform given the current joint config
-        # print "DEBUG: " , endl ,  X_tot
-        # print "DEBUG: " , XJ_s
-        # print "DEBUG: " , body.xform
-        X_tot = np_dot( X_tot , XJ_s , body.xform ) # Apply the joint transform and body transform to the accumulated transform
+        XJ_h = joint_homog( body.pitch , q[ bodyIndex ] ) # Calculate the joint transform given the current joint config
+        # print "DEBUG ," , "X_tot:" , endl ,  X_tot
+        # print "DEBUG ," ,  , body.xform
+        # X_tot = np_dot( X_tot , XJ_h , body.xform ) # Apply the joint transform and body transform to the accumulated transform
+        X_tot = np_dot( X_tot , body.xform , XJ_h ) # Apply the joint transform and body transform to the accumulated transform
+        # X_tot = np_dot( body.xform , XJ_h , X_tot ) # Apply the joint transform and body transform to the accumulated transform
         body = body.parent # This will become 'None' after the root link has been processed
     return X_tot # After the root has been processed , there are no more transformations to perform , return
         
@@ -479,5 +474,7 @@ if __name__ == "__main__":
 [1] Featherstone, Roy. "A beginner's guide to 6-d vectors (part 1)." IEEE robotics & automation magazine 17.3 (2010): 83-94.
 [2] Featherstone, Roy. "A beginner's guide to 6-D vectors (part 2)[tutorial]." IEEE robotics & automation magazine 17.4 (2010): 88-99.
 [3] Featherstone, Roy. "Robot dynamics algorithms." (1984).
+[4] Ralf Grosse-Kunstleve. "scitbx_rigid_body_essence Python Library" ,Lawrence Berkeley National Laboratory , Computational Crystallography Initiative
+    http://cctbx.sourceforge.net/scitbx_rigid_body_essence/
 """
 # === End Ref ===

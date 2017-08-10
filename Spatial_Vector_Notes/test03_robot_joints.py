@@ -17,19 +17,22 @@ Dependencies: SpatialVectorRobot , Pyglet
 <clip>
 [ ] 2. Implement a single joint
     |Y| 2.a. Make the center of the Cuboid settable - COMPLETE , Also corrected some errors in the vertices calculations
-    
-    ISSUE : LINK ROTATES IN THE OPPOSITE DIRECTION FROM EXPECTED FOR POSITIVE 'q'
-    
-        ! ! Find out what reference frame it is supposed to be transforming
-        
-    ISSUE : PRISMATIC JOINT TRANSFORM DOES NOT RESULT IN A TRANSLATION
-    
-        ! ! Take a close look about how pure translation happens in a homogeneous transformation
-        ! ! Develop a spatial transformation matrix that will also cause a pure translation ( Look at DRAKE from MIT , Search below )
-    
-    |Y| 2.b. Rotate - COMPLETE , rotates but opposite of expected , See above
-    | | 2.c. Translate
-    | | 2.d. Screw
+    ISSUE      : LINK ROTATES IN THE OPPOSITE DIRECTION FROM EXPECTED FOR POSITIVE 'q'
+    RESOLUTION : Needed to do a transformation instead of a rotation
+        !N! Find out what reference frame it is supposed to be transforming        
+    ISSUE      : PRISMATIC JOINT TRANSFORM DOES NOT RESULT IN A TRANSLATION
+    RESOLUTION : There was confusion about trying to use spatial transforms to operate on 3D vectors
+        !N! Take a close look about how pure translation happens in a homogeneous transformation
+        !N! Develop a spatial transformation matrix that will also cause a pure translation ( Look at DRAKE from MIT , Search below )
+    ISSUE      : SOME PROBLEMS HAVE ARISEN FROM THE MISCONCEPTION THAT SPATIAL VECTORS ARE USED TO REPRESENT POSE , THEY ARE NOT. THEY ARE USED
+                 TO REPRESENT MOTION AND FORCE.
+    RESOLUTION : Spatial and Euclidean vector transformations are now completely separate
+        !Y! Recover from the spatial / 3D mixup
+            ;Y; Remove functions that were meant to use spatial transforms to operate on 3D points
+            ;Y; Separate the spatial and 3D operations from the jacobian and FK operations
+    |Y| 2.b. Rotate - COMPLETE
+    |Y| 2.c. Translate
+    |Y| 2.d. Screw - COMPLETE
     | | 2.e. Implement a control interface with per-joint slider and text input
     { } 2.f. Start thinking about how to implement DH Parameters
 <\clip>
@@ -55,6 +58,8 @@ def add_valid_to_path( pathList ):
 # ~ Standard ~
 import os , random
 from math import pi , cos , sin , degrees , radians
+import time # --------- For calculating framerate
+from Tkinter import * # Standard Python cross-platform GUI
 # ~ Special ~
 import numpy as np
 import pyglet # --------- Package for OpenGL
@@ -222,11 +227,12 @@ class Cuboid(object):
             # print "DEBUG :" , self.vertices[ i : i+3 ]
             self.vertX[ i : i+3 ] = apply_homog( homogXform , self.vertices[ i : i+3 ] )
     
-    def xform_spatl( self , spatlXform ):
-        """ Transform all of the vertices with 'spatlXform' (6x6) and store the result for rendering """
-        for i in xrange( 0 , len( self.vertices ) , 3 ):
-            # print "DEBUG :" , self.vertices[ i : i+3 ]
-            self.vertX[ i : i+3 ] = apply_spatl_3D( spatlXform , self.vertices[ i : i+3 ] )
+    # NOTE: This function is likely invalid , See the testing plan!
+#    def xform_spatl( self , spatlXform ):
+#        """ Transform all of the vertices with 'spatlXform' (6x6) and store the result for rendering """
+#        for i in xrange( 0 , len( self.vertices ) , 3 ):
+#            # print "DEBUG :" , self.vertices[ i : i+3 ]
+#            self.vertX[ i : i+3 ] = apply_spatl_3D( spatlXform , self.vertices[ i : i+3 ] )
     
     def xform_Z_rot( self , thetaZrad ):
         """ Rotate all of the vertices in the list about the local Z axis """
@@ -342,12 +348,69 @@ class OGL_Robot( LinkModel ):
         # NOTE : This method is extremely inefficient and benefits neither from obvious recursive techniques nor elimination of 0-products
         # TODO : Fix the above issues
         for linkDex , link in enumerate( self.links ):
-            link.graphics.xform_spatl( FK( self , linkDex , qList ) )
+            # link.graphics.xform_spatl( FK( self , linkDex , qList ) )
+            link.graphics.xform_homog( FK( self , linkDex , qList ) )
         
 # == End OGL_Robot ==
             
 # === End OpenGL ===
 
+# === TKinter Classes ===
+
+# == class TKBasicApp ==
+            
+class TKBasicApp_Driven(object):
+    """ TKinter application GUI without an auto-update feature """
+    
+    def __init__( self , winWidth , winHeight , title = "DEFAULT WINDOW TITLE" ):
+        # 1. Init Tkinter root
+        self.winWidth       = winWidth
+        self.winHeight      = winHeight
+        self.updateFuncList = [ self.dummy_update ] # Should really be loaded with something before running
+        self.winRunning     = False
+        self.rootWin        = Tk()
+        self.rootWin.wm_title( title ) 
+        self.rootWin.protocol( "WM_DELETE_WINDOW" , self.callback_destroy ) # Does this even work?
+        # 2. Set up window
+        self.init_controls()
+        
+    def set_title( self , winTitle ):
+        """ Set the title for the Tkinter window """
+        self.rootWin.wm_title( str( winTitle ) )
+
+    def dummy_update( self ):
+        """ This function does nothing and only serves to prevent an error if client code does not provide an update function """
+        pass
+    
+    def init_controls( self ):
+        """ Init UI here """ 
+        self.controlPanel = Frame( self.rootWin ) # A panel to hold the controls, has its own packing environment
+        w = Scale( self.controlPanel , from_ = 0 , to = 100 )
+        w.pack()
+        
+    def callback_destroy( self ):
+        """ Ask the window to self-destruct , THIS ALMOST NEVER EXITS CLEANLY """
+        self.winRunning = False
+        self.rootWin.destroy()
+        exit()
+            
+    def run( self ):
+        """ Execute one update cycle and stop """
+        
+        # Execute the per-cycle work specifed by the user
+        for f in self.updateFuncList:
+            f() # Please make these lightweight and pertain to UI drawing!
+        
+        # Update window
+        self.rootWin.update_idletasks() # idk , draw or something!
+        
+        print "UPDATING"
+        
+    
+
+# == End TKBasicApp ==
+
+# === End TKinter ===
 
 # == Main ==================================================================================================================================
 
@@ -365,10 +428,13 @@ if __name__ == "__main__":
     prism1.set_center( [ 0.5/2.0 , 1/2.0 , 0 ] )
     
     # link1 = LinkSpatial( "link1" , 0 ) # This link is attached to the world by a rotational joint
-    link1 = LinkSpatial( "link1" , infty ) # This link is attached to the world by a prismatic joint
+    # link1 = LinkSpatial( "link1" , infty ) # This link is attached to the world by a prismatic joint
+    link1 = LinkSpatial( "link1" , 0.1 ) # This link is attached to the world by a rotational joint
     
     # link1.xform = spatl_xfrom( np.eye( 3 ) , prism1.center )
-    link1.xform = spatl_xfrom_TEST( np.eye( 3 ) , prism1.center ) 
+    # link1.xform = spatl_xfrom_TEST( np.eye( 3 ) , prism1.center ) 
+    # link1.xform = homog_xfrom( np.eye( 3 ) , prism1.center )
+    link1.xform = homog_xfrom( np.eye( 3 ) , np.multiply( prism1.center , -1 ) )
     link1.graphics = prism1
     q = 0
     # 1.A. Set up a robot that contains the one link 
@@ -384,14 +450,12 @@ if __name__ == "__main__":
     print "Spatial Translation:    " , endl , sp_trn_xfrm( [ 0 , 0 , 4 ] )
     print "Translate test 1  " , endl , np.dot( sp_trn_xfrm( [ 0 , 0 , 4 ] ) , [ 0 , 0 , 0 , 4 , 0 , 0 ] )
     print "Translate test 2  " , endl , np.dot( sp_trn_xfrm( [ 0 , 0 , 4 ] ) , [ 4 , 0 , 0 , 0 , 0 , 0 ] )
+    print "Translate test 3  " , endl , np.dot( [ 0 , 0 , 0 , 4 , 0 , 0 ] , sp_trn_xfrm( [ 0 , 0 , 4 ] ) )
+    print "Translate test 4  " , endl , np.dot( [ 4 , 0 , 0 , 0 , 0 , 0 ] , sp_trn_xfrm( [ 0 , 0 , 4 ] ) )
     # print "Spatial Xform Alt:" , endl , spatl_xform_alt( np.eye( 3 ) , [ 0 , 0 , 4 ] )
     
-    
-    # print "FK Xform:       " , endl , FK( robot , 0 , [ q ] )
-    # print "Rotate Vector:  " , endl , np.dot( FK( robot , 0 , [ pi / 8 ] ) , [ 0 , 0 , 0 , 4 , 0 , 0 ] )
-    # print "Apply to Vector:" , endl , apply_spatl_3D( FK( robot , 0 , [ pi / 8 ] ) , [ 4 , 0 , 0 ] )
-    
-    # foo = OGL_Robot()
+    # 3. Setup the UI
+    ctrlWin = TKBasicApp_Driven( 600 , 200 , "Robot Control Panel" )
     
     
     # 4. Render!
@@ -408,6 +472,8 @@ if __name__ == "__main__":
         robot.set_q( [ q ] )
         # 3. Perform FK
         robot.apply_FK_all( [ q ] )
+        # 4. Update control UI
+        ctrlWin.run()
         
         
 #        # print "DEBUG , q:" , q
