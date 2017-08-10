@@ -34,6 +34,10 @@ Dependencies: SpatialVectorRobot , Pyglet
     |Y| 2.c. Translate
     |Y| 2.d. Screw - COMPLETE
     | | 2.e. Implement a control interface with per-joint slider and text input
+    ISSUE : TKINTER WINDOW DOES NOT PLAY NICE WITH THE PYGLET WINDOW , DOES NOT PAINT PROPERLY , BLOCKS PYGLET WHEN 'mainloop' is called
+        ! ! Try driving pyglet from tkinter instead of the other way around
+        ! ! Try creating two programs that communicate with multiprocess sockets
+        ! ! Try creating two programs that communicate with Twisted sockets
     { } 2.f. Start thinking about how to implement DH Parameters
 <\clip>
 
@@ -403,7 +407,7 @@ class TKBasicApp_Driven(object):
         
         # Update window
         self.rootWin.update_idletasks() # idk , draw or something!
-        
+        self.rootWin.update()
         print "UPDATING"
         
     
@@ -490,7 +494,10 @@ if __name__ == "__main__":
     clock.schedule_interval( update , updatePeriodSec ) # update at target frame rate
     window.set_visible()
     
-    while not window.has_exit:
+    # multiprocess sockets   , https://stackoverflow.com/a/6921402/893511
+    # twisted python sockets , http://twistedmatrix.com/documents/current/core/examples/#auto0
+    
+    while not window.has_exit: # TODO : TRY DRIVING THESE INSIDE TKINTER INSTEAD OF THE OTHER WAY AROUND
         window.dispatch_events() # Handle window events
         clock.tick() # Call the update function
         # glClear( GL_COLOR_BUFFER_BIT )
