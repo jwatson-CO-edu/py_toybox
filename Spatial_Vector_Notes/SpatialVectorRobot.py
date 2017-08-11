@@ -13,7 +13,7 @@ Dependencies: numpy , pyglet
 
 %% Test Sequence %%
 
-[N] A. Install and switch to MARCHHARE - This will not be done MARCHHARE is under development in a research environment and risk of accumulating
+[N] A. Install and switch to MARCHHARE - This will not be done , MARCHHARE is under development in an academic environment and risk of accumulating
        restrictions for its use is undesireable.
 [Y] 0. Render cuboid, using the primitive voxel engine as an example. Will use cuboids to construct robots - SUCCESS
     |Y| 0.a. Render multiple translated - SUCCESS
@@ -29,16 +29,35 @@ Dependencies: numpy , pyglet
     |Y| 1.b. Rotate    , 0 pitch
     |Y| 1.c. Translate , infty pitch
     |Y| 1.d. Screw     , finite pitch
-[ ] 2. Implement a single joint
-    | | 2.a. Rotate
-    | | 2.b. Translate
-    | | 2.c. Screw
-    | | 2.d. Implement a control interface with per-joint slider and text input
+[Y] 2. Implement a single joint
+    |Y| 2.a. Make the center of the Cuboid settable - COMPLETE , Also corrected some errors in the vertices calculations
+    ISSUE      : LINK ROTATES IN THE OPPOSITE DIRECTION FROM EXPECTED FOR POSITIVE 'q'
+    RESOLUTION : Needed to do a transformation instead of a rotation
+        !N! Find out what reference frame it is supposed to be transforming        
+    ISSUE      : PRISMATIC JOINT TRANSFORM DOES NOT RESULT IN A TRANSLATION
+    RESOLUTION : There was confusion about trying to use spatial transforms to operate on 3D vectors
+        !N! Take a close look about how pure translation happens in a homogeneous transformation
+        !N! Develop a spatial transformation matrix that will also cause a pure translation ( Look at DRAKE from MIT , Search below )
+    ISSUE      : SOME PROBLEMS HAVE ARISEN FROM THE MISCONCEPTION THAT SPATIAL VECTORS ARE USED TO REPRESENT POSE , THEY ARE NOT. THEY ARE USED
+                 TO REPRESENT MOTION AND FORCE.
+    RESOLUTION : Spatial and Euclidean vector transformations are now completely separate
+        !Y! Recover from the spatial / 3D mixup
+            ;Y; Remove functions that were meant to use spatial transforms to operate on 3D points
+            ;Y; Separate the spatial and 3D operations from the jacobian and FK operations
+    |Y| 2.b. Rotate - COMPLETE
+    |Y| 2.c. Translate
+    |Y| 2.d. Screw - COMPLETE
+    |Y| 2.e. Implement a control interface with per-joint slider , Tested with all three types of joint
+    ISSUE    : TKINTER WINDOW DOES NOT PLAY NICE WITH THE PYGLET WINDOW , DOES NOT PAINT PROPERLY , BLOCKS PYGLET WHEN 'mainloop' is called
+    RESOLVED : Tkinter hates being told what to do and will not tolerate being outside of the main thread of its program. Solution is to let
+               Tkinter be the loop / heartbeat of the program , and not bother trying to get other loops to drive Tkinter , becuase it won't
+        !Y! Try driving pyglet from tkinter instead of the other way around - THIS WAS IT
 [ ] 3. Implement a Robot from Robot Intro , Forward Kinematics
-    | | 3.a. Move OGL classes and functions to their own file
-    | | 3.b. Position
-    | | 3.c. Speed
-    | | 3.d. Acceleration
+    | | 3.a. Move OGL classes and functions to their own file , Move Tkinter class to its own file
+    | | 3.b. Implement DH Parameters (Hollerbach)
+    | | 3.c. Position
+    | | 3.d. Speed
+    | | 3.e. Acceleration
 [ ] 4. Implement a Robot from Robot Intro , Dynamics
     | | 4.a. Gravity
     | | 4.b. Coriolis

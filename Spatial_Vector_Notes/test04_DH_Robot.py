@@ -5,9 +5,9 @@
 from __future__ import division # MUST be run before all other expressions , including docstrings!
 
 """
-test03_robot_joints.py
+test04_DH_Robot.py
 James Watson , 2017 August , Written on Spyder 3 / Python 2.7
-Test and control 1DOF kinematics
+Test and control N-DOF kinematics with D-H Parameters
 
 Dependencies: SpatialVectorRobot , Pyglet
 """
@@ -15,29 +15,12 @@ Dependencies: SpatialVectorRobot , Pyglet
 """
 %% Test Sequence %%
 <clip>
-[Y] 2. Implement a single joint
-    |Y| 2.a. Make the center of the Cuboid settable - COMPLETE , Also corrected some errors in the vertices calculations
-    ISSUE      : LINK ROTATES IN THE OPPOSITE DIRECTION FROM EXPECTED FOR POSITIVE 'q'
-    RESOLUTION : Needed to do a transformation instead of a rotation
-        !N! Find out what reference frame it is supposed to be transforming        
-    ISSUE      : PRISMATIC JOINT TRANSFORM DOES NOT RESULT IN A TRANSLATION
-    RESOLUTION : There was confusion about trying to use spatial transforms to operate on 3D vectors
-        !N! Take a close look about how pure translation happens in a homogeneous transformation
-        !N! Develop a spatial transformation matrix that will also cause a pure translation ( Look at DRAKE from MIT , Search below )
-    ISSUE      : SOME PROBLEMS HAVE ARISEN FROM THE MISCONCEPTION THAT SPATIAL VECTORS ARE USED TO REPRESENT POSE , THEY ARE NOT. THEY ARE USED
-                 TO REPRESENT MOTION AND FORCE.
-    RESOLUTION : Spatial and Euclidean vector transformations are now completely separate
-        !Y! Recover from the spatial / 3D mixup
-            ;Y; Remove functions that were meant to use spatial transforms to operate on 3D points
-            ;Y; Separate the spatial and 3D operations from the jacobian and FK operations
-    |Y| 2.b. Rotate - COMPLETE
-    |Y| 2.c. Translate
-    |Y| 2.d. Screw - COMPLETE
-    |Y| 2.e. Implement a control interface with per-joint slider , Tested with all three types of joint
-    ISSUE    : TKINTER WINDOW DOES NOT PLAY NICE WITH THE PYGLET WINDOW , DOES NOT PAINT PROPERLY , BLOCKS PYGLET WHEN 'mainloop' is called
-    RESOLVED : Tkinter hates being told what to do and will not tolerate being outside of the main thread of its program. Solution is to let
-               Tkinter be the loop / heartbeat of the program , and not bother trying to get other loops to drive Tkinter , becuase it won't
-        !Y! Try driving pyglet from tkinter instead of the other way around - THIS WAS IT
+[ ] 3. Implement a Robot from Robot Intro , Forward Kinematics
+    | | 3.a. Move OGL classes and functions to their own file , Move Tkinter class to its own file
+    | | 3.b. Implement DH Parameters (Hollerbach)
+    | | 3.c. Position
+    | | 3.d. Speed
+    | | 3.e. Acceleration
 <\clip>
 
 ~~~ TODO ~~~
@@ -229,13 +212,6 @@ class Cuboid(object):
         for i in xrange( 0 , len( self.vertices ) , 3 ):
             # print "DEBUG :" , self.vertices[ i : i+3 ]
             self.vertX[ i : i+3 ] = apply_homog( homogXform , self.vertices[ i : i+3 ] )
-    
-    # NOTE: This function is likely invalid , See the testing plan!
-#    def xform_spatl( self , spatlXform ):
-#        """ Transform all of the vertices with 'spatlXform' (6x6) and store the result for rendering """
-#        for i in xrange( 0 , len( self.vertices ) , 3 ):
-#            # print "DEBUG :" , self.vertices[ i : i+3 ]
-#            self.vertX[ i : i+3 ] = apply_spatl_3D( spatlXform , self.vertices[ i : i+3 ] )
     
     def xform_Z_rot( self , thetaZrad ):
         """ Rotate all of the vertices in the list about the local Z axis """
