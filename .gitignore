@@ -19,3 +19,5 @@ Spatial_Vector_Notes/SpatialVectorRobot.pyc
 Graphics/pyglet/euclid.pyc
 Graphics/pyglet/shader.pyc
 */*/*/*.pyc
+Spatial_Vector_Notes/OGLshapes.pyc
+Spatial_Vector_Notes/TKBasicUI.pyc
