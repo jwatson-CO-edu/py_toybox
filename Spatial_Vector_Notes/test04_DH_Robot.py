@@ -47,7 +47,7 @@ def add_valid_to_path( pathList ):
 # ~ Standard ~
 import os , random
 from math import pi , cos , sin , degrees , radians
-from Tkinter import Frame , HORIZONTAL 
+from Tkinter import Frame , HORIZONTAL , GROOVE , LEFT , SUNKEN
 # ~ Special ~
 import numpy as np
 #import pyglet # --------- Package for OpenGL
@@ -94,14 +94,28 @@ class OGL_Robot( LinkModel ):
 class TKOGLRobotCtrl( TKBasicApp ):
     """ Control UI in TK for a robot rendered with Pyglet """
     
-    class JointSubpanel(object):
+    class JointSubpanel( Frame ):
         """ Control sub-panel for manual control of one robot DOF """
         
         def __init__( self , rootApp ):
             """ Set up the subpanel within the root window """
-            # FIXME: START HERE
-            self.jnt1 = Scale( self.controlPanel , from_ = -pi , to = pi , resolution = 0.01 , length = 400 , orient = HORIZONTAL )
-            self.jnt1.pack()
+            Frame.__init__( self , rootApp , relief = SUNKEN )
+            
+            if not hasattr( rootApp , 'jntCtrls' ): # If there has been no joint control array initialized
+                rootApp.jntCtrls = [] # Create an empty joint control array
+            
+            # URL , Relief Styles : http://infohost.nmt.edu/tcc/help/pubs/tkinter/web/relief.html
+            self.jntScale = Scale( self , from_ = -pi , to = pi , resolution = 0.01 , length = 400 , orient = HORIZONTAL , relief = GROOVE )
+            # URL , Tkinter pack geometry : http://effbot.org/tkinterbook/pack.htm
+            self.jntScale.pack( side = LEFT )
+            self.value = self.jntScale.get()
+            
+            # URL , Entry Widget : http://effbot.org/tkinterbook/entry.htm
+            self.jntEntry = Entry( self )
+            self.jntEntry.pack( side = LEFT )
+            
+            # TODO , ; ; Write Tntry validation
+            #        ; ; Write update callbacks for both Scale and Entry (One changes the other and always sets the overall 'value')
             
     
     def __init__( self , winWidth , winHeight , updateHz = 30 , title = "DEFAULT WINDOW TITLE" ):
