@@ -47,7 +47,7 @@ def add_valid_to_path( pathList ):
 # ~ Standard ~
 import os , random
 from math import pi , cos , sin , degrees , radians
-from Tkinter import Frame , HORIZONTAL , GROOVE , LEFT , SUNKEN
+from Tkinter import Frame , HORIZONTAL , GROOVE , LEFT , SUNKEN , Scale , TOP , Entry
 # ~ Special ~
 import numpy as np
 #import pyglet # --------- Package for OpenGL
@@ -99,32 +99,46 @@ class TKOGLRobotCtrl( TKBasicApp ):
         
         def __init__( self , rootApp ):
             """ Set up the subpanel within the root window """
-            Frame.__init__( self , rootApp , relief = SUNKEN )
+            Frame.__init__( self , rootApp.rootWin , relief = SUNKEN )
             
             if not hasattr( rootApp , 'jntCtrls' ): # If there has been no joint control array initialized
+                print "DEBUG:" , "Added joint controls!"
                 rootApp.jntCtrls = [] # Create an empty joint control array
             
             # URL , Relief Styles : http://infohost.nmt.edu/tcc/help/pubs/tkinter/web/relief.html
             self.jntScale = Scale( self , from_ = -pi , to = pi , resolution = 0.01 , length = 400 , orient = HORIZONTAL , relief = GROOVE )
             # URL , Tkinter pack geometry : http://effbot.org/tkinterbook/pack.htm
             self.jntScale.pack( side = LEFT )
-            self.value = self.jntScale.get()
+            # self.value = self.jntScale.get()
+            
             
             # URL , Entry Widget : http://effbot.org/tkinterbook/entry.htm
             self.jntEntry = Entry( self )
             self.jntEntry.pack( side = LEFT )
             
-            # TODO , ; ; Write Tntry validation
-            #        ; ; Write update callbacks for both Scale and Entry (One changes the other and always sets the overall 'value')
+            self.pack( side = TOP )
             
+            # TODO ,  ; ; Write Entry validation
+            #         ; ; Write update callbacks for both Scale and Entry (One changes the other and always sets the overall 'value')
+            
+            rootApp.jntCtrls.append( self )
+            
+        def get_val( self ):
+            """ Get the q val for this joint control """
+            return self.jntScale.get()
     
-    def __init__( self , winWidth , winHeight , updateHz = 30 , title = "DEFAULT WINDOW TITLE" ):
+    def __init__( self , winWidth , winHeight , updateHz = 30 , title = "DEFAULT WINDOW TITLE" , numJoints = 1 ):
         """ Init a the control window , This is the heartbeat of the simulation """
         TKBasicApp.__init__( self , winWidth , winHeight , updateHz , title )
+        
+        for jnt_i in xrange( numJoints ):
+            self.JointSubpanel( self )
 
     def get_q( self ):
         """ Return an array of slider values corresponding to the user's demanded configuration of the robot """
-        return [ self.jnt1.get() ]
+        rtnArr = []
+        for jnt_i in self.jntCtrls:
+            rtnArr.append( jnt_i.get_val() )
     
 # == End TKOGLRobotCtrl ==
 
