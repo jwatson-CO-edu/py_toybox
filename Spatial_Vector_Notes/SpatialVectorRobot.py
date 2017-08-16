@@ -64,7 +64,8 @@ Dependencies: numpy , pyglet
     | | 4.c. Friction
     | | 4.d. Forward Dynamics
 [ ] 5. Implement a Robot from Robot Controls , Inverse Dynamics
-[ ] 6. Tools for robot arm design
+[ ] 6. Implement the same robot from (3.b) with DH Parameters (Hollerbach) and generalize
+[ ] 7. Tools for robot arm design
 """
 
 # == Init ==================================================================================================================================
@@ -147,6 +148,13 @@ def x_rot( theta ):
     return [ [  1            ,  0            ,  0            ] , 
              [  0            ,  cos( theta ) ,  sin( theta ) ] , 
              [  0            , -sin( theta ) ,  cos( theta ) ] ]
+    
+def x_trn( theta ):
+    """ Return the 3x3 matrix that performs a rotation of 'theta' about the X axis """
+    return [ [  1            ,  0            ,  0            ] , 
+             [  0            ,  cos( theta ) , -sin( theta ) ] , 
+             [  0            ,  sin( theta ) ,  cos( theta ) ] ]
+
     
 def y_rot( theta ):
     """ Return the 3x3 matrix that performs a rotation of 'theta' about the Y axis """
@@ -317,6 +325,7 @@ class LinkModel(object):
         if linkName in self.names:
             for lnk in self.links:
                 if lnk.name == linkName:
+                    print "DEBUG:" , "Found link" , lnk.name
                     return lnk
         raise KeyError( "LinkModel.link_ref_by_name: No link found with name " + str( linkName ) )
         
@@ -429,11 +438,12 @@ def FK( model , bodyIndex , q ): # ( Featherstone: bodypos ) # This is modified 
     while body: # While the reference 'body' points to a link object
         XJ_h = joint_homog( body.pitch , q[ bodyIndex ] ) # Calculate the joint transform given the current joint config
         # print "DEBUG ," , "X_tot:" , endl ,  X_tot
-        # print "DEBUG ," ,  , body.xform
+        # print "DEBUG ," , "body.xform" , endl , body.xform
         # X_tot = np_dot( X_tot , XJ_h , body.xform ) # Apply the joint transform and body transform to the accumulated transform
         X_tot = np_dot( X_tot , body.xform , XJ_h ) # Apply the joint transform and body transform to the accumulated transform
         # X_tot = np_dot( body.xform , XJ_h , X_tot ) # Apply the joint transform and body transform to the accumulated transform
         body = body.parent # This will become 'None' after the root link has been processed
+    print "DEBUG ," , "X_tot:" , endl ,  X_tot
     return X_tot # After the root has been processed , there are no more transformations to perform , return
         
 def jacobn_manip( model , bodyIndex , q ): # ( Featherstone: bodyJac )

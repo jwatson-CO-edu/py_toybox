@@ -81,9 +81,11 @@ class TKBasicApp(object):
             self.updateFuncList.extend( updateFunc )
     
     def dummy_ctrl_Frame( self ):
-        """ This function is an example and only serves to prevent an error if client code does not provide an update function """
-        self.jnt1 = Scale( self.controlPanel , from_ = -pi , to = pi , resolution = 0.01 , length = 400 , orient = HORIZONTAL )
-        self.jnt1.pack()
+        """ This function does nothing and only serves to prevent an error if client code does not provide an update function """
+        pass
+        # ~ Example ~
+        # self.jnt1 = Scale( self.controlPanel , from_ = -pi , to = pi , resolution = 0.01 , length = 400 , orient = HORIZONTAL )
+        # self.jnt1.pack()
         
     def add_UI_func( self , *UIFunc ):
         """ Add update function(s) to the list to be executed every frame """
