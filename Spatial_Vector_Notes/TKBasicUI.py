@@ -6,7 +6,7 @@ from __future__ import division # MUST be run before all other expressions , inc
 
 """
 TKBasicUI.py
-James Watson , YYYY MONTHNAME , Written on Spyder 3 / Python 2.7 for Sarcos Corp
+James Watson , YYYY MONTHNAME , Written on Spyder 3 / Python 2.7
 A ONE LINE DESCRIPTION OF THE FILE
 
 Dependencies: XOS_util.py

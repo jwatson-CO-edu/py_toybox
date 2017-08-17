@@ -5,8 +5,8 @@
 from __future__ import division # MUST be run before all other expressions , including docstrings!
 
 """
-FILENAME.py
-James Watson , YYYY MONTHNAME , Written on Spyder 3 / Python 2.7 for Sarcos Corp
+OGLshapes.py
+James Watson , YYYY MONTHNAME , Written on Spyder 3 / Python 2.7
 A ONE LINE DESCRIPTION OF THE FILE
 
 Dependencies: numpy
@@ -35,16 +35,102 @@ from SpatialVectorRobot import apply_homog , homogeneous_Z , homog_ang_axs
 
 # === OpenGL Classes ===
 
+# == class OGLDrawable ==
+
+class OGLDrawable( object ):
+    """ Template class for drawing rigid objects in Pyglet and performing rigid transformations """
+    
+    def __init__( self , cntr = [ 0 , 0 , 0 ] ):
+        """ Instantiate a drawable object with its 'cntr' specified in the parent frame """
+        self.pos3D = cntr # ------------------- Position of the object in the
+        self.drawOffset = [ 0.0 , 0.0 , 0.0 ] # Vector to subtract from vertices
+        self.vertices = () # ------------------ Tuple of vertices that define the drawable geometry
+        self.vertX = list( self.vertexList ) #- List of transformed vertices
+        self.indices = () # ------------------- Tuple of indices of 'vertX' that determine the which are used to draw what parts of the geometry
+        self.trnsByOGL = False # -------------- Flag for whether to apply translation by OpenGL: True - OpenGL , False - Matrix Algebra
+        self.rotnByOGL = False # -------------- Flag for whether to apply rotation by OpenGL: True - OpenGL , False - Matrix Algebra
+        self.colors = ( ( 255 , 255 , 255 ) ) # All of the colors used to paint the object
+        self.thetaDeg = 0.0
+        self.thetaRad = 0.0
+        self.rotAxis = [ 0.0 , 0.0 , 1.0 ]
+
+    def calc_verts_rela( self , offset = [] ):
+        """ Calc the relative positions of vertices given the center , Set a new offset if specified """
+        if len( offset ) == 3:
+            self.center = offset
+        self.vertices = list( self.vertexList )
+        for i in xrange( 0 , len( self.vertices ) , 3 ):
+            # print "DEBUG :" , self.vertices[ i : i+3 ]
+            # print "DEBUG :" , self.center
+            self.vertices[ i : i+3 ] = np.subtract( self.vertices[ i : i+3 ] , self.drawOffset )
+        self.vertices = tuple( self.vertices )
+        
+    def set_offset( self , offset ):
+        """ Set center to that specified , Calc the relative positions of vertices given the center """
+        self.calc_verts_rela( offset )
+        
+    def xform_homog( self , homogXform ):
+        """ Transform all of the vertices with 'homogXform' (4x4) and store the result for rendering """
+        for i in xrange( 0 , len( self.vertices ) , 3 ):
+            # print "DEBUG :" , self.vertices[ i : i+3 ]
+            self.vertX[ i : i+3 ] = apply_homog( homogXform , self.vertices[ i : i+3 ] )
+    
+    def xform_Z_rot( self , thetaZrad ):
+        """ Rotate all of the vertices in the list about the local Z axis """
+        self.xform_homog( homogeneous_Z( thetaZrad , [ 0 , 0 , 0 ] ) )
+        
+    def xform_ang_axs( self , thetaRad , k ):
+        """ Rotate all of the vertices in the list about the local Z axis """
+        self.xform_homog( homog_ang_axs( thetaRad , k , [ 0 , 0 , 0 ] ) )
+
+    def draw( self ): # VIRTUAL
+        """ Render the INHERITED_CLASS """
+        raise NotImplementedError( "OVERRIDE: YOU RAN THE INHERITED VIRTUAL VERSION OF THE 'draw'!" ) 
+        # if self.trnsByOGL:
+        #     glTranslated( *self.pos3D ) # This moves the origin of drawing , so that we can use the above coordinates at each draw location
+        # if self.rotnByOGL:
+        #     glRotated( self.thetaDeg , *self.rotAxis )
+        # glColor3ub( *self.colors[i] ) # Set color
+        # pyglet.graphics.draw_indexed( 
+        #     10 , # -------------------- Number of seqential triplet in vertex list
+        #     GL_LINES , # -------------- Draw quadrilaterals
+        #     self.vectors[i] , # ------- Indices where the coordinates are stored
+        #     ( 'v3f' , self.vertices ) # vertex list , OpenGL offers an optimized vertex list object , but this is not it
+        # )
+        
+
+# == end OGLDrawable ==
+
+
+# == class Point ==
+        
+class Point( OGLDrawable ):
+    """ Visible representation of a 1D point """
+    
+    def __init__( self , pnt = [ 0 , 0 , 0 ] , size = 8 , color = ( 255 , 255 , 255 ) ):
+        """ Define a single point """
+        OGLDrawable.__init__( self , pnt )
+        self.vertices = tuple( 0 , 0 , 0 ) # -- Tuple of vertices that define the drawable geometry
+        self.vertX = list( self.vertexList ) #- List of transformed vertices
+        self.indices = ( 0 ) # ---------------- Tuple of indices of 'vertX' that determine the which are used to draw what parts of the geometry
+        self.size = size
+        self.colors = ( tuple( color ) )
+        
+    def draw( self ):
+        """ Render the point """
+        
+# == End Point ==
+
 # == class CartAxes ==
 
-class CartAxes(object):
+class CartAxes( object ):
     """ Standard set of Cartesian coordinate axes """
     # NOTE: At this time , will only draw the axes at the lab frame
     
     def __init__( self , unitLen ):
         """ Set up the vertices for a coordinate axes """
         
-        subLen = unitLen / 8.0
+        subLen = unitLen / 8.0 # Arrowhead occupies 20% of the total length
         
         self.vertices = (
                   0 ,       0 ,       0 ,     # 0 , Orgn
@@ -99,7 +185,7 @@ class CartAxes(object):
 
 # == class Cuboid ==
 
-class Cuboid(object):
+class Cuboid( object ):
     """ Rectnagular prism rendered in Pyglet """
     
     def __init__( self , l , w , h , pos = [ 0 , 0 , 0 ] ):
@@ -159,35 +245,7 @@ class Cuboid(object):
         self.rotnByOGL = False # Flag for whether to apply rotation by OpenGL: True - OpenGL , False - Matrix Algebra
         
         
-    def calc_verts_rela( self , cntr = [] ):
-        """ Calc the relative positions of vertices given the center , Set a new center if specified """
-        if len( cntr ) == 3:
-            self.center = cntr
-        self.vertices = list( self.vertexList )
-        for i in xrange( 0 , len( self.vertices ) , 3 ):
-            # print "DEBUG :" , self.vertices[ i : i+3 ]
-            # print "DEBUG :" , self.center
-            self.vertices[ i : i+3 ] = np.subtract( self.vertices[ i : i+3 ] , self.center )
-        self.vertices = tuple( self.vertices )
-        
-    def set_center( self , cntr ):
-        """ Set center to that specified , Calc the relative positions of vertices given the center """
-        # assert( len( cntr ) == 3 , "Cuboid.set_center: Center must be a 3D vector , got " + str( cntr ) )
-        self.calc_verts_rela( cntr )
-        
-    def xform_homog( self , homogXform ):
-        """ Transform all of the vertices with 'homogXform' (4x4) and store the result for rendering """
-        for i in xrange( 0 , len( self.vertices ) , 3 ):
-            # print "DEBUG :" , self.vertices[ i : i+3 ]
-            self.vertX[ i : i+3 ] = apply_homog( homogXform , self.vertices[ i : i+3 ] )
-    
-    def xform_Z_rot( self , thetaZrad ):
-        """ Rotate all of the vertices in the list about the local Z axis """
-        self.xform_homog( homogeneous_Z( thetaZrad , [ 0 , 0 , 0 ] ) )
-        
-    def xform_ang_axs( self , thetaRad , k ):
-        """ Rotate all of the vertices in the list about the local Z axis """
-        self.xform_homog( homog_ang_axs( thetaRad , k , [ 0 , 0 , 0 ] ) )
+
         
     def draw( self ):
         """ Render the cuboid in OGL , This function assumes that a graphics context already exists """
