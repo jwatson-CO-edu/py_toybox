@@ -24,7 +24,7 @@ import numpy as np
 import pyglet # --------- Package for OpenGL
 #- OpenGL flags and state machine
 from pyglet.gl import ( GL_LINES , glColor3ub , GL_TRIANGLES , glTranslated , GL_QUADS , glRotated , glClearColor , glEnable , GL_DEPTH_TEST , 
-                        glMatrixMode , GL_PROJECTION , glLoadIdentity , gluPerspective , GL_MODELVIEW , gluLookAt )
+                        glMatrixMode , GL_PROJECTION , glLoadIdentity , gluPerspective , GL_MODELVIEW , gluLookAt, GL_POINTS )
 from pyglet import clock # Animation timing
 # ~ Local ~
 from SpatialVectorRobot import apply_homog , homogeneous_Z , homog_ang_axs
@@ -45,7 +45,7 @@ class OGLDrawable( object ):
         self.pos3D = cntr # ------------------- Position of the object in the
         self.drawOffset = [ 0.0 , 0.0 , 0.0 ] # Vector to subtract from vertices
         self.vertices = () # ------------------ Tuple of vertices that define the drawable geometry
-        self.vertX = list( self.vertexList ) #- List of transformed vertices
+        self.vertX = list( self.vertices ) #- List of transformed vertices
         self.indices = () # ------------------- Tuple of indices of 'vertX' that determine the which are used to draw what parts of the geometry
         self.trnsByOGL = False # -------------- Flag for whether to apply translation by OpenGL: True - OpenGL , False - Matrix Algebra
         self.rotnByOGL = False # -------------- Flag for whether to apply rotation by OpenGL: True - OpenGL , False - Matrix Algebra
@@ -86,17 +86,25 @@ class OGLDrawable( object ):
     def draw( self ): # VIRTUAL
         """ Render the INHERITED_CLASS """
         raise NotImplementedError( "OVERRIDE: YOU RAN THE INHERITED VIRTUAL VERSION OF THE 'draw'!" ) 
+        # [1]. If OGL transforms enabled , Translate and rotate the OGL state machine to desired rendering frame
         # if self.trnsByOGL:
         #     glTranslated( *self.pos3D ) # This moves the origin of drawing , so that we can use the above coordinates at each draw location
         # if self.rotnByOGL:
         #     glRotated( self.thetaDeg , *self.rotAxis )
-        # glColor3ub( *self.colors[i] ) # Set color
+        # [2]. Set color
+        # glColor3ub( *self.colors[0] ) 
+        # [3]. Render! 
         # pyglet.graphics.draw_indexed( 
-        #     10 , # -------------------- Number of seqential triplet in vertex list
-        #     GL_LINES , # -------------- Draw quadrilaterals
-        #     self.vectors[i] , # ------- Indices where the coordinates are stored
-        #     ( 'v3f' , self.vertices ) # vertex list , OpenGL offers an optimized vertex list object , but this is not it
+        #     10 , # ----------------- Number of seqential triplet in vertex list
+        #     GL_LINES , # ----------- Draw quadrilaterals
+        #     self.vectors[i] , # ---- Indices where the coordinates are stored
+        #     ( 'v3f' , self.vertX ) # vertex list , OpenGL offers an optimized vertex list object , but this is not it
         # )
+        # [4]. If OGL transforms enabled , Translate and rotate the OGL state machine to desired rendering frame
+        # if self.rotnByOGL:
+        #     glRotated( -self.thetaDeg , *self.rotAxis )
+        # if self.trnsByOGL:
+        #     glTranslated( *np.multiply( self.pos3D , -1 ) ) # Reset the transform coordinates
         
 
 # == end OGLDrawable ==
@@ -110,14 +118,33 @@ class Point( OGLDrawable ):
     def __init__( self , pnt = [ 0 , 0 , 0 ] , size = 8 , color = ( 255 , 255 , 255 ) ):
         """ Define a single point """
         OGLDrawable.__init__( self , pnt )
-        self.vertices = tuple( 0 , 0 , 0 ) # -- Tuple of vertices that define the drawable geometry
-        self.vertX = list( self.vertexList ) #- List of transformed vertices
-        self.indices = ( 0 ) # ---------------- Tuple of indices of 'vertX' that determine the which are used to draw what parts of the geometry
+        self.vertices = tuple( pnt ) # -- Tuple of vertices that define the drawable geometry
+        self.vertX = list( self.vertices ) #- List of transformed vertices
+        self.indices = tuple( [ 0 ] ) # ---------------- Tuple of indices of 'vertX' that determine the which are used to draw what parts of the geometry
         self.size = size
-        self.colors = ( tuple( color ) )
+        self.colors = ( [ tuple( color ) ] )
         
     def draw( self ):
         """ Render the point """
+        # [1]. If OGL transforms enabled , Translate and rotate the OGL state machine to desired rendering frame
+        if self.trnsByOGL:
+            glTranslated( *self.pos3D ) # This moves the origin of drawing , so that we can use the above coordinates at each draw location
+        # ( Rotation is not applicable to points )
+        # [2]. Set color
+        glColor3ub( *self.colors[0] ) 
+        # [3]. Render! 
+        print "self.vertX:  " , self.vertX 
+        print "self.indices:" , self.indices
+        pyglet.graphics.draw_indexed( 
+            1 , # --------------------- Number of seqential triplet in vertex list
+            GL_POINTS , # ------------- Draw quadrilaterals
+            self.indices , # ----------------- Indices where the coordinates are stored
+            ( 'v3f' , self.vertX ) # -- vertex list , OpenGL offers an optimized vertex list object , but this is not it
+        )
+        # [4]. If OGL transforms enabled , Translate and rotate the OGL state machine to desired rendering frame
+        # ( Rotation is not applicable to points )
+        if self.trnsByOGL:
+            glTranslated( *np.multiply( self.pos3D , -1 ) ) # Reset the transform coordinates
         
 # == End Point ==
 
@@ -160,6 +187,8 @@ class CartAxes( object ):
         """ Draw the axes """
         
         pyglet.gl.glLineWidth( 3 )
+
+        # TODO: These need to be translated and rotated to their parent frame
         
         for i in xrange(3): # 
             
@@ -178,6 +207,8 @@ class CartAxes( object ):
                 self.arrows[i] , # -------- Indices where the coordinates are stored
                 ( 'v3f' , self.vertices ) # vertex list , OpenGL offers an optimized vertex list object , but this is not it
             )
+
+        # TODO: These need to be untranslated and unrotated from their parent frame
             
 # == End CartAxes ==
 
@@ -305,8 +336,8 @@ class OGL_App( pyglet.window.Window ):
         glClearColor( 0.7 , 0.7 , 0.8 , 1 ) # Set the BG color for the OGL window
         
         # URL: https://www.opengl.org/discussion_boards/showthread.php/165839-Use-gluLookAt-to-navigate-around-the-world
-        self.camera = [  3 ,  8 ,  4 , # eyex    , eyey    , eyez    : Camera location , point (world) , XYZ
-                         3 ,  0 ,  0 , # centerx , centery , centerz : Center of the camera focus , point (world) , XYZ
+        self.camera = [  2 ,  2 ,  2 , # eyex    , eyey    , eyez    : Camera location , point (world) , XYZ
+                         0 ,  0 ,  0 , # centerx , centery , centerz : Center of the camera focus , point (world) , XYZ
                          0 ,  0 ,  1 ] # upx     , upy     , upz     : Direction of "up" in the world frame , vector , XYZ
         
         self.renderlist = objList

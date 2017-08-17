@@ -129,58 +129,17 @@ class TKOGLRobotCtrl( TKBasicApp ):
 if __name__ == "__main__":
     # Create display window , set up camera , begin main event loop
     
-    updateHz = 30.0 # Target frame rate
-    updatePeriodSec = 1.0 / updateHz 
-
-    # ~~ 1. Link 0 , Rotational ~~
+    coords = [ 0 , 2 ]
+    allPts = []
     
-    # Link Geo
-    length = 0.25; width = 0.25; height = 3;
-    prism1 = Cuboid( length , width , height , [  6 ,  0 ,  0 ] )
-    prism1.rotnByOGL = False
-    prism1.set_center( [ length/2.0 , width/2.0 , 0 ] )
-    
-    # Joint Type
-    link1 = LinkSpatial( "link1" , 0 ) # This link is attached to the world by a rotational joint
-    # link1 = LinkSpatial( "link1" , infty ) # This link is attached to the world by a prismatic joint
-    # link1 = LinkSpatial( "link1" , 0.1 ) # This link is attached to the world by a rotational joint
-    
-    # Apply transform and set rendering geo
-    link1.xform = homog_xfrom( np.eye( 3 ) , np.multiply( prism1.center , -1 ) )
-    link1.graphics = prism1
-    
-    # ~~ 2. Link 1 , Rotational ~~
-    
-    # Link Geo
-    prevHeight = height
-    length = 3.00; width = 0.25; height = 0.25;
-    # prism2 = Cuboid( length , width , height , [  0 ,  0 ,  prevHeight ] )
-    prism2 = Cuboid( length , width , height , [  0 ,  0 ,  0 ] )
-    prism2.rotnByOGL = False
-    prism2.set_center( [ 0 , width/2.0 , height/2.0 ] )
-    
-    # Joint Type
-    link2 = LinkSpatial( "link1" , 0 ) # This link is attached to the world by a rotational joint
-    # link1 = LinkSpatial( "link1" , infty ) # This link is attached to the world by a prismatic joint
-    # link1 = LinkSpatial( "link1" , 0.1 ) # This link is attached to the world by a rotational joint
-    
-    # Apply transform and set rendering geo
-    # link2.xform = homog_xfrom( x_trn( pi / 2.0 ) , np.multiply( prism1.center , -1 ) )
-    link2.xform = homog_xfrom( x_trn( pi / 2.0 ) , [  0 ,  0 ,  prevHeight ] )
-    link2.graphics = prism2
-    
-    # 1.A. Set up a robot that contains the one link 
-    q = 0
-    robot = OGL_Robot()
-    robot.add_and_attach( link1 ) # Add 'link1' as the base link
-    robot.add_and_attach( link2 , parentName = "link1" ) # Add 'link2' as the next link
-    robot.set_q( [ q , q ] )
-    
-    # 3. Setup the UI
-    ctrlWin = TKOGLRobotCtrl( 600 , 200 , title = "Robot Control Panel" , numJoints = 2 ) # Default refresh rate is 30 Hz
+    # Create the eight vertices of a cube and load them into a list
+    for X in coords:
+        for Y in coords:
+            for Z in coords:
+                allPts.append( Point( pnt = [ X , Y , Z ] , color = ( 0,0,0 ) ) )
     
     # 4. Render!
-    window = OGL_App( [ CartAxes( 1 ) , prism1 , prism2 ] , caption = "2DOF Robot" ) 
+    window = OGL_App( allPts , caption = "Transformation Test" ) 
     
     # ~ Begin animation ~
     window.set_visible()
@@ -188,21 +147,14 @@ if __name__ == "__main__":
     # ~ Set up animation ~
     def update( ):
         """ Per-frame changes to make prior to redraw """
-        # global q
-        # 1. Update q
-        # q += pi / 60.0
-        # 2. Set q
-        robot.set_q( ctrlWin.get_q() )
-        # 3. Perform FK
-        robot.apply_FK_all( ctrlWin.get_q() )
         
-        print "DEBUG:" , "Configuration:" , ctrlWin.get_q()
         
         if not window.has_exit: # TODO : TRY DRIVING THESE INSIDE TKINTER INSTEAD OF THE OTHER WAY AROUND
             window.dispatch_events() # Handle window events
-
             window.on_draw() # Redraw the scene
             window.flip()
+        
+    ctrlWin = TKOGLRobotCtrl( 600 , 200 , title = "Transform Test" , numJoints = 2 ) # Default refresh rate is 30 Hz
         
     # ~~ Run ~~
     ctrlWin.add_update_func( update )
