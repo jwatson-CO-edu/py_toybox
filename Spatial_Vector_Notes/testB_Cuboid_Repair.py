@@ -5,7 +5,7 @@
 from __future__ import division # MUST be run before all other expressions , including docstrings!
 
 """
-testA_Serial_Xforms.py
+testB_Cuboid_Repair.py
 James Watson , 2017 August , Written on Spyder 3 / Python 2.7
 Troubleshooting for serial , homogeneous transformations
 
@@ -18,14 +18,16 @@ Dependencies: SpatialVectorRobot , Pyglet
         ISSUE    : LINK2 IS IN THE LAB FRAME INSTEAD OF THE LINK1 FRAME
         RESOLVED : Had beed relying on the OGL transform to translate , such that displacements were applied twice , but only the downstream
                    transform had been applied ( Joint 1 transforms are not carried downstream )
+        ! ! Rewrite Cuboid to inherit OGLDrawable
+        ! ! Rewrite CartAxes to inherit OGLDrawable , Such that it can be transformed ( Currently can only reside at lab origin )
         ISSUE : THE ROTATION CENTER OF LINK2 IS MOVING
             ;Y; Write Point to inherit OGLDrawable - COMPLETE
             ;Y; Composing two homogeneous transformations to see if they behave in the way that is expected - COMPLETE , Combined homogeneous
                 transforms to produce the desired D-H mechanism
             ; ; Investigate how moving the center of the Cuboid affects how it is rendered , There might be inconsistencies between the ways
                 'Cuboid.center' and 'Cuboid.pos3D' are used. There might also be some confusion on whether to translate by OGL or matrices
-        ! ! Rewrite Cuboid to inherit OGLDrawable
-        ! ! Rewrite CartAxes to inherit OGLDrawable
+        ! ! Develop a way to affix CartAxes to any pose on any link
+        ! ! Compare the analytical sol'n of a 2 link end effector pose to the numerical sol'n
 <\clip>
 
 ~~~ TODO ~~~

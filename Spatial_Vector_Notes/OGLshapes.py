@@ -24,7 +24,7 @@ import numpy as np
 import pyglet # --------- Package for OpenGL
 #- OpenGL flags and state machine
 from pyglet.gl import ( GL_LINES , glColor3ub , GL_TRIANGLES , glTranslated , GL_QUADS , glRotated , glClearColor , glEnable , GL_DEPTH_TEST , 
-                        glMatrixMode , GL_PROJECTION , glLoadIdentity , gluPerspective , GL_MODELVIEW , gluLookAt, GL_POINTS )
+                        glMatrixMode , GL_PROJECTION , glLoadIdentity , gluPerspective , GL_MODELVIEW , gluLookAt , GL_POINTS , glPointSize )
 from pyglet import clock # Animation timing
 # ~ Local ~
 from SpatialVectorRobot import apply_homog , homogeneous_Z , homog_ang_axs
@@ -32,6 +32,28 @@ from SpatialVectorRobot import apply_homog , homogeneous_Z , homog_ang_axs
 # ~~ Setup ~~
 
 # == End Init ==============================================================================================================================
+
+# == Helper Functions ==
+
+def concat_arr( *arrays ): # TODO: Update MARCHHARE
+    """ Concatenate all 'arrays' , any of which can be either a Python list or a Numpy array """
+    # URL , Test if any in an iterable belongs to a certain class : https://stackoverflow.com/a/16705879
+    if any( isinstance( arr , np.ndarray ) for arr in arrays ): # If any of the 'arrays' are Numpy , work for all cases , 
+        if len( arrays ) == 2: # Base case 1 , simple concat    # but always returns np.ndarray
+            return np.concatenate( arrays[0] , arrays[1] )  
+        elif len( arrays ) > 2: # If there are more than 2 , concat the first two and recur
+            return concat_arr( np.concatenate( arrays[0] , arrays[1] ) , *arrays[2:] )
+        else: # Base case 2 , there is only once arg , return it
+            return arrays[0]
+    if len( arrays ) > 1: # else no 'arrays' are Numpy 
+        rtnArr = arrays[0]
+        for arr in arrays[1:]: # If there are more than one , just use addition operator in a line
+            rtnArr += arr
+        return rtnArr
+    else: # else there was only one , return it
+        return arrays[0] 
+
+# == End Helper ==
 
 # === OpenGL Classes ===
 
@@ -130,11 +152,12 @@ class Point( OGLDrawable ):
         if self.trnsByOGL:
             glTranslated( *self.pos3D ) # This moves the origin of drawing , so that we can use the above coordinates at each draw location
         # ( Rotation is not applicable to points )
-        # [2]. Set color
+        # [2]. Set color & size
         glColor3ub( *self.colors[0] ) 
+        glPointSize( self.size )
         # [3]. Render! 
-        print "self.vertX:  " , self.vertX 
-        print "self.indices:" , self.indices
+        # print "DEBUG ," , "self.vertX:  " , self.vertX 
+        # print "DEBUG ," , "self.indices:" , self.indices
         pyglet.graphics.draw_indexed( 
             1 , # --------------------- Number of seqential triplet in vertex list
             GL_POINTS , # ------------- Draw quadrilaterals
@@ -342,6 +365,14 @@ class OGL_App( pyglet.window.Window ):
         
         self.renderlist = objList
         self.showFPS = False
+        
+    def set_camera( self , cameraLocationPnt , lookAtPoint , upDirection ):
+        """ Specify the camera view """
+        if ( len( cameraLocationPnt ) != 3 or len( lookAtPoint ) != 3 or len( upDirection ) != 3 ):
+            raise IndexError( "OGL_App.set_camera: All parameters must be 3D vectors" )
+        self.camera = concat_arr( cameraLocationPnt , # eyex    , eyey    , eyez    : Camera location , point (world) , XYZ
+                                  lookAtPoint , #       centerx , centery , centerz : Center of the camera focus , point (world) , XYZ
+                                  upDirection ) #       upx     , upy     , upz     : Direction of "up" in the world frame , vector , XYZ
         
     def setup_3D( self ):
         """ Setup the 3D matrix """
