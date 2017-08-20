@@ -67,14 +67,14 @@ class OGLDrawable( object ):
         self.pos3D = cntr # ------------------- Position of the object in the
         self.drawOffset = [ 0.0 , 0.0 , 0.0 ] # Vector to subtract from vertices
         self.vertices = () # ------------------ Tuple of vertices that define the drawable geometry
-        self.vertX = list( self.vertices ) #- List of transformed vertices
+        self.vertX = list( self.vertices ) # -- List of transformed vertices
         self.indices = () # ------------------- Tuple of indices of 'vertX' that determine the which are used to draw what parts of the geometry
         self.trnsByOGL = False # -------------- Flag for whether to apply translation by OpenGL: True - OpenGL , False - Matrix Algebra
         self.rotnByOGL = False # -------------- Flag for whether to apply rotation by OpenGL: True - OpenGL , False - Matrix Algebra
         self.colors = ( ( 255 , 255 , 255 ) ) # All of the colors used to paint the object
-        self.thetaDeg = 0.0
-        self.thetaRad = 0.0
-        self.rotAxis = [ 0.0 , 0.0 , 1.0 ]
+        self.thetaDeg = 0.0 # ----------------- Rotation angle for OGL transform [deg]
+        self.thetaRad = 0.0 # ----------------- Rotation angle for OGL transform [rad , must be converted]
+        self.rotAxis = [ 0.0 , 0.0 , 1.0 ] # -- Rotation axis for OGL transform # TODO: Find out if this has to be normalized!
 
     def calc_verts_rela( self , offset = [] ):
         """ Calc the relative positions of vertices given the center , Set a new offset if specified """
@@ -105,15 +105,29 @@ class OGLDrawable( object ):
         """ Rotate all of the vertices in the list about the local Z axis """
         self.xform_homog( homog_ang_axs( thetaRad , k , [ 0 , 0 , 0 ] ) )
 
+    def state_transform( self ):
+        """ Set the transformation matrix in the OGL state machine for this object """
+        # If OGL transforms enabled , Translate and rotate the OGL state machine to desired rendering frame
+        if self.trnsByOGL: # Translate first
+            glTranslated( *self.pos3D ) # This moves the origin of drawing , so that we can use the above coordinates at each draw location
+        if self.rotnByOGL: # Rotate last
+            glRotated( self.thetaDeg , *self.rotAxis )
+            
+    def state_untransform( self ):
+        """ Unset the transformation matrix in the OGL state machine for this object , so that other shapes can set it for themselves """
+        # If OGL transforms enabled , Return the OGL state machine to previous rendering frame
+        if self.rotnByOGL: # Unrotate first
+            glRotated( -self.thetaDeg , *self.rotAxis )
+        if self.trnsByOGL: # Untranslate last
+            glTranslated( *np.multiply( self.pos3D , -1 ) ) # Reset the transform coordinates
+
     def draw( self ): # VIRTUAL
         """ Render the INHERITED_CLASS """
-        raise NotImplementedError( "OVERRIDE: YOU RAN THE INHERITED VIRTUAL VERSION OF THE 'draw'!" ) 
+        raise NotImplementedError( "OVERRIDE: YOU RAN THE INHERITED VIRTUAL VERSION OF THE 'draw' function!" ) 
+        # ~~ Implementation Template ~~
         # [1]. If OGL transforms enabled , Translate and rotate the OGL state machine to desired rendering frame
-        # if self.trnsByOGL:
-        #     glTranslated( *self.pos3D ) # This moves the origin of drawing , so that we can use the above coordinates at each draw location
-        # if self.rotnByOGL:
-        #     glRotated( self.thetaDeg , *self.rotAxis )
-        # [2]. Set color
+        # self.state_transform()
+        # [2]. Set color , size , and shape-specific parameters
         # glColor3ub( *self.colors[0] ) 
         # [3]. Render! 
         # pyglet.graphics.draw_indexed( 
@@ -122,29 +136,27 @@ class OGLDrawable( object ):
         #     self.vectors[i] , # ---- Indices where the coordinates are stored
         #     ( 'v3f' , self.vertX ) # vertex list , OpenGL offers an optimized vertex list object , but this is not it
         # )
-        # [4]. If OGL transforms enabled , Translate and rotate the OGL state machine to desired rendering frame
-        # if self.rotnByOGL:
-        #     glRotated( -self.thetaDeg , *self.rotAxis )
-        # if self.trnsByOGL:
-        #     glTranslated( *np.multiply( self.pos3D , -1 ) ) # Reset the transform coordinates
+        # [4]. If OGL transforms enabled , Return the OGL state machine to previous rendering frame
+        # self.state_untransform()
+        
         
 
 # == end OGLDrawable ==
 
 
 # == class Point ==
-        
+     
 class Point( OGLDrawable ):
     """ Visible representation of a 1D point """
     
     def __init__( self , pnt = [ 0 , 0 , 0 ] , size = 8 , color = ( 255 , 255 , 255 ) ):
         """ Define a single point """
-        OGLDrawable.__init__( self , pnt )
-        self.vertices = tuple( pnt ) # -- Tuple of vertices that define the drawable geometry
-        self.vertX = list( self.vertices ) #- List of transformed vertices
-        self.indices = tuple( [ 0 ] ) # ---------------- Tuple of indices of 'vertX' that determine the which are used to draw what parts of the geometry
-        self.size = size
-        self.colors = ( [ tuple( color ) ] )
+        OGLDrawable.__init__( self , pnt ) # - Parent class init
+        self.vertices = tuple( pnt ) # ------- Tuple of vertices that define the drawable geometry
+        self.vertX = list( self.vertices ) # - List of transformed vertices
+        self.indices = tuple( [ 0 ] ) # ------ Tuple of indices of 'vertX' that determine the which are used to draw what parts of the geometry
+        self.size = size # ------------------- Width of point marker
+        self.colors = ( [ tuple( color ) ] ) # Point marker color
         
     def draw( self ):
         """ Render the point """
@@ -173,16 +185,16 @@ class Point( OGLDrawable ):
 
 # == class CartAxes ==
 
-class CartAxes( object ):
+class CartAxes( OGLDrawable ):
     """ Standard set of Cartesian coordinate axes """
     # NOTE: At this time , will only draw the axes at the lab frame
     
-    def __init__( self , unitLen ):
+    def __init__( self , origin = [ 0 , 0 , 0 ] , unitLen = 1.0 ):
         """ Set up the vertices for a coordinate axes """
+        OGLDrawable.__init__( self , origin ) # ------------------------- Parent class init
+        subLen = unitLen / 8.0 # Arrowhead 20% of the total length        
         
-        subLen = unitLen / 8.0 # Arrowhead occupies 20% of the total length
-        
-        self.vertices = (
+        self.vertices = ( # --------------------------------------------- Tuples of vertices that define the drawable geometry
                   0 ,       0 ,       0 ,     # 0 , Orgn
             unitLen ,       0 ,       0 ,     # 1 , X vec / arw
                   0 , unitLen ,       0 ,     # 2 , Y vec / arw
@@ -193,51 +205,65 @@ class CartAxes( object ):
             0 , unitLen - subLen , -subLen ,  # 7 , Y arw
              subLen , 0 , unitLen - subLen ,  # 8 , Z arw
             -subLen  , 0 , unitLen - subLen   # 9 , Z arw
-              
         )
         
-        self.ndx_Xvec = ( 0 , 1 ) ; self.ndx_Xarw = ( 1 , 4 , 5 )
-        self.ndx_Yvec = ( 0 , 2 ) ; self.ndx_Yarw = ( 2 , 6 , 7 )
-        self.ndx_Zvec = ( 0 , 3 ) ; self.ndx_Zarw = ( 3 , 8 , 9 )
+        self.vertX = list( self.vertices ) # ---------------------------- List of transformed vertices
         
-        self.colors  = ( ( 255 ,   0 ,   0 ) , 
-                         (   0 , 255 ,   0 ) , 
-                         (   0 ,   0 , 255 )  )
+        # These indices are used to draw the individual 
+        # components of the coordinate axes
+        self.ndx_Xvec = ( 0 , 1 ) ; self.ndx_Xarw = ( 1 , 4 , 5 ) # ----- Tuple of indices of 'vertX' that determine the which are 
+        self.ndx_Yvec = ( 0 , 2 ) ; self.ndx_Yarw = ( 2 , 6 , 7 ) #       used to draw what parts of the geometry
+        self.ndx_Zvec = ( 0 , 3 ) ; self.ndx_Zarw = ( 3 , 8 , 9 )
         self.vectors = ( self.ndx_Xvec , self.ndx_Yvec , self.ndx_Zvec )
         self.arrows  = ( self.ndx_Xarw , self.ndx_Yarw , self.ndx_Zarw )
         
+        self.colors  = ( ( 255 ,   0 ,   0 ) ,  # ----------------------- All of the colors used to paint the object
+                         (   0 , 255 ,   0 ) ,  # R = X , G = Y , B = Z
+                         (   0 ,   0 , 255 )  ) # by convention
+        
     def draw( self ):
         """ Draw the axes """
-        
+        # [1]. If OGL transforms enabled , Translate and rotate the OGL state machine to desired rendering frame
+        self.state_transform()
+        # [2]. Set color , size , and shape-specific parameters
         pyglet.gl.glLineWidth( 3 )
-
-        # TODO: These need to be translated and rotated to their parent frame
-        
+        # [3]. Render! # Basis vectors are drawn one at a time in the conventional colors
         for i in xrange(3): # 
-            
             glColor3ub( *self.colors[i] )
-            
+            # Draw the arrow tail
             pyglet.graphics.draw_indexed( 
-                10 , # -------------------- Number of seqential triplet in vertex list
-                GL_LINES , # -------------- Draw quadrilaterals
-                self.vectors[i] , # ------- Indices where the coordinates are stored
-                ( 'v3f' , self.vertices ) # vertex list , OpenGL offers an optimized vertex list object , but this is not it
+                10 , # ------------------ Number of seqential triplet in vertex list
+                GL_LINES , # ------------ Draw quadrilaterals
+                self.vectors[i] , # ----- Indices where the coordinates are stored
+                ( 'v3f' , self.vertX ) #- Vertex list , OpenGL offers an optimized vertex list object , but this is not it
             )
-            
+            # Draw the arrow head
             pyglet.graphics.draw_indexed( 
-                10 , # -------------------- Number of seqential triplet in vertex list
-                GL_TRIANGLES , # ---------- Draw quadrilaterals
-                self.arrows[i] , # -------- Indices where the coordinates are stored
-                ( 'v3f' , self.vertices ) # vertex list , OpenGL offers an optimized vertex list object , but this is not it
+                10 , # ------------------ Number of seqential triplet in vertex list
+                GL_TRIANGLES , # -------- Draw quadrilaterals
+                self.arrows[i] , # ------ Indices where the coordinates are stored
+                ( 'v3f' , self.vertX ) #- Vertex list , OpenGL offers an optimized vertex list object , but this is not it
             )
-
-        # TODO: These need to be untranslated and unrotated from their parent frame
+        # [4]. If OGL transforms enabled , Return the OGL state machine to previous rendering frame
+        self.state_untransform()
             
 # == End CartAxes ==
 
 # URL , Spatial Transforms: http://drake.mit.edu/doxygen_cxx/group__multibody__spatial__pose.html
 
 # == class Cuboid ==
+
+#        OGLDrawable.__init__( self , cntr ) # -- Parent class init , Center will be used for OGL rendering transform
+#        self.drawOffset = [ 0.0 , 0.0 , 0.0 ] # Vector to subtract from vertices
+#        self.vertices = () # ------------------ Tuple of vertices that define the drawable geometry
+#        self.vertX = list( self.vertices ) # -- List of transformed vertices
+#        self.indices = () # ------------------- Tuple of indices of 'vertX' that determine the which are used to draw what parts of the geometry
+#        self.trnsByOGL = False # -------------- Flag for whether to apply translation by OpenGL: True - OpenGL , False - Matrix Algebra
+#        self.rotnByOGL = False # -------------- Flag for whether to apply rotation by OpenGL: True - OpenGL , False - Matrix Algebra
+#        self.colors = ( ( 255 , 255 , 255 ) ) # All of the colors used to paint the object
+#        self.thetaDeg = 0.0 # ----------------- Rotation angle for OGL transform [deg , must be converted]
+#        self.thetaRad = 0.0 # ----------------- Rotation angle for OGL transform [rad]
+#        self.rotAxis = [ 0.0 , 0.0 , 1.0 ] # -- Rotation axis for OGL transform # TODO: Find out if this has to be normalized!
 
 class Cuboid( object ):
     """ Rectnagular prism rendered in Pyglet """
@@ -299,7 +325,20 @@ class Cuboid( object ):
         self.rotnByOGL = False # Flag for whether to apply rotation by OpenGL: True - OpenGL , False - Matrix Algebra
         
         
-
+        # ~~ Implementation Template ~~
+        # [1]. If OGL transforms enabled , Translate and rotate the OGL state machine to desired rendering frame
+        # self.state_transform()
+        # [2]. Set color , size , and shape-specific parameters
+        # glColor3ub( *self.colors[0] ) 
+        # [3]. Render! 
+        # pyglet.graphics.draw_indexed( 
+        #     10 , # ----------------- Number of seqential triplet in vertex list
+        #     GL_LINES , # ----------- Draw quadrilaterals
+        #     self.vectors[i] , # ---- Indices where the coordinates are stored
+        #     ( 'v3f' , self.vertX ) # vertex list , OpenGL offers an optimized vertex list object , but this is not it
+        # )
+        # [4]. If OGL transforms enabled , Return the OGL state machine to previous rendering frame
+        # self.state_untransform()
         
     def draw( self ):
         """ Render the cuboid in OGL , This function assumes that a graphics context already exists """
