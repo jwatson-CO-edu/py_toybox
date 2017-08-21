@@ -43,7 +43,7 @@ def concat_arr( *arrays ): # TODO: Update MARCHHARE
             return np.concatenate( arrays[0] , arrays[1] )  
         elif len( arrays ) > 2: # If there are more than 2 , concat the first two and recur
             return concat_arr( np.concatenate( arrays[0] , arrays[1] ) , *arrays[2:] )
-        else: # Base case 2 , there is only once arg , return it
+        else: # Base case 2 , there is only one arg , return it
             return arrays[0]
     if len( arrays ) > 1: # else no 'arrays' are Numpy 
         rtnArr = arrays[0]
@@ -76,15 +76,13 @@ class OGLDrawable( object ):
         self.thetaRad = 0.0 # ----------------- Rotation angle for OGL transform [rad , must be converted]
         self.rotAxis = [ 0.0 , 0.0 , 1.0 ] # -- Rotation axis for OGL transform # TODO: Find out if this has to be normalized!
 
-    def calc_verts_rela( self , offset = [] ):
+    def add_vertex_offset( self , offset = [] ):
         """ Calc the relative positions of vertices given the center , Set a new offset if specified """
         if len( offset ) == 3:
-            self.center = offset
-        self.vertices = list( self.vertexList )
+            self.drawOffset = offset
+        self.vertices = list( self.vertices )
         for i in xrange( 0 , len( self.vertices ) , 3 ):
-            # print "DEBUG :" , self.vertices[ i : i+3 ]
-            # print "DEBUG :" , self.center
-            self.vertices[ i : i+3 ] = np.subtract( self.vertices[ i : i+3 ] , self.drawOffset )
+            self.vertices[ i : i+3 ] = np.add( self.vertices[ i : i+3 ] , self.drawOffset )
         self.vertices = tuple( self.vertices )
         
     def set_offset( self , offset ):
@@ -253,30 +251,15 @@ class CartAxes( OGLDrawable ):
 
 # == class Cuboid ==
 
-#        OGLDrawable.__init__( self , cntr ) # -- Parent class init , Center will be used for OGL rendering transform
-#        self.drawOffset = [ 0.0 , 0.0 , 0.0 ] # Vector to subtract from vertices
-#        self.vertices = () # ------------------ Tuple of vertices that define the drawable geometry
-#        self.vertX = list( self.vertices ) # -- List of transformed vertices
-#        self.indices = () # ------------------- Tuple of indices of 'vertX' that determine the which are used to draw what parts of the geometry
-#        self.trnsByOGL = False # -------------- Flag for whether to apply translation by OpenGL: True - OpenGL , False - Matrix Algebra
-#        self.rotnByOGL = False # -------------- Flag for whether to apply rotation by OpenGL: True - OpenGL , False - Matrix Algebra
-#        self.colors = ( ( 255 , 255 , 255 ) ) # All of the colors used to paint the object
-#        self.thetaDeg = 0.0 # ----------------- Rotation angle for OGL transform [deg , must be converted]
-#        self.thetaRad = 0.0 # ----------------- Rotation angle for OGL transform [rad]
-#        self.rotAxis = [ 0.0 , 0.0 , 1.0 ] # -- Rotation axis for OGL transform # TODO: Find out if this has to be normalized!
-
-class Cuboid( object ):
+class Cuboid( OGLDrawable ):
     """ Rectnagular prism rendered in Pyglet """
     
     def __init__( self , l , w , h , pos = [ 0 , 0 , 0 ] ):
         """ Create a rectangular prism with 'l' (x) , 'w' (y) , 'h' (z) """
-        # NOTE: Poses are stored as transforms , since that is what you need poses for anyway
+        OGLDrawable.__init__( self , pos ) # -- Parent class init , Center will be used for OGL rendering transform
+        # OGLDrawable.__init__( pos ) # -- Parent class init , Center will be used for OGL rendering transform
         
-        # FIXME : This object needs a transform to the parent frame
-        
-        self.center = [ 0.0 , 0.0 , 0.0 ] # Origin shift for this shape
-        
-        self.vertexList = ( # List of untransformed vertices
+        self.vertices = ( # ------------------ Tuple of vertices that define the drawable geometry
             0 , 0 , 0 ,	# vertex 0    3-------2     # NOTE: Z+ is UP
             l , 0 , 0 ,	# vertex 1    !\      !\
             0 , 0 , h ,	# vertex 2    ! \     Z \
@@ -287,9 +270,9 @@ class Cuboid( object ):
             l , w , h ,	# vertex 7       5=======4
         )
         
-        self.vertX = list( self.vertexList ) # List of transformed vertices
+        self.vertX = list( self.vertices ) # List of transformed vertices
         
-        self.indices = ( #                                       NOTE: Vertices must have CCW order to point the normals towards exterior , 
+        self.faceDices = ( #                                       NOTE: Vertices must have CCW order to point the normals towards exterior , 
              0 , 1 , 3 , 2 , # back face      3-----2    3-----2       right hand rule , otherwise dot products computed for backface-culling 
              4 , 6 , 7 , 5 , # front face     !\  up \   !back !\      will have the wrong sign! faces vanish!
              0 , 2 , 6 , 4 , # left face   right7=====6  !     ! 6
@@ -313,77 +296,34 @@ class Cuboid( object ):
             1 , 0
         )
         
-        self.color     = (  88 , 181 ,  74 ) # Body color
-        self.colorLine = (   0 ,   0 , 255 ) # Line color
-        
-        self.pos3D = pos # 3D position in the parent frame
-        
-        self.thetaDeg = 0.0
-        self.thetaRad = 0.0
-        self.rotAxis = [ 0.0 , 0.0 , 1.0 ]
-        
-        self.rotnByOGL = False # Flag for whether to apply rotation by OpenGL: True - OpenGL , False - Matrix Algebra
-        
-        
-        # ~~ Implementation Template ~~
-        # [1]. If OGL transforms enabled , Translate and rotate the OGL state machine to desired rendering frame
-        # self.state_transform()
-        # [2]. Set color , size , and shape-specific parameters
-        # glColor3ub( *self.colors[0] ) 
-        # [3]. Render! 
-        # pyglet.graphics.draw_indexed( 
-        #     10 , # ----------------- Number of seqential triplet in vertex list
-        #     GL_LINES , # ----------- Draw quadrilaterals
-        #     self.vectors[i] , # ---- Indices where the coordinates are stored
-        #     ( 'v3f' , self.vertX ) # vertex list , OpenGL offers an optimized vertex list object , but this is not it
-        # )
-        # [4]. If OGL transforms enabled , Return the OGL state machine to previous rendering frame
-        # self.state_untransform()
+        self.colors = ( (  88 , 181 ,  74 ) , # Body color
+                        (   0 ,   0 , 255 ) ) # Line color
         
     def draw( self ):
         """ Render the cuboid in OGL , This function assumes that a graphics context already exists """
-        # print "DEBUG:" , "Drawing cuboid!"
-        glTranslated( *self.pos3D ) # This moves the origin of drawing , so that we can use the above coordinates at each draw location
-        if self.rotnByOGL:
-            glRotated( self.thetaDeg , *self.rotAxis )
-        # glTranslated( 0 , 0 , 0  ) # This moves the origin of drawing , so that we can use the above coordinates at each draw location
-        # print "DEBUG:" , "Translated to" , 0 , 0 , 0
-        glColor3ub( *self.color ) # Get the color according to the voxel type
-        # print "DEBUG:" , "Set color to" , self.color
+        # [1]. If OGL transforms enabled , Translate and rotate the OGL state machine to desired rendering frame
+        self.state_transform()
+        # [2]. Set color , size , and shape-specific parameters
+        glColor3ub( *self.colors[0] ) # Get the color according to the voxel type
+        # [3]. Render! 
         pyglet.graphics.draw_indexed( 
             8 , # --------------------- Number of seqential triplet in vertex list
             GL_QUADS , # -------------- Draw quadrilaterals
-            self.indices , # ---------- Indices where the coordinates are stored
+            self.faceDices , # ---------- Indices where the coordinates are stored
             ( 'v3f' , self.vertX ) # vertex list , OpenGL offers an optimized vertex list object , but this is not it
         ) #   'v3i' # This is for integers I suppose!
-                
-        glColor3ub( *self.colorLine )
+        # [2]. Set color , size , and shape-specific parameters
+        glColor3ub( *self.colors[1] ) # Get the color according to the voxel type
         pyglet.gl.glLineWidth( 3 )
+        # [3]. Render! 
         pyglet.graphics.draw_indexed( 
             8 , # --------------------- Number of seqential triplet in vertex list
             GL_LINES , # -------------- Draw quadrilaterals
             self.linDices , # ---------- Indices where the coordinates are stored
             ( 'v3f' , self.vertX ) # vertex list , OpenGL offers an optimized vertex list object , but this is not it
         ) #   'v3i' # This is for integers I suppose!
-                
-        # print "DEBUG:" , "Indices"
-        # print self.indices      
-        # print "DEBUG:" , "Vertices"
-        # print self.vertices      
-        """ URL: http://pyglet.readthedocs.io/en/pyglet-1.2-maintenance/programming_guide/graphics.html#vertex-lists
-        
-        There is a significant overhead in using pyglet.graphics.draw and pyglet.graphics.draw_indexed due to pyglet 
-        interpreting and formatting the vertex data for the video device. Usually the data drawn in each frame (of an animation) 
-        is identical or very similar to the previous frame, so this overhead is unnecessarily repeated.
-        
-        A VertexList is a list of vertices and their attributes, stored in an efficient manner that’s suitable for direct 
-        upload to the video card. On newer video cards (supporting OpenGL 1.5 or later) the data is actually stored in video memory.
-        """
-        if self.rotnByOGL:
-            glRotated( -self.thetaDeg , *self.rotAxis )
-        glTranslated( *np.multiply( self.pos3D , -1 ) ) # Reset the transform coordinates
-        # print "DEBUG:" , "Translated to" , 0 , 0 , 0
-        # print "DEBUG:" , "Done drawing!"
+        # [4]. If OGL transforms enabled , Return the OGL state machine to previous rendering frame
+        self.state_untransform()
 
 # == End Cuboid ==
 
@@ -441,3 +381,19 @@ class OGL_App( pyglet.window.Window ):
 # == End OGL_App ==
             
 # === End OpenGL ===
+            
+            
+# === Spare Parts ==========================================================================================================================
+            
+""" 
+URL: http://pyglet.readthedocs.io/en/pyglet-1.2-maintenance/programming_guide/graphics.html#vertex-lists
+        
+There is a significant overhead in using pyglet.graphics.draw and pyglet.graphics.draw_indexed due to pyglet 
+interpreting and formatting the vertex data for the video device. Usually the data drawn in each frame (of an animation) 
+is identical or very similar to the previous frame, so this overhead is unnecessarily repeated.
+
+A VertexList is a list of vertices and their attributes, stored in an efficient manner that’s suitable for direct 
+upload to the video card. On newer video cards (supporting OpenGL 1.5 or later) the data is actually stored in video memory.
+"""
+            
+# === End Parts ============================================================================================================================

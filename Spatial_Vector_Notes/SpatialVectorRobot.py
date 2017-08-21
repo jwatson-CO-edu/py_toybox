@@ -358,7 +358,6 @@ ISSUE : IN THE ORIGINAL FORMATION OF 'jcalc' in [2] , THE TRANSFORMATION MATRIX 
 [Y] Make the transform available in both homogeneous and spatial forms 
 [ ] Test until until advantages and drawbacks of differing sizes become clear
 """
-
 def joint_spatl( pitch , q ): # Featherstone: jcalc
     """ Return the joint spatial transform and subspace matrix for a joint with 'pitch' and joint variable 'q' """
     

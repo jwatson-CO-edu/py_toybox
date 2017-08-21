@@ -18,16 +18,21 @@ Dependencies: SpatialVectorRobot , Pyglet
         ISSUE    : LINK2 IS IN THE LAB FRAME INSTEAD OF THE LINK1 FRAME
         RESOLVED : Had beed relying on the OGL transform to translate , such that displacements were applied twice , but only the downstream
                    transform had been applied ( Joint 1 transforms are not carried downstream )
-        ! ! Rewrite Cuboid to inherit OGLDrawable
-        ! ! Rewrite CartAxes to inherit OGLDrawable , Such that it can be transformed ( Currently can only reside at lab origin )
-        ISSUE : THE ROTATION CENTER OF LINK2 IS MOVING
+        !Y! Rewrite Cuboid to inherit OGLDrawable - COMPLETE
+        !Y! Rewrite CartAxes to inherit OGLDrawable , Such that it can be transformed ( Move with links ) - COMPLETE
+        !N! Add axes labels to CartAxes - CANCELLED , Placing text in a 3D world doesn't add anything to the display
+        ISSUE    : THE ROTATION CENTER OF LINK2 IS MOVING
             ;Y; Write Point to inherit OGLDrawable - COMPLETE
             ;Y; Composing two homogeneous transformations to see if they behave in the way that is expected - COMPLETE , Combined homogeneous
                 transforms to produce the desired D-H mechanism
-            ; ; Investigate how moving the center of the Cuboid affects how it is rendered , There might be inconsistencies between the ways
+            ;Y; Investigate how moving the center of the Cuboid affects how it is rendered , There might be inconsistencies between the ways
                 'Cuboid.center' and 'Cuboid.pos3D' are used. There might also be some confusion on whether to translate by OGL or matrices
-        ! ! Develop a way to affix CartAxes to any pose on any link
+                COMPLETE - It would seem that 'Cuboid.center' and 'Cuboid.pos3D' were both inconsistently used as a coordinate offset
+        RESOLVED : Rewriting the class solved the problem , It would seem that 'Cuboid.center' and 'Cuboid.pos3D' were both inconsistently 
+                   used as a coordinate offset
+        !Y! Develop a way to affix CartAxes to any pose on any link - COMPLETE , See above
         ! ! Compare the analytical sol'n of a 2 link end effector pose to the numerical sol'n
+        !L! Test OGL rendering - DEFERRED , This does not currently meet any project goals
 <\clip>
 
 ~~~ TODO ~~~
@@ -136,17 +141,17 @@ if __name__ == "__main__":
     coords = [ 0 , 2 ]
     allPts = [ CartAxes( 1 ) ]
     
-    # Create the eight vertices of a cube and load them into a list
-#    for X in coords:
-#        for Y in coords:
-#            for Z in coords:
-#                allPts.append( Point( pnt = [ X , Y , Z ] , color = ( 0 , 0 , 0 ) , size = 12 ) )
-    
     link1pts = [ Point( pnt = [ 0 , 0 , 0 ] , color = (  17 ,  78 , 175 ) , size = 12 ) ,
                  Point( pnt = [ 0 , 0 , 2 ] , color = (  17 ,  78 , 175 ) , size = 12 ) ]
     
     link2pts = [ Point( pnt = [ 1 , 0 , 0 ] , color = (   9 , 160 ,  75 ) , size = 12 ) ,
                  Point( pnt = [ 2 , 0 , 0 ] , color = (   9 , 160 ,  75 ) , size = 12 ) ]
+    
+    link1 = Cuboid( 0.25 , 0.25 , 2.0  , [ 0 , 0 , 2 ] )
+    link1.add_vertex_offset( [ -0.25/2.0 , -0.25/2.0 , 0.0 ] )
+    link1axis = CartAxes( unitLen = 0.5 )
+    link2 = Cuboid( 2.0  , 0.25 , 0.25 , [ 0 , 0 , 0 ] )
+    link2.add_vertex_offset( [ 0.0 , -0.25/2.0 , -0.25/2.0 ] )
     
     def transform_Points( q ):
         """ Control the positions of two groups of points as though they were  """
@@ -155,15 +160,19 @@ if __name__ == "__main__":
         jtXfrm = homog_xfrom( x_trn( pi/2 ) , [ 0 , 0 , 2 ] )
         xform2 = homog_xfrom( z_trn( q[1] ) , [ 0 , 0 , 0 ] )
         # combined = np.dot( xform1 , xform2 )
-        combined = np_dot( xform1 , jtXfrm , xform2 )
-        for pnt in link1pts:
-            pnt.xform_homog( xform1 )
-        for pnt in link2pts:
-            pnt.xform_homog( combined )
+        combined1 = np_dot( xform1 , jtXfrm )
+        combined2 = np_dot( xform1 , jtXfrm , xform2 )
+#        for pnt in link1pts:
+#            pnt.xform_homog( xform1 )
+#        for pnt in link2pts:
+#            pnt.xform_homog( combined )
+        link1.xform_homog( xform1 )
+        link1axis.xform_homog( combined1 )
+        link2.xform_homog( combined2 )
     
     # 4. Render!
-    window = OGL_App( link1pts + link2pts + [ CartAxes( 1 ) ] , caption = "Transformation Test" ) 
-    window.set_camera( [ 4 , 4 , 4 ] , [ 0 , 0 , 0 ] , [ 0 , 0 , 1 ] )
+    window = OGL_App( [ link1 , link1axis , link2 , CartAxes( 1 ) ] , caption = "Transformation Test" ) 
+    window.set_camera( [ 3 , 3 , 3 ] , [ 0 , 0 , 0 ] , [ 0 , 0 , 1 ] )
     
     # ~ Begin animation ~
     window.set_visible()
