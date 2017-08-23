@@ -132,6 +132,17 @@ class TKOGLRobotCtrl( TKBasicApp ):
     
 # == End TKOGLRobotCtrl ==
 
+# == Test Functions ==
+    
+def analytic_test_B( q , d1 , a2 ):
+    """ Return the analytic transform for the effector frame for comparision to the numerical solution """
+    th1 = q[0]; th2 = q[1]
+    return [ [  cos( th1 ) * cos( th2 ) , cos( th1 ) * sin( th2 ) ,  sin( th1 ) , a2 * cos( th1 ) * cos( th2 ) ] , 
+             [  sin( th1 ) * cos( th2 ) , sin( th1 ) * sin( th2 ) , -cos( th1 ) , a2 * sin( th1 ) * cos( th2 ) ] , 
+             [ -cos( th2 )              , cos( th2 )              ,  0          , d1 - a2 * sin( th2 )         ] , 
+             [  0                       , 0                       ,  0          , 1                            ] ]
+    
+# == End Test ==
 
 # == Main ==================================================================================================================================
 
@@ -152,6 +163,7 @@ if __name__ == "__main__":
     link1axis = CartAxes( unitLen = 0.5 )
     link2 = Cuboid( 2.0  , 0.25 , 0.25 , [ 0 , 0 , 0 ] )
     link2.add_vertex_offset( [ 0.0 , -0.25/2.0 , -0.25/2.0 ] )
+    effectorAxis = CartAxes( unitLen = 0.5 )
     
     def transform_Points( q ):
         """ Control the positions of two groups of points as though they were  """
@@ -159,19 +171,18 @@ if __name__ == "__main__":
         xform1 = homog_xfrom( z_trn( q[0] ) , [ 0 , 0 , 0 ] )
         jtXfrm = homog_xfrom( x_trn( pi/2 ) , [ 0 , 0 , 2 ] )
         xform2 = homog_xfrom( z_trn( q[1] ) , [ 0 , 0 , 0 ] )
+        efXfrm = homog_xfrom( np.eye( 3 )   , [ 2 , 0 , 0 ] )
         # combined = np.dot( xform1 , xform2 )
         combined1 = np_dot( xform1 , jtXfrm )
         combined2 = np_dot( xform1 , jtXfrm , xform2 )
-#        for pnt in link1pts:
-#            pnt.xform_homog( xform1 )
-#        for pnt in link2pts:
-#            pnt.xform_homog( combined )
+        combined3 = np_dot( xform1 , jtXfrm , xform2 , efXfrm )
         link1.xform_homog( xform1 )
         link1axis.xform_homog( combined1 )
         link2.xform_homog( combined2 )
+        effectorAxis.xform_homog( combined3 )
     
     # 4. Render!
-    window = OGL_App( [ link1 , link1axis , link2 , CartAxes( 1 ) ] , caption = "Transformation Test" ) 
+    window = OGL_App( [ link1 , link1axis , link2 , effectorAxis , CartAxes( 1 ) ] , caption = "Transformation Test" ) 
     window.set_camera( [ 3 , 3 , 3 ] , [ 0 , 0 , 0 ] , [ 0 , 0 , 1 ] )
     
     # ~ Begin animation ~

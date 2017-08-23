@@ -129,7 +129,7 @@ def np_dot( *args ):
 
 # == End Vector ==
 
-# == Trigonometry ==
+# == Trigonometry == # TODO: Chech that these are in MARCHHARE
 
 def ver( theta ):
     """ Versine , radians """
@@ -141,7 +141,7 @@ def verd( theta ):
 
 # == End Trig ==
 
-# == Geo 3D ==
+# == Geo 3D == # TODO: Copy all 3D geo to MARCHHARE
     
 def x_rot( theta ):
     """ Return the 3x3 matrix that performs a rotation of 'theta' about the X axis """
@@ -175,11 +175,22 @@ def z_trn( theta ):
              [  0            ,  0            ,  1            ] ]
     
 def rot_matx_ang_axs( theta , k  ):
-    """ Return the 3x3 rotation matrix for the given angle , axis , and position """
+    """ Return the 3x3 rotation matrix for the given angle 'theta' and axis 'k' """
     k = vec_unit( k )
     return [ [ k[0]*k[0]*ver(theta) + cos(theta)      , k[0]*k[1]*ver(theta) - k[2]*sin(theta) , k[0]*k[2]*ver(theta) + k[1]*sin(theta) ] , 
              [ k[1]*k[0]*ver(theta) + k[2]*sin(theta) , k[1]*k[1]*ver(theta) + cos(theta)      , k[1]*k[2]*ver(theta) - k[0]*sin(theta) ] , 
              [ k[2]*k[0]*ver(theta) - k[1]*sin(theta) , k[2]*k[1]*ver(theta) + k[0]*sin(theta) , k[2]*k[2]*ver(theta) + cos(theta)      ] ]
+
+def ang_axs_from_rot_matx( R ):
+    """ Return the angle 'theta' and axis 'k' for the given 3x3 rotation matrix 'R' """"
+    # NOTE : This function returns only one solution out of 2 possible , these solution are equivalen with opposite
+    theta = acos( ( np.trace( R ) - 1.0 ) / 2.0 )
+    k = np.multiply( [ R[2][1] - R[1][2] , 
+                       R[0][2] - R[2][0] , 
+                       R[1][0] - R[0][1] ] , 0.5 * sin( theta ) )
+    return theta , k
+    
+    
 
 def homogeneous_Z( zTheta , pos ):
     """ Return the Homogeneous Transformation for the given parameters """
