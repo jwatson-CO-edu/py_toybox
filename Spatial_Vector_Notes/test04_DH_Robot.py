@@ -83,6 +83,10 @@ class OGL_Robot( LinkModel ):
         """ Constructor """
         LinkModel.__init__( self ) # Init parent class
         
+    def add_link_w_graphics( self ,  ):
+        add_and_attach( self , link , parentName = None )
+        
+        
     def apply_FK_all( self , qList ):
         """ Apply joint transforms associated with 'qList' to each link , transforming all graphics """
         # NOTE : This method is extremely inefficient and benefits neither from obvious recursive techniques nor elimination of 0-products

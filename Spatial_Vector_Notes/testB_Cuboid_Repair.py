@@ -107,9 +107,6 @@ class TKOGLRobotCtrl( TKBasicApp ):
             
             self.pack( side = TOP )
             
-            # TODO ,  ; ; Write Entry validation
-            #         ; ; Write update callbacks for both Scale and Entry (One changes the other and always sets the overall 'value')
-            
             rootApp.jntCtrls.append( self )
             
         def get_val( self ):
@@ -132,6 +129,46 @@ class TKOGLRobotCtrl( TKBasicApp ):
         return rtnArr
     
 # == End TKOGLRobotCtrl ==
+        
+# == class OGL_Robot ==
+            
+class OGL_Robot( LinkModel ):
+    """ Representation of a serial , branched , rigid manipulator expressed in spatial coordinates and displayed using pyglet """
+    
+    def __init__( self ):
+        """ Constructor """
+        LinkModel.__init__( self ) # Init parent class
+        self.OGLDrawables = [] # --- List of all render models of class OGLDrawable 
+        
+    def add_link_w_graphics( self , link , graphics , parentName = None ):
+        """ Set up the kinematic chain relationship and store the associated graphics """
+        # 1. Set up the kinematic chain relationship
+        LinkModel.add_and_attach( self , link , parentName )
+        # 2. Store the associated graphics
+        self.OGLDrawables.append( graphics )
+        link.graphics = graphics
+        # 3. Create the coordinate axes that this link rotates in
+        axes = CartAxes( 1 ) # Default at the origin , Transformation will occur when the link's parent is examined
+        self.OGLDrawables.append( axes ) # Add the axes to the list of models
+        link.axes = axes # Associate the axes with this link
+        
+    # TODO : Figure out how to handle the effector frame!
+        
+    def get_graphics_list( self ):
+        """ Return a copy of references to all drawables """
+        return self.OGLDrawables[:] # This is a shallow copy and intentionally so
+        
+    # FIXME : START HERE!
+    
+    def apply_FK_all( self , qList ):
+        """ Apply joint transforms associated with 'qList' to each link , transforming all graphics """
+        # NOTE : This method is extremely inefficient and benefits neither from obvious recursive techniques nor elimination of 0-products
+        # TODO : Fix the above issues
+        for linkDex , link in enumerate( self.links ):
+            # link.graphics.xform_spatl( FK( self , linkDex , qList ) )
+            link.graphics.xform_homog( FK( self , linkDex , qList ) )
+        
+# == End OGL_Robot ==
 
 # == Test Functions ==
     

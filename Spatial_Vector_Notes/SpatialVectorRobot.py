@@ -375,12 +375,12 @@ def joint_spatl( pitch , q ): # Featherstone: jcalc
         s_i = [ 0 , 0 , 1 , 0 , 0 , 0 ]
         XJ_s = sp_rot_xfrm( E )
         
-    elif pitch == infty: # Prismatic Joint : Implements pure translation
+    elif pitch == infty: #- Prismatic Joint : Implements pure translation
         E = np.eye( 3 ); r = [ 0 , 0 , q ]
         s_i = [ 0 , 0 , 0 , 0 , 0 , 1 ]
         XJ_s = sp_trn_xfrm( r )
         
-    else: #                Helical Joint   : Implements a screwing motion
+    else: # --------------- Helical Joint   : Implements a screwing motion
         E = z_trn( q ); r = [ 0 , 0 , pitch * q ]
         s_i = [ 0 , 0 , 1 , 0 , 0 , pitch ]
         XJ_s = np.dot( sp_rot_xfrm( E ) , sp_trn_xfrm( r ) )
@@ -390,18 +390,17 @@ def joint_spatl( pitch , q ): # Featherstone: jcalc
 
 def joint_homog( pitch , q ): 
     """ Return the joint homogeneous transform matrix for a joint with 'pitch' and joint variable 'q' """
-    
     # See page 135 of [3] for the homogeneous transformations for each type
     
     if eq( pitch , 0.0 ): # Revolute Joint : Implements pure rotation 
         E = z_trn( q )
         r = [ 0 , 0 , 0 ]
     
-    elif pitch == infty: # Prismatic Joint : Implements pure translation
+    elif pitch == infty: #- Prismatic Joint : Implements pure translation
         E = np.eye( 3 )
         r = [ 0 , 0 , q ]
 
-    else: #                Helical Joint   : Implements a screwing motion
+    else: # --------------- Helical Joint   : Implements a screwing motion
         E = z_trn( q )
         r = [ 0 , 0 , pitch * q ]
 
@@ -448,6 +447,9 @@ def FK( model , bodyIndex , q ): # ( Featherstone: bodypos ) # This is modified 
         # print "DEBUG ," , "X_tot:" , endl ,  X_tot
         # print "DEBUG ," , "body.xform" , endl , body.xform
         # X_tot = np_dot( X_tot , XJ_h , body.xform ) # Apply the joint transform and body transform to the accumulated transform
+        
+        # body0 Xform * joint1 Xform * body1 Xform * joint2 Xform ... 
+        
         X_tot = np_dot( X_tot , body.xform , XJ_h ) # Apply the joint transform and body transform to the accumulated transform
         # X_tot = np_dot( body.xform , XJ_h , X_tot ) # Apply the joint transform and body transform to the accumulated transform
         body = body.parent # This will become 'None' after the root link has been processed
