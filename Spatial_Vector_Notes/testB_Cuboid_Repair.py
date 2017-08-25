@@ -31,8 +31,9 @@ Dependencies: SpatialVectorRobot , Pyglet
         RESOLVED : Rewriting the class solved the problem , It would seem that 'Cuboid.center' and 'Cuboid.pos3D' were both inconsistently 
                    used as a coordinate offset
         !Y! Develop a way to affix CartAxes to any pose on any link - COMPLETE , See above
-        ! ! Compare the analytical sol'n of a 2 link end effector pose to the numerical sol'n
+        !Y! Compare the analytical sol'n of a 2 link end effector pose to the numerical sol'n
         !L! Test OGL rendering - DEFERRED , This does not currently meet any project goals
+        ! ! Repair FK function
 <\clip>
 
 ~~~ TODO ~~~
@@ -137,9 +138,9 @@ class TKOGLRobotCtrl( TKBasicApp ):
 def analytic_test_B( q , d1 , a2 ):
     """ Return the analytic transform for the effector frame for comparision to the numerical solution """
     th1 = q[0]; th2 = q[1]
-    return [ [  cos( th1 ) * cos( th2 ) , cos( th1 ) * sin( th2 ) ,  sin( th1 ) , a2 * cos( th1 ) * cos( th2 ) ] , 
-             [  sin( th1 ) * cos( th2 ) , sin( th1 ) * sin( th2 ) , -cos( th1 ) , a2 * sin( th1 ) * cos( th2 ) ] , 
-             [ -cos( th2 )              , cos( th2 )              ,  0          , d1 - a2 * sin( th2 )         ] , 
+    return [ [  cos( th1 ) * cos( th2 ) , -cos( th1 ) * sin( th2 ) ,  sin( th1 ) , a2 * cos( th1 ) * cos( th2 ) ] , 
+             [  sin( th1 ) * cos( th2 ) , -sin( th1 ) * sin( th2 ) , -cos( th1 ) , a2 * sin( th1 ) * cos( th2 ) ] , 
+             [  sin( th2 )              , cos( th2 )              ,  0          , d1 + a2 * sin( th2 )         ] , 
              [  0                       , 0                       ,  0          , 1                            ] ]
     
 # == End Test ==
@@ -180,6 +181,8 @@ if __name__ == "__main__":
         link1axis.xform_homog( combined1 )
         link2.xform_homog( combined2 )
         effectorAxis.xform_homog( combined3 )
+        print np.sum( np.subtract( combined3 , analytic_test_B( q , 2.0 , 2.0 ) ) )
+        
     
     # 4. Render!
     window = OGL_App( [ link1 , link1axis , link2 , effectorAxis , CartAxes( 1 ) ] , caption = "Transformation Test" ) 

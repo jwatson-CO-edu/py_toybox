@@ -182,7 +182,7 @@ def rot_matx_ang_axs( theta , k  ):
              [ k[2]*k[0]*ver(theta) - k[1]*sin(theta) , k[2]*k[1]*ver(theta) + k[0]*sin(theta) , k[2]*k[2]*ver(theta) + cos(theta)      ] ]
 
 def ang_axs_from_rot_matx( R ):
-    """ Return the angle 'theta' and axis 'k' for the given 3x3 rotation matrix 'R' """"
+    """ Return the angle 'theta' and axis 'k' for the given 3x3 rotation matrix 'R' """
     # NOTE : This function returns only one solution out of 2 possible , these solution are equivalen with opposite
     theta = acos( ( np.trace( R ) - 1.0 ) / 2.0 )
     k = np.multiply( [ R[2][1] - R[1][2] , 
@@ -190,8 +190,6 @@ def ang_axs_from_rot_matx( R ):
                        R[1][0] - R[0][1] ] , 0.5 * sin( theta ) )
     return theta , k
     
-    
-
 def homogeneous_Z( zTheta , pos ):
     """ Return the Homogeneous Transformation for the given parameters """
     return np.vstack( ( np.hstack( (  z_rot( zTheta )  , [ [ pos[0] ] , [ pos[1] ] , [ pos[2] ] ]  ) ) ,
