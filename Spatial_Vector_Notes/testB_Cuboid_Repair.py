@@ -151,22 +151,39 @@ class OGL_Robot( LinkModel ):
         axes = CartAxes( 1 ) # Default at the origin , Transformation will occur when the link's parent is examined
         self.OGLDrawables.append( axes ) # Add the axes to the list of models
         link.axes = axes # Associate the axes with this link
+        # 4. Create an empty container for markers associated with this link
+        link.markers = [] # This will hold things like effector frame bases , etc
+        
+    def create_add_link_w_graphics( self , pName , pPitch , xform , graphics , parentName = None ):
+        """ Create a link , and Set up the kinematic chain relationship and store the associated graphics """
+        link = LinkSpatial( pName , pPitch , xform ) # ----------- 1. Create the link
+        self.add_link_w_graphics( link , graphics , parentName ) # 2. Add the link
         
     # TODO : Figure out how to handle the effector frame!
+    def add_marker_w_transform( self , linkName , marker , transform ):
+        """ Add a OGLDrawable 'marker' to 'linkName' with a relative 'transform' such that it moves with link with an offset """
+        # FIXME : COMPLETE THIS FUNCTION!
+        
         
     def get_graphics_list( self ):
         """ Return a copy of references to all drawables """
         return self.OGLDrawables[:] # This is a shallow copy and intentionally so
-        
-    # FIXME : START HERE!
+   
+    # In order to perform this this transformation , the following is needed
+    # * Link Transform         , last link --> this link ( That is , the transform from the joint of this link to the joint of the next )
+    # * Configuration transfom , next link attachment --> pose change due to config change
+    
+    # FK Repair
+    # [ ] Make sure that each link is assigned a transform
     
     def apply_FK_all( self , qList ):
         """ Apply joint transforms associated with 'qList' to each link , transforming all graphics """
         # NOTE : This method is extremely inefficient and benefits neither from obvious recursive techniques nor elimination of 0-products
         # TODO : Fix the above issues
         for linkDex , link in enumerate( self.links ):
-            # link.graphics.xform_spatl( FK( self , linkDex , qList ) )
+            # 1. Apply transform to the link
             link.graphics.xform_homog( FK( self , linkDex , qList ) )
+            # 2. Apply transform to the parent 
         
 # == End OGL_Robot ==
 
@@ -196,15 +213,24 @@ if __name__ == "__main__":
     link2pts = [ Point( pnt = [ 1 , 0 , 0 ] , color = (   9 , 160 ,  75 ) , size = 12 ) ,
                  Point( pnt = [ 2 , 0 , 0 ] , color = (   9 , 160 ,  75 ) , size = 12 ) ]
     
-    link1 = Cuboid( 0.25 , 0.25 , 2.0  , [ 0 , 0 , 2 ] )
+    # link1 = Cuboid( 0.25 , 0.25 , 2.0  , [ 0 , 0 , 2 ] )
     link1.add_vertex_offset( [ -0.25/2.0 , -0.25/2.0 , 0.0 ] )
     link1axis = CartAxes( unitLen = 0.5 )
     link2 = Cuboid( 2.0  , 0.25 , 0.25 , [ 0 , 0 , 0 ] )
     link2.add_vertex_offset( [ 0.0 , -0.25/2.0 , -0.25/2.0 ] )
     effectorAxis = CartAxes( unitLen = 0.5 )
     
+    # ~~ 1. Create robot ~~
+    robot = OGL_Robot()
+    # ~~ 2. Add links ~~
+    # ~ Link 1 ~
+    robot.create_add_link_w_graphics( "link1" , 0.0 , np.eye( 4 ) , Cuboid( 0.25 , 0.25 , 2.0  , [ 0 , 0 , 2 ] ) , None )
+    # ~ Link 2 ~
+    # FIXME : START HERE
+    
+    
     def transform_Points( q ):
-        """ Control the positions of two groups of points as though they were  """
+        """ Apply the appropriate transformations to the links , In the future this will be taken care of by FK """
         global link1pts , link2pts
         xform1 = homog_xfrom( z_trn( q[0] ) , [ 0 , 0 , 0 ] )
         jtXfrm = homog_xfrom( x_trn( pi/2 ) , [ 0 , 0 , 2 ] )
@@ -219,7 +245,6 @@ if __name__ == "__main__":
         link2.xform_homog( combined2 )
         effectorAxis.xform_homog( combined3 )
         print np.sum( np.subtract( combined3 , analytic_test_B( q , 2.0 , 2.0 ) ) )
-        
     
     # 4. Render!
     window = OGL_App( [ link1 , link1axis , link2 , effectorAxis , CartAxes( 1 ) ] , caption = "Transformation Test" ) 

@@ -293,23 +293,25 @@ def XtoV( X ):
 
 class LinkSpatial:
     """ Represents a rigid link and the associated joint using spatial coordinates """
-    def __init__( self , pName , pPitch ):
+    def __init__( self , pName , pPitch , xform = None ):
         """ Rigid link struct """
-        self.name = pName # -- String that uniquely identifies the link
-        self.pitch = pPitch #- Describes the pitch (and therefore the type) of the associated joint
-        self.parent = None # - Reference to the parent link to which this link is attached
-        self.children = [] # - List of child links
-        self.linkIndex = 0 # - Index of link in q 
-        self.xform = None # -- Plucker coordinate transform that describes the relative position of this joint in the parent frame
-        self.I = None # ------ Spatial inertia for this link
-        self.q = 0 # --------- Joint configuration ---> These used for caching and for preserving state across timesteps
-        self.qDot = 0 # ------ Joint Velocity        /
-        self.qDotDot = 0 # --- Joint Acceleration  _/
-        self.v = 0 # --------- Link Spatial Velocity     ---> These are the result of dynamics calculations
-        self.a = 0 # --------- Link Spatial Acceleration   /
-        self.f = 0 # --------- Joint Spatial Force        /
-        self.tau = 0 # ------- Torque about this joint  _/
-        self.graphics = None # Graphic reprsentation of the link , Contains all of the draw routines , ex: Cuboid
+        self.name = pName # ----- String that uniquely identifies the link
+        self.pitch = pPitch # --- Describes the pitch (and therefore the type) of the associated joint
+        self.parent = None # ---- Reference to the parent link to which this link is attached
+        self.children = [] # ---- List of child links
+        self.linkIndex = 0 # ---- Index of link in q 
+        self.xform = xform # ---- Homogeneous coordinate transform that describes the relative position of this joint in the parent frame
+        self.pose = np.eye( 4 ) # Cached homogeneous transform that represents the pose of the link
+        self.poseReady = False #- Flag , False if the cached version is old , True if the cached pose is ready for use
+        self.I = None # --------- Spatial inertia for this link
+        self.q = 0 # ------------ Joint configuration ---> These used for caching and for preserving state across timesteps
+        self.qDot = 0 # --------- Joint Velocity        /
+        self.qDotDot = 0 # ------ Joint Acceleration  _/
+        self.v = 0 # ------------ Link Spatial Velocity     ---> These are the result of dynamics calculations
+        self.a = 0 # ------------ Link Spatial Acceleration   /
+        self.f = 0 # ------------ Joint Spatial Force        /
+        self.tau = 0 # ---------- Torque about this joint  _/
+        self.graphics = None # -- Graphic reprsentation of the link , Contains all of the draw routines , ex: Cuboid
         # NOTE : At this time , not asking LinkSpatial to do any of the graphics setup. This is probably best for keeping the implementation
         #        as simple and display-agnostic as possible
         
