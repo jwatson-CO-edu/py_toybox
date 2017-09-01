@@ -272,7 +272,6 @@ def cross_forc_matx( forceVec ): # (Featherstone: crf) # Acts on a force vector 
     return np.vstack( ( np.hstack( ( skew_sym_cross( forceVec[:3] ) , skew_sym_cross( forceVec[3:] ) ) ) , 
                         np.hstack( ( np.zeros( (3,3) )              , skew_sym_cross( forceVec[:3] ) ) ) ) ) # 6x6
     
-
 def XtoV( X ):
     """ Calculate the small-magnitude motion vector from the transform for a small change in coordinates """
     return np.multiply( 0.5 , 
@@ -336,7 +335,7 @@ class LinkModel(object):
         if linkName in self.names:
             for lnk in self.links:
                 if lnk.name == linkName:
-                    print "DEBUG:" , "Found link" , lnk.name
+                    # print "DEBUG:" , "Found link" , lnk.name
                     return lnk
         raise KeyError( "LinkModel.link_ref_by_name: No link found with name " + str( linkName ) )
         
@@ -345,20 +344,18 @@ class LinkModel(object):
         link.linkIndex = self.N
         self.N += 1
         self.names.add( link.name )
-        print "DEBUG , LinkModel.add_and_attach: Links so far:" , self.names
         self.links.append( link )
         if parentName in self.names: # If there was a parent link specified and such a link has been added to the model
             parent = self.link_ref_by_name( parentName ) # Fetch parent
             link.parent = parent # Add the parent reference # NOTE: This will raise a KeyError if no such parent was stored
             parent.children.append( link ) # Add the child reference
-        else:
-            print "DEBUG , LinkModel.add_and_attach: Parent link was not found!" , parentName
             
     # NOTE: Not implementing the ability to remove links at this time
     
     def set_q( self , q ):
         """ Set the configuration of the robot """
-        assert( len( q ) == len( self.links ) , "LinkModel.set_q: 'len(q)' must equal the number of links!" )
+        if not len( q ) == len( self.links ):
+            raise IndexError( "LinkModel.set_q: 'len(q)' must equal the number of links!" )
         for lnkDex , link in enumerate( self.links ):
             link.q = q[ lnkDex ]
        
@@ -445,21 +442,15 @@ def FK( model , bodyIndex , q ): # ( Featherstone: bodypos ) # This is modified 
     """ Compute the pose ( as a homogeneous transform ) for a given config 'q' """
     # NOTE: This function does not depend on the presently stored q state , returned pose depends only on given 'q'
     # NOTE: This function assumes that every link between 'bodyIndex' and the root has 'xform' set
-    X_tot = np.eye(4) # Total transform , the returned value # Base case: No links , Unity xform
+    X_tot = []
     body = model.links[ bodyIndex ] # Fetch the link by index
     while body: # While the reference 'body' points to a link object
-        XJ_h = joint_homog( body.pitch , q[ bodyIndex ] ) # Calculate the joint transform given the current joint config
-        # print "DEBUG ," , "X_tot:" , endl ,  X_tot
-        # print "DEBUG ," , "body.xform" , endl , body.xform
-        # X_tot = np_dot( X_tot , XJ_h , body.xform ) # Apply the joint transform and body transform to the accumulated transform
-        
-        # body0 Xform * joint1 Xform * body1 Xform * joint2 Xform ... 
-        
-        X_tot = np_dot( X_tot , body.xform , XJ_h ) # Apply the joint transform and body transform to the accumulated transform
-        # X_tot = np_dot( body.xform , XJ_h , X_tot ) # Apply the joint transform and body transform to the accumulated transform
+        # XJ_h = 
+        temp = [ body.xform , joint_homog( body.pitch , q[ body.linkIndex ] ) ]
+        temp.extend( X_tot ) # Prepend the transforms associated with the parent joint
+        X_tot = temp
         body = body.parent # This will become 'None' after the root link has been processed
-    print "DEBUG ," , "X_tot:" , endl ,  X_tot
-    return X_tot # After the root has been processed , there are no more transformations to perform , return
+    return np_dot( *X_tot ) # After the root has been processed , there are no more transformations to perform , return
         
 def jacobn_manip( model , bodyIndex , q ): # ( Featherstone: bodyJac )
     """ Compute the manipulator jacobian up to the specified link in the tree """

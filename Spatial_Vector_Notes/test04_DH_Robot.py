@@ -18,17 +18,25 @@ Dependencies: SpatialVectorRobot , Pyglet
 [ ] 3. Implement a Robot from Robot Intro , Forward Kinematics
     |Y| 3.a. Move OGL classes and functions to their own file , Move Tkinter class to its own file - COMPLETE
         !Y! Extend 'TKBasicApp' to have a slider and to retrieve [ q ] - COMPLETE
-    | | 3.b. Implement a 2-link robot
+    |Y| 3.b. Implement a 2-link robot - COMPLETE
         !Y! 3.b.1. Add a sub-panel class to 'TKOGLRobotCtrl' - COMPLETE , Resolved conflicts with the previous UI design , Although the text
-                   -update feature that I wanted is not yet implemented
-        ISSUE : LINK2 IS IN THE LAB FRAME INSTEAD OF THE LINK1 FRAME
-        ISSUE : THE ROTATION CENTER OF LINK2 IS MOVING
-            ; ; Composing two homogeneous transformations to see if they behave in the way that is expected
-            ; ; Investigate how moving the center of the Cuboid affects how it is rendered
+        !Y! Rewrite Cuboid to inherit OGLDrawable - COMPLETE
+        !Y! Rewrite CartAxes to inherit OGLDrawable , Such that it can be transformed ( Move with links ) - COMPLETE
+        !N! Add axes labels to CartAxes - CANCELLED , Placing text in a 3D world doesn't add anything to the display
+        !Y! Develop a way to affix CartAxes to any pose on any link - COMPLETE , See above
+        !Y! Compare the analytical sol'n of a 2 link end effector pose to the numerical sol'n
+        !L! Test OGL rendering - DEFERRED , This does not currently meet any project goals
+        !Y! Repair FK function - COMPLETE , Construction of the transformation matrix was incorrect , constructed the entire sequence of 
+            transforms before multiplying
+        !Y! Implement an effector frame - COMPLETE
     |L| 3.c. Implement the same robot from (3.b) with DH Parameters (Hollerbach) and generalize - LATER
-    | | 3.d. Position
+    |Y| 3.d. Position - COMPLETE , Note that this is done in homogeneous 3D coords , however
     | | 3.e. Speed
+        ! ! Instantiate a robot , set it in a configuration , and calculate the task-space velocity of the end effector
+        ! ! Compare to analytical sol'n from Intro to Robot
     | | 3.f. Acceleration
+        ! ! Instantiate a robot , set it in a configuration and angular velocity , and calculate the task-space acceleration of the end effector
+        ! ! Compare to analytical sol'n from Intro to Robot
 <\clip>
 
 ~~~ TODO ~~~
@@ -73,31 +81,6 @@ endl  = os.linesep # - Line separator (OS Specific)
 
 # == End Init ==============================================================================================================================
 
-
-# == class OGL_Robot ==
-            
-class OGL_Robot( LinkModel ):
-    """ Representation of a serial , branched , rigid manipulator expressed in spatial coordinates and displayed using pyglet """
-    
-    def __init__( self ):
-        """ Constructor """
-        LinkModel.__init__( self ) # Init parent class
-        
-    def add_link_w_graphics( self ,  ):
-        add_and_attach( self , link , parentName = None )
-        
-        
-    def apply_FK_all( self , qList ):
-        """ Apply joint transforms associated with 'qList' to each link , transforming all graphics """
-        # NOTE : This method is extremely inefficient and benefits neither from obvious recursive techniques nor elimination of 0-products
-        # TODO : Fix the above issues
-        for linkDex , link in enumerate( self.links ):
-            # link.graphics.xform_spatl( FK( self , linkDex , qList ) )
-            link.graphics.xform_homog( FK( self , linkDex , qList ) )
-        
-# == End OGL_Robot ==
-            
-
 # == class TKOGLRobotCtrl ==
 
 class TKOGLRobotCtrl( TKBasicApp ):
@@ -111,7 +94,7 @@ class TKOGLRobotCtrl( TKBasicApp ):
             Frame.__init__( self , rootApp.rootWin , relief = SUNKEN )
             
             if not hasattr( rootApp , 'jntCtrls' ): # If there has been no joint control array initialized
-                print "DEBUG:" , "Added joint controls!"
+                # print "DEBUG:" , "Added joint controls!"
                 rootApp.jntCtrls = [] # Create an empty joint control array
             
             # URL , Relief Styles : http://infohost.nmt.edu/tcc/help/pubs/tkinter/web/relief.html
@@ -126,9 +109,6 @@ class TKOGLRobotCtrl( TKBasicApp ):
             self.jntEntry.pack( side = LEFT )
             
             self.pack( side = TOP )
-            
-            # TODO ,  ; ; Write Entry validation
-            #         ; ; Write update callbacks for both Scale and Entry (One changes the other and always sets the overall 'value')
             
             rootApp.jntCtrls.append( self )
             
@@ -152,87 +132,143 @@ class TKOGLRobotCtrl( TKBasicApp ):
         return rtnArr
     
 # == End TKOGLRobotCtrl ==
+        
+# == class OGL_Robot ==
+            
+class OGL_Robot( LinkModel ):
+    """ Representation of a serial , branched , rigid manipulator expressed in spatial coordinates and displayed using pyglet """
+    
+    def __init__( self ):
+        """ Constructor """
+        LinkModel.__init__( self ) # Init parent class
+        self.OGLDrawables = [] # --- List of all render models of class OGLDrawable 
+        
+    def add_link_w_graphics( self , link , graphics , parentName = None ):
+        """ Set up the kinematic chain relationship and store the associated graphics """
+        # 1. Set up the kinematic chain relationship
+        LinkModel.add_and_attach( self , link , parentName )
+        # 2. Store the associated graphics
+        self.OGLDrawables.append( graphics )
+        link.graphics = graphics
+        # 3. Create the coordinate axes that this link rotates in
+        axes = CartAxes( 1 ) # Default at the origin , Transformation will occur when the link's parent is examined
+        self.OGLDrawables.append( axes ) # Add the axes to the list of models
+        link.axes = axes # Associate the axes with this link
+        # 4. Create an empty container for markers associated with this link
+        link.markers = [] # This will hold things like effector frame bases , etc
+        
+    def create_add_link_w_graphics( self , pName , pPitch , xform , graphics , parentName = None ):
+        """ Create a link , and Set up the kinematic chain relationship and store the associated graphics """
+        link = LinkSpatial( pName , pPitch , xform ) # ----------- 1. Create the link
+        self.add_link_w_graphics( link , graphics , parentName ) # 2. Add the link
+        
+    # TODO : Figure out how to handle the effector frame!
+    def add_marker_w_transform( self , linkName , marker , transform ):
+        """ Add a OGLDrawable 'marker' to 'linkName' with a relative 'transform' such that it moves with link with an offset """
+        link = self.link_ref_by_name( linkName )
+        marker.xform = transform
+        link.markers.append( marker )
+        self.OGLDrawables.append( marker )
+        
+    def get_graphics_list( self ):
+        """ Return a copy of references to all drawables """
+        return self.OGLDrawables[:] # This is a shallow copy and intentionally so
+   
+    # In order to perform this this transformation , the following is needed
+    # * Link Transform         , last link --> this link ( That is , the transform from the joint of this link to the joint of the next )
+    # * Configuration transfom , next link attachment --> pose change due to config change
+    
+    # FK Repair
+    # [ ] Make sure that each link is assigned a transform
+    
+    def apply_FK_all( self , qList ):
+        """ Apply joint transforms associated with 'qList' to each link , transforming all graphics """
+        # NOTE : This method is extremely inefficient and benefits neither from obvious recursive techniques nor elimination of 0-products
+        # TODO : Fix the above issues
+        for linkDex , link in enumerate( self.links ):
+            # 1. Apply transform to the link
+            linkXform = FK( self , linkDex , qList )
+            link.graphics.xform_homog( linkXform )
+            # 2. Apply transform to the parent axes # How to do this without rewriting the function
+            if link.parent:
+                link.axes.xform_homog( np.dot( FK( self , link.parent.linkIndex , qList ) , link.xform ) )
+            # 3. If there are markers , apply the transform to the markers
+            for mrkr in link.markers:
+                mrkr.xform_homog( np.dot( linkXform , mrkr.xform ) )
+        
+# == End OGL_Robot ==
 
+# == Test Functions ==
+    
+
+    
+# == End Test ==
 
 # == Main ==================================================================================================================================
 
 if __name__ == "__main__":
     # Create display window , set up camera , begin main event loop
     
-    updateHz = 30.0 # Target frame rate
-    updatePeriodSec = 1.0 / updateHz 
-
-    # ~~ 1. Link 0 , Rotational ~~
     
-    # Link Geo
-    length = 0.25; width = 0.25; height = 3;
-    prism1 = Cuboid( length , width , height , [  6 ,  0 ,  0 ] )
-    prism1.rotnByOGL = False
-    prism1.set_center( [ length/2.0 , width/2.0 , 0 ] )
     
-    # Joint Type
-    link1 = LinkSpatial( "link1" , 0 ) # This link is attached to the world by a rotational joint
-    # link1 = LinkSpatial( "link1" , infty ) # This link is attached to the world by a prismatic joint
-    # link1 = LinkSpatial( "link1" , 0.1 ) # This link is attached to the world by a rotational joint
+    # ~~ 1. Create robot ~~
+    # Robot for the velocity example will be Image 96 / pg. 94 of Intro to Robot Notes
+    d1 = a2 = a3 = 2.0 # Create 3 links , all of the same size
+    edge = 0.25
     
-    # Apply transform and set rendering geo
-    link1.xform = homog_xfrom( np.eye( 3 ) , np.multiply( prism1.center , -1 ) )
-    link1.graphics = prism1
-    
-    # ~~ 2. Link 1 , Rotational ~~
-    
-    # Link Geo
-    prevHeight = height
-    length = 3.00; width = 0.25; height = 0.25;
-    # prism2 = Cuboid( length , width , height , [  0 ,  0 ,  prevHeight ] )
-    prism2 = Cuboid( length , width , height , [  0 ,  0 ,  0 ] )
-    prism2.rotnByOGL = False
-    prism2.set_center( [ 0 , width/2.0 , height/2.0 ] )
-    
-    # Joint Type
-    link2 = LinkSpatial( "link1" , 0 ) # This link is attached to the world by a rotational joint
-    # link1 = LinkSpatial( "link1" , infty ) # This link is attached to the world by a prismatic joint
-    # link1 = LinkSpatial( "link1" , 0.1 ) # This link is attached to the world by a rotational joint
-    
-    # Apply transform and set rendering geo
-    # link2.xform = homog_xfrom( x_trn( pi / 2.0 ) , np.multiply( prism1.center , -1 ) )
-    link2.xform = homog_xfrom( x_trn( pi / 2.0 ) , [  0 ,  0 ,  prevHeight ] )
-    link2.graphics = prism2
-    
-    # 1.A. Set up a robot that contains the one link 
-    q = 0
     robot = OGL_Robot()
-    robot.add_and_attach( link1 ) # Add 'link1' as the base link
-    robot.add_and_attach( link2 , parentName = "link1" ) # Add 'link2' as the next link
-    robot.set_q( [ q , q ] )
+    # ~~ 2. Add links ~~
     
-    # 3. Setup the UI
-    ctrlWin = TKOGLRobotCtrl( 600 , 200 , title = "Robot Control Panel" , numJoints = 2 ) # Default refresh rate is 30 Hz
+    # ~ Link 1 ~
+    temp = Cuboid( edge , edge , d1 , [ 0 , 0 , 0 ] )
+    temp.add_vertex_offset( [ -edge/2.0 , -edge/2.0 , 0.0 ] )
+    robot.create_add_link_w_graphics( "link1" , 0.0 , 
+                                      np.eye( 4 ) , 
+                                      temp , None )
+    # ~ Link 2 ~
+    temp = Cuboid( a2  , edge , edge , [ 0 , 0 , 0 ] )
+    temp.add_vertex_offset( [ 0.0 , -edge/2.0 , -edge/2.0 ] )
+    robot.create_add_link_w_graphics( "link2" , 0.0 , 
+                                      homog_xfrom( x_trn( pi/2 ) , [ 0 , 0 , 2 ] ) , 
+                                      temp , "link1" )
+    
+    # ~ Link 3 ~
+    # FIXME : START HERE!
+    
+    # ~ Effector Frame ~
+    robot.add_marker_w_transform( "link2" , CartAxes( unitLen = 1.0 ) , homog_xfrom( np.eye( 3 ) , [ 2 , 0 , 0 ] ) )
+    
+    # Check links and connections
+    print robot.link_ref_by_name( "link1" ) , "has parent" , robot.link_ref_by_name( "link1" ).parent
+    print robot.link_ref_by_name( "link2" ) , "has parent" , robot.link_ref_by_name( "link2" ).parent
+    print robot.link_ref_by_name( "link1" ) == robot.link_ref_by_name( "link2" ).parent
+    link1 = robot.link_ref_by_name( "link1" )
+    link2 = robot.link_ref_by_name( "link2" )
+    print "Link 1 xform" , endl , link1.xform
+    print "Link 2 xform" , endl , link2.xform
+    print "Link 2 Markers" , link2.markers
     
     # 4. Render!
-    window = OGL_App( [ CartAxes( 1 ) , prism1 , prism2 ] , caption = "2DOF Robot" ) 
+    # window = OGL_App( [ link1 , link1axis , link2 , effectorAxis , CartAxes( 1 ) ] , caption = "Transformation Test" ) 
+    window = OGL_App( robot.get_graphics_list() , caption = "Transformation Test" ) 
+    window.set_camera( [ 3 , 3 , 3 ] , [ 0 , 0 , 0 ] , [ 0 , 0 , 1 ] )
     
     # ~ Begin animation ~
     window.set_visible()
         
+
+    
     # ~ Set up animation ~
     def update( ):
         """ Per-frame changes to make prior to redraw """
-        # global q
-        # 1. Update q
-        # q += pi / 60.0
-        # 2. Set q
-        robot.set_q( ctrlWin.get_q() )
-        # 3. Perform FK
-        robot.apply_FK_all( ctrlWin.get_q() )
-        
-        print "DEBUG:" , "Configuration:" , ctrlWin.get_q()
-        
-        if not window.has_exit: # TODO : TRY DRIVING THESE INSIDE TKINTER INSTEAD OF THE OTHER WAY AROUND
+        q = ctrlWin.get_q()
+        robot.apply_FK_all( q )
+        if not window.has_exit: 
             window.dispatch_events() # Handle window events
-
             window.on_draw() # Redraw the scene
             window.flip()
+        
+    ctrlWin = TKOGLRobotCtrl( 600 , 200 , title = "Transform Test" , numJoints = 2 ) # Default refresh rate is 30 Hz
         
     # ~~ Run ~~
     ctrlWin.add_update_func( update )
@@ -240,9 +276,41 @@ if __name__ == "__main__":
     ctrlWin.rootWin.mainloop() # --------------- Show window and begin the simulation / animation
 
 # == End Main ==============================================================================================================================
+    
 
         
 # == Spare Parts ===========================================================================================================================
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+#def analytic_test_B( q , d1 , a2 ):
+#    """ Return the analytic transform for the effector frame for comparision to the numerical solution """
+#    th1 = q[0]; th2 = q[1]
+#    return [ [  cos( th1 ) * cos( th2 ) , -cos( th1 ) * sin( th2 ) ,  sin( th1 ) , a2 * cos( th1 ) * cos( th2 ) ] , 
+#             [  sin( th1 ) * cos( th2 ) , -sin( th1 ) * sin( th2 ) , -cos( th1 ) , a2 * sin( th1 ) * cos( th2 ) ] , 
+#             [  sin( th2 )              , cos( th2 )              ,  0          , d1 + a2 * sin( th2 )         ] , 
+#             [  0                       , 0                       ,  0          , 1                            ] ]
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+#    def transform_Points( q ):
+#        """ Apply the appropriate transformations to the links , In the future this will be taken care of by FK """
+#        global link1pts , link2pts
+#        xform1 = homog_xfrom( z_trn( q[0] ) , [ 0 , 0 , 0 ] )
+#        jtXfrm = homog_xfrom( x_trn( pi/2 ) , [ 0 , 0 , 2 ] )
+#        xform2 = homog_xfrom( z_trn( q[1] ) , [ 0 , 0 , 0 ] )
+#        efXfrm = homog_xfrom( np.eye( 3 )   , [ 2 , 0 , 0 ] )
+#        # combined = np.dot( xform1 , xform2 )
+#        combined1 = np_dot( xform1 , jtXfrm )
+#        combined2 = np_dot( xform1 , jtXfrm , xform2 )
+#        combined3 = np_dot( xform1 , jtXfrm , xform2 , efXfrm )
+#        link1.xform_homog( xform1 )
+#        link1axis.xform_homog( combined1 )
+#        link2.xform_homog( combined2 )
+#        effectorAxis.xform_homog( combined3 )
+#        print np.sum( np.subtract( combined3 , analytic_test_B( q , 2.0 , 2.0 ) ) )
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Create a loop with 'schedule_interval'
 # http://nullege.com/codes/show/src%40c%40h%40chemshapes-HEAD%40host%40pygletHG%40contrib%40layout%40examples%40interpreter.py/116/pyglet.clock.schedule_interval/python

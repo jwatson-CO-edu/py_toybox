@@ -33,7 +33,8 @@ Dependencies: SpatialVectorRobot , Pyglet
         !Y! Develop a way to affix CartAxes to any pose on any link - COMPLETE , See above
         !Y! Compare the analytical sol'n of a 2 link end effector pose to the numerical sol'n
         !L! Test OGL rendering - DEFERRED , This does not currently meet any project goals
-        ! ! Repair FK function
+        !Y! Repair FK function - COMPLETE , Construction of the transformation matrix was incorrect , constructed the entire sequence of 
+            transforms before multiplying
 <\clip>
 
 ~~~ TODO ~~~
@@ -239,6 +240,15 @@ if __name__ == "__main__":
                                       homog_xfrom( x_trn( pi/2 ) , [ 0 , 0 , 2 ] ) , 
                                       temp , "link1" )
     
+    # Check links and connections
+    print robot.link_ref_by_name( "link1" ) , "has parent" , robot.link_ref_by_name( "link1" ).parent
+    print robot.link_ref_by_name( "link2" ) , "has parent" , robot.link_ref_by_name( "link2" ).parent
+    print robot.link_ref_by_name( "link1" ) == robot.link_ref_by_name( "link2" ).parent
+    link1 = robot.link_ref_by_name( "link1" )
+    link2 = robot.link_ref_by_name( "link2" )
+    print "Link 1 xform" , endl , link1.xform
+    print "Link 2 xform" , endl , link2.xform
+    
     # 4. Render!
     # window = OGL_App( [ link1 , link1axis , link2 , effectorAxis , CartAxes( 1 ) ] , caption = "Transformation Test" ) 
     window = OGL_App( robot.get_graphics_list() , caption = "Transformation Test" ) 
@@ -247,15 +257,14 @@ if __name__ == "__main__":
     # ~ Begin animation ~
     window.set_visible()
         
+
+    
     # ~ Set up animation ~
     def update( ):
         """ Per-frame changes to make prior to redraw """
-        
         q = ctrlWin.get_q()
-        
         robot.apply_FK_all( q )
-        
-        if not window.has_exit: # TODO : TRY DRIVING THESE INSIDE TKINTER INSTEAD OF THE OTHER WAY AROUND
+        if not window.has_exit: 
             window.dispatch_events() # Handle window events
             window.on_draw() # Redraw the scene
             window.flip()
@@ -266,9 +275,6 @@ if __name__ == "__main__":
     ctrlWin.add_update_func( update )
     ctrlWin.rootWin.after( 100 , ctrlWin.run ) # Start the simulation after a 100 ms delay
     ctrlWin.rootWin.mainloop() # --------------- Show window and begin the simulation / animation
-    
-    # ~~ Post-Run ~~
-    print 
 
 # == End Main ==============================================================================================================================
 
