@@ -345,11 +345,14 @@ class LinkModel(object):
         link.linkIndex = self.N
         self.N += 1
         self.names.add( link.name )
+        print "DEBUG , LinkModel.add_and_attach: Links so far:" , self.names
         self.links.append( link )
         if parentName in self.names: # If there was a parent link specified and such a link has been added to the model
             parent = self.link_ref_by_name( parentName ) # Fetch parent
             link.parent = parent # Add the parent reference # NOTE: This will raise a KeyError if no such parent was stored
             parent.children.append( link ) # Add the child reference
+        else:
+            print "DEBUG , LinkModel.add_and_attach: Parent link was not found!" , parentName
             
     # NOTE: Not implementing the ability to remove links at this time
     

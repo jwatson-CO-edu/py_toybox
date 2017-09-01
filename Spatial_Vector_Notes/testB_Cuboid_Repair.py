@@ -183,7 +183,9 @@ class OGL_Robot( LinkModel ):
         for linkDex , link in enumerate( self.links ):
             # 1. Apply transform to the link
             link.graphics.xform_homog( FK( self , linkDex , qList ) )
-            # 2. Apply transform to the parent 
+            # 2. Apply transform to the parent axes # How to do this without rewriting the function
+            if link.parent:
+                link.axes.xform_homog( np.dot( FK( self , link.parent.linkIndex , qList ) , link.xform ) )
         
 # == End OGL_Robot ==
 
@@ -214,40 +216,32 @@ if __name__ == "__main__":
                  Point( pnt = [ 2 , 0 , 0 ] , color = (   9 , 160 ,  75 ) , size = 12 ) ]
     
     # link1 = Cuboid( 0.25 , 0.25 , 2.0  , [ 0 , 0 , 2 ] )
-    link1.add_vertex_offset( [ -0.25/2.0 , -0.25/2.0 , 0.0 ] )
+    # link1.add_vertex_offset( [ -0.25/2.0 , -0.25/2.0 , 0.0 ] )
     link1axis = CartAxes( unitLen = 0.5 )
-    link2 = Cuboid( 2.0  , 0.25 , 0.25 , [ 0 , 0 , 0 ] )
-    link2.add_vertex_offset( [ 0.0 , -0.25/2.0 , -0.25/2.0 ] )
+    # link2 = Cuboid( 2.0  , 0.25 , 0.25 , [ 0 , 0 , 0 ] )
+    # link2.add_vertex_offset( [ 0.0 , -0.25/2.0 , -0.25/2.0 ] )
     effectorAxis = CartAxes( unitLen = 0.5 )
     
     # ~~ 1. Create robot ~~
     robot = OGL_Robot()
     # ~~ 2. Add links ~~
+    
     # ~ Link 1 ~
-    robot.create_add_link_w_graphics( "link1" , 0.0 , np.eye( 4 ) , Cuboid( 0.25 , 0.25 , 2.0  , [ 0 , 0 , 2 ] ) , None )
+    temp = Cuboid( 0.25 , 0.25 , 2.0  , [ 0 , 0 , 2 ] )
+    temp.add_vertex_offset( [ -0.25/2.0 , -0.25/2.0 , 0.0 ] )
+    robot.create_add_link_w_graphics( "link1" , 0.0 , 
+                                      np.eye( 4 ) , 
+                                      temp , None )
     # ~ Link 2 ~
-    # FIXME : START HERE
-    
-    
-    def transform_Points( q ):
-        """ Apply the appropriate transformations to the links , In the future this will be taken care of by FK """
-        global link1pts , link2pts
-        xform1 = homog_xfrom( z_trn( q[0] ) , [ 0 , 0 , 0 ] )
-        jtXfrm = homog_xfrom( x_trn( pi/2 ) , [ 0 , 0 , 2 ] )
-        xform2 = homog_xfrom( z_trn( q[1] ) , [ 0 , 0 , 0 ] )
-        efXfrm = homog_xfrom( np.eye( 3 )   , [ 2 , 0 , 0 ] )
-        # combined = np.dot( xform1 , xform2 )
-        combined1 = np_dot( xform1 , jtXfrm )
-        combined2 = np_dot( xform1 , jtXfrm , xform2 )
-        combined3 = np_dot( xform1 , jtXfrm , xform2 , efXfrm )
-        link1.xform_homog( xform1 )
-        link1axis.xform_homog( combined1 )
-        link2.xform_homog( combined2 )
-        effectorAxis.xform_homog( combined3 )
-        print np.sum( np.subtract( combined3 , analytic_test_B( q , 2.0 , 2.0 ) ) )
+    temp = Cuboid( 2.0  , 0.25 , 0.25 , [ 0 , 0 , 0 ] )
+    temp.add_vertex_offset( [ 0.0 , -0.25/2.0 , -0.25/2.0 ] )
+    robot.create_add_link_w_graphics( "link2" , 0.0 , 
+                                      homog_xfrom( x_trn( pi/2 ) , [ 0 , 0 , 2 ] ) , 
+                                      temp , "link1" )
     
     # 4. Render!
-    window = OGL_App( [ link1 , link1axis , link2 , effectorAxis , CartAxes( 1 ) ] , caption = "Transformation Test" ) 
+    # window = OGL_App( [ link1 , link1axis , link2 , effectorAxis , CartAxes( 1 ) ] , caption = "Transformation Test" ) 
+    window = OGL_App( robot.get_graphics_list() , caption = "Transformation Test" ) 
     window.set_camera( [ 3 , 3 , 3 ] , [ 0 , 0 , 0 ] , [ 0 , 0 , 1 ] )
     
     # ~ Begin animation ~
@@ -257,7 +251,9 @@ if __name__ == "__main__":
     def update( ):
         """ Per-frame changes to make prior to redraw """
         
-        transform_Points( ctrlWin.get_q() )
+        q = ctrlWin.get_q()
+        
+        robot.apply_FK_all( q )
         
         if not window.has_exit: # TODO : TRY DRIVING THESE INSIDE TKINTER INSTEAD OF THE OTHER WAY AROUND
             window.dispatch_events() # Handle window events
@@ -270,6 +266,9 @@ if __name__ == "__main__":
     ctrlWin.add_update_func( update )
     ctrlWin.rootWin.after( 100 , ctrlWin.run ) # Start the simulation after a 100 ms delay
     ctrlWin.rootWin.mainloop() # --------------- Show window and begin the simulation / animation
+    
+    # ~~ Post-Run ~~
+    print 
 
 # == End Main ==============================================================================================================================
 
