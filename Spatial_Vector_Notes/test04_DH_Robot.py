@@ -33,6 +33,12 @@ Dependencies: SpatialVectorRobot , Pyglet
     |Y| 3.d. Position - COMPLETE , Note that this is done in homogeneous 3D coords , however
     | | 3.e. Speed
         ! ! Instantiate a robot , set it in a configuration , and calculate the task-space velocity of the end effector
+        ISSUE : THE SIZE OF THE COORDINATE TRANSFORM MATRICES IS INCORRECT (4X4) , IT MUST BE 6X6
+            ;Y; Restore the coordinate transforms that were previously written to transform coordinates. These are coordinate transforms 
+                for Plucker bases , not positions - COMPLETE , Obtained clarification of formulae and notation from [5] that was less clear in
+                [1] and [2] , 2017-09-02 : UNTESTED
+            ; ; Write a function to be called on 'LinkSpatial.__init__' that automatically computes the homogeneous , spatial velocity , 
+                and spatial force transforms for the link
         ! ! Compare to analytical sol'n from Intro to Robot
     | | 3.f. Acceleration
         ! ! Instantiate a robot , set it in a configuration and angular velocity , and calculate the task-space acceleration of the end effector
@@ -173,13 +179,6 @@ class OGL_Robot( LinkModel ):
     def get_graphics_list( self ):
         """ Return a copy of references to all drawables """
         return self.OGLDrawables[:] # This is a shallow copy and intentionally so
-   
-    # In order to perform this this transformation , the following is needed
-    # * Link Transform         , last link --> this link ( That is , the transform from the joint of this link to the joint of the next )
-    # * Configuration transfom , next link attachment --> pose change due to config change
-    
-    # FK Repair
-    # [ ] Make sure that each link is assigned a transform
     
     def apply_FK_all( self , qList ):
         """ Apply joint transforms associated with 'qList' to each link , transforming all graphics """
@@ -209,8 +208,6 @@ class OGL_Robot( LinkModel ):
 if __name__ == "__main__":
     # Create display window , set up camera , begin main event loop
     
-    
-    
     # ~~ 1. Create robot ~~
     # Robot for the velocity example will be Image 96 / pg. 94 of Intro to Robot Notes
     d1 = a2 = a3 = 2.0 # Create 3 links , all of the same size
@@ -233,30 +230,35 @@ if __name__ == "__main__":
                                       temp , "link1" )
     
     # ~ Link 3 ~
-    # FIXME : START HERE!
+    temp = Cuboid( a3  , edge , edge , [ 0 , 0 , 0 ] )
+    temp.add_vertex_offset( [ 0.0 , -edge/2.0 , -edge/2.0 ] )
+    robot.create_add_link_w_graphics( "link3" , 0.0 , 
+                                      homog_xfrom( np.eye( 3 ) , [ 2 , 0 , 0 ] ) , 
+                                      temp , "link2" )
     
     # ~ Effector Frame ~
-    robot.add_marker_w_transform( "link2" , CartAxes( unitLen = 1.0 ) , homog_xfrom( np.eye( 3 ) , [ 2 , 0 , 0 ] ) )
+    robot.add_marker_w_transform( "link3" , CartAxes( unitLen = 1.0 ) , homog_xfrom( x_trn( -pi/2 ) , [ 2 , 0 , 0 ] ) )
     
-    # Check links and connections
-    print robot.link_ref_by_name( "link1" ) , "has parent" , robot.link_ref_by_name( "link1" ).parent
-    print robot.link_ref_by_name( "link2" ) , "has parent" , robot.link_ref_by_name( "link2" ).parent
-    print robot.link_ref_by_name( "link1" ) == robot.link_ref_by_name( "link2" ).parent
-    link1 = robot.link_ref_by_name( "link1" )
-    link2 = robot.link_ref_by_name( "link2" )
-    print "Link 1 xform" , endl , link1.xform
-    print "Link 2 xform" , endl , link2.xform
-    print "Link 2 Markers" , link2.markers
+    if 0: # Set to 1 to check links and connections
+        print robot.link_ref_by_name( "link1" ) , "has parent" , robot.link_ref_by_name( "link1" ).parent
+        print robot.link_ref_by_name( "link2" ) , "has parent" , robot.link_ref_by_name( "link2" ).parent
+        print robot.link_ref_by_name( "link1" ) == robot.link_ref_by_name( "link2" ).parent
+        link1 = robot.link_ref_by_name( "link1" )
+        link2 = robot.link_ref_by_name( "link2" )
+        print "Link 1 xform" , endl , link1.xform
+        print "Link 2 xform" , endl , link2.xform
+        print "Link 2 Markers" , link2.markers
+    elif 1:
+        qTest = [ pi/4 , pi/4 , pi/4 ] # Specify a test config
+        manipJacob = jacobn_manip( robot , 2 , qTest )
     
     # 4. Render!
     # window = OGL_App( [ link1 , link1axis , link2 , effectorAxis , CartAxes( 1 ) ] , caption = "Transformation Test" ) 
     window = OGL_App( robot.get_graphics_list() , caption = "Transformation Test" ) 
-    window.set_camera( [ 3 , 3 , 3 ] , [ 0 , 0 , 0 ] , [ 0 , 0 , 1 ] )
+    window.set_camera( [ 4 , 4 , 4 ] , [ 0 , 0 , 0 ] , [ 0 , 0 , 1 ] )
     
     # ~ Begin animation ~
     window.set_visible()
-        
-
     
     # ~ Set up animation ~
     def update( ):
@@ -268,7 +270,7 @@ if __name__ == "__main__":
             window.on_draw() # Redraw the scene
             window.flip()
         
-    ctrlWin = TKOGLRobotCtrl( 600 , 200 , title = "Transform Test" , numJoints = 2 ) # Default refresh rate is 30 Hz
+    ctrlWin = TKOGLRobotCtrl( 600 , 200 , title = "Transform Test" , numJoints = 3 ) # Default refresh rate is 30 Hz
         
     # ~~ Run ~~
     ctrlWin.add_update_func( update )

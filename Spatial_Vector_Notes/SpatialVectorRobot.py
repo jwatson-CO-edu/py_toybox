@@ -143,6 +143,12 @@ def verd( theta ):
 
 # == Geo 3D == # TODO: Copy all 3D geo to MARCHHARE
     
+""" Page 4 of [5]
+A few details are worth mentioning here. The symbols [0] and [1] denote the
+zero and identity matrices, respectively, and [0] also denotes the zero vector. The
+superscript A^{−T} denotes the transpose of the inverse of A, so A^{−T} means ( A^{−1} )^{T} .
+"""
+    
 def x_rot( theta ):
     """ Return the 3x3 matrix that performs a rotation of 'theta' about the X axis """
     return [ [  1            ,  0            ,  0            ] , 
@@ -210,21 +216,34 @@ def skew_sym_cross( vecR ):
              [  vecR[2] ,  0       , -vecR[0] ] ,
              [ -vecR[1] ,  vecR[0] ,  0       ] ]
 
-def homog_xfrom( E , r ):
+def homog_xfrom( E , r ): 
     """ Return the combination of rotation matrix 'E' and displacement vector 'r' as a 4x4 homogeneous transformation matrix """
     return np.vstack( ( np.hstack( (  E                              , [ [ r[0] ] , [ r[1] ] , [ r[2] ] ]  ) ) ,
                         np.hstack( (  [ 0 , 0 , 0 ]                  , [ 1 ]                               ) ) ) )
 
-def sp_trn_xfrm( r ):
-    """ Return the spatial transformation that corresponds to a translation of R3 vector 'r' """
+def sp_trn_xfrm_vel( r ): # (2.21) of [5]
+    """ Return the spatial transformation of a velocity vector that corresponds to a translation of R3 vector 'r' """
     return np.vstack( (  np.hstack( (  np.eye( 3 )                             , np.zeros( ( 3 , 3 ) )  ) ) , 
-                         # np.hstack( (  np.multiply( skew_sym_cross( r ) , -1 ) , np.eye( 3 )            ) ) ) )
-                         np.hstack( (  skew_sym_cross( r )                     , np.eye( 3 )            ) ) ) )
+                         np.hstack( (  np.multiply( skew_sym_cross( r ) , -1 ) , np.eye( 3 )            ) ) ) )
 
-def sp_rot_xfrm( E ):
+def sp_trn_xfrm_frc( r ): # (2.22) of [5]
+    """ Return the spatial transformation of a velocity vector that corresponds to a translation of R3 vector 'r' """
+    return np.vstack( (  np.hstack( (  np.eye( 3 )           , np.multiply( skew_sym_cross( r ) , -1 )  ) ) , 
+                         np.hstack( (  np.zeros( ( 3 , 3 ) ) , np.eye( 3 )                              ) ) ) )
+
+def sp_rot_xfrm( E ): # Eq. (2.19) and (2.20) in [5]
     """ Return the spatial transformation that corresponds to a 3x3 rotation matrix 'E' """
+    # NOTE: Transform is the same for both velocity and force vectors , [5]
     return np.vstack( (  np.hstack( (  E                     , np.zeros( ( 3 , 3 ) )  ) ) , 
                          np.hstack( (  np.zeros( ( 3 , 3 ) ) , E                      ) ) ) )    
+
+def spatl_xfrm_vel( E , r ): # (2.24) of [5]
+    """ Return the spatial velocity vector transformation that corresponds to a translation by 'r' followed by rotation by 'E' """
+    return np.dot( sp_rot_xfrm( E ) , sp_trn_xfrm_vel( r ) )
+
+def spatl_xfrm_frc( E , r ): # (2.25) of [5]
+    """ Return the spatial force vector transformation that corresponds to a translation by 'r' followed by rotation by 'E' """
+    return np.dot( sp_rot_xfrm( E ) , sp_trn_xfrm_frc( r ) )
     
 # == End 3D ==
 
@@ -319,6 +338,10 @@ class LinkSpatial:
         cX = cross_motn_matx( COM )
         self.I = np.vstack( ( np.hstack( ( I_COM - np.multiply( mass , np.dot( cX , cX ) ) , np.multiply( mass , cX )        ) ) , 
                               np.hstack( ( np.multiply( -mass , cX )                       , np.multiply( mass , np.eye(3) ) ) ) ) )
+        
+    def calc_xforms( self , E , r ):
+        """ Given 3D transform of translation 'r' followed by rotation 'E' set equivalent homogeneous , 6D velocity , and 6D force transforms """
+        # FIXME : START HERE
 
 class LinkModel(object):
     """ Represents a serial-link manipulator composed of rigid links and defined with spatial vectors """
@@ -370,7 +393,8 @@ ISSUE : IN THE ORIGINAL FORMATION OF 'jcalc' in [2] , THE TRANSFORMATION MATRIX 
 [ ] Test until until advantages and drawbacks of differing sizes become clear
 """
 def joint_spatl( pitch , q ): # Featherstone: jcalc
-    """ Return the joint spatial transform and subspace matrix for a joint with 'pitch' and joint variable 'q' """
+    """ Return the joint spatial coordinate transform and subspace matrix for a joint with 'pitch' and joint variable 'q' """
+    # NOTE : This function is for transform coordinate bases , not positions
     
     if eq( pitch , 0.0 ): # Revolute Joint : Implements pure rotation 
         E = z_trn( q ); r = [ 0 , 0 , 0 ]
@@ -455,20 +479,22 @@ def FK( model , bodyIndex , q ): # ( Featherstone: bodypos ) # This is modified 
 def jacobn_manip( model , bodyIndex , q ): # ( Featherstone: bodyJac )
     """ Compute the manipulator jacobian up to the specified link in the tree """
     # NOTE: This function does not depend on the presently stored q state , returned pose depends only on given 'q'
-    e = np.zeros( model.N )
+    e = np.zeros( model.N ) # Selector vector
     body = model.links[ bodyIndex ] # Fetch the link by index
-    while body:
-        e[ body.linkIndex ] = 1
+    while body: # Build the selector vector
+        e[ body.linkIndex ] = 1 # Place a 1 at the index of every link between 'body' and the root
         body = body.parent # This will become 'None' after the root link has been processed
     J = np.zeros( ( 6 , model.N ) ) # Matrix for the Jacobian
-    Xa = np.zeros( model.N ) # An array of transforms
-    for lnkDex , link in enumerate( model.links ): 
-        if e[ lnkDex ]:
-            [ XJ , s_i ] = joint_xform( link.pitch , q[ lnkDex ] )
+    # Xa = np.zeros( model.N ) # An array of transforms
+    Xa = np.zeros( ( model.N , model.N ) ) # An array of transforms
+    for lnkDex , link in enumerate( model.links ): # For each link in the model
+        if e[ lnkDex ]: # If the link is in the chain from the selected body to the root
+            # [ XJ , s_i ] = joint_xform( link.pitch , q[ lnkDex ] )
+            [ XJ , s_i ] = joint_spatl( link.pitch , q[ lnkDex ] )
             Xa[ lnkDex ] = np.dot( XJ , link.xform )
             if link.parent:
                 Xa[ lnkDex ] = np.dot( Xa[ lnkDex ] , Xa[ link.parent.linkIndex ] )
-            x , resid , rank , s = np.linalg.lstsq( Xa[ lnkDex ] , s_i )
+            x , resid , rank , s = np.linalg.lstsq( Xa[ lnkDex ] , s_i ) # Solving what exactly?
             J[ : , lnkDex ] = x
     return J
 
@@ -506,10 +532,11 @@ if __name__ == "__main__":
 
 # === References ===
 """
-[1] Featherstone, Roy. "A beginner's guide to 6-d vectors (part 1)." IEEE robotics & automation magazine 17.3 (2010): 83-94.
+[1] Featherstone, Roy. "A beginner's guide to 6-D vectors (part 1)." IEEE robotics & automation magazine 17.3 (2010): 83-94.
 [2] Featherstone, Roy. "A beginner's guide to 6-D vectors (part 2)[tutorial]." IEEE robotics & automation magazine 17.4 (2010): 88-99.
 [3] Featherstone, Roy. "Robot dynamics algorithms." (1984).
 [4] Ralf Grosse-Kunstleve. "scitbx_rigid_body_essence Python Library" ,Lawrence Berkeley National Laboratory , Computational Crystallography Initiative
     http://cctbx.sourceforge.net/scitbx_rigid_body_essence/
+[5] Featherstone, Roy. Rigid body dynamics algorithms. Springer, 2014.
 """
 # === End Ref ===
