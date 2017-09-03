@@ -32,22 +32,21 @@ Dependencies: SpatialVectorRobot , Pyglet
     |L| 3.c. Implement the same robot from (3.b) with DH Parameters (Hollerbach) and generalize - LATER
     |Y| 3.d. Position - COMPLETE , Note that this is done in homogeneous 3D coords , however
     | | 3.e. Speed
+        !Y! Consider a Spatial Geo Primitive that contains transform operations common to all spatial geometry - COMPLETE , virtual class OGLDrawable
         ! ! Instantiate a robot , set it in a configuration , and calculate the task-space velocity of the end effector
         ISSUE : THE SIZE OF THE COORDINATE TRANSFORM MATRICES IS INCORRECT (4X4) , IT MUST BE 6X6
             ;Y; Restore the coordinate transforms that were previously written to transform coordinates. These are coordinate transforms 
                 for Plucker bases , not positions - COMPLETE , Obtained clarification of formulae and notation from [5] that was less clear in
                 [1] and [2] , 2017-09-02 : UNTESTED
-            ; ; Write a function to be called on 'LinkSpatial.__init__' that automatically computes the homogeneous , spatial velocity , 
-                and spatial force transforms for the link
-        ! ! Compare to analytical sol'n from Intro to Robot
+            ;Y; Write a function to be called on 'LinkSpatial.__init__' that automatically computes the homogeneous , spatial velocity , 
+                and spatial force transforms for the link - COMPLETE , Still unsure if they are correct
+        ! ! Compare to analytical sol'n from Intro to Robot (Image 96)
     | | 3.f. Acceleration
         ! ! Instantiate a robot , set it in a configuration and angular velocity , and calculate the task-space acceleration of the end effector
         ! ! Compare to analytical sol'n from Intro to Robot
 <\clip>
 
 ~~~ TODO ~~~
-* Consider a Spatial Geo Primitive that contains transform operations common to all spatial geometry ( WAIT until operations successfully
-  implemented in a presently-useful class )
 
 """
 
@@ -109,7 +108,6 @@ class TKOGLRobotCtrl( TKBasicApp ):
             self.jntScale.pack( side = LEFT )
             # self.value = self.jntScale.get()
             
-            
             # URL , Entry Widget : http://effbot.org/tkinterbook/entry.htm
             self.jntEntry = Entry( self )
             self.jntEntry.pack( side = LEFT )
@@ -163,9 +161,9 @@ class OGL_Robot( LinkModel ):
         # 4. Create an empty container for markers associated with this link
         link.markers = [] # This will hold things like effector frame bases , etc
         
-    def create_add_link_w_graphics( self , pName , pPitch , xform , graphics , parentName = None ):
+    def create_add_link_w_graphics( self , pName , pPitch , E , r , graphics , parentName = None ):
         """ Create a link , and Set up the kinematic chain relationship and store the associated graphics """
-        link = LinkSpatial( pName , pPitch , xform ) # ----------- 1. Create the link
+        link = LinkSpatial( pName , pPitch , E , r ) # ----------- 1. Create the link
         self.add_link_w_graphics( link , graphics , parentName ) # 2. Add the link
         
     # TODO : Figure out how to handle the effector frame!
@@ -219,21 +217,22 @@ if __name__ == "__main__":
     # ~ Link 1 ~
     temp = Cuboid( edge , edge , d1 , [ 0 , 0 , 0 ] )
     temp.add_vertex_offset( [ -edge/2.0 , -edge/2.0 , 0.0 ] )
+    # pName , pPitch , E , r , graphics , parentName
     robot.create_add_link_w_graphics( "link1" , 0.0 , 
-                                      np.eye( 4 ) , 
+                                      np.eye( 3 ) , [ 0 , 0 , 0 ] , 
                                       temp , None )
     # ~ Link 2 ~
     temp = Cuboid( a2  , edge , edge , [ 0 , 0 , 0 ] )
     temp.add_vertex_offset( [ 0.0 , -edge/2.0 , -edge/2.0 ] )
     robot.create_add_link_w_graphics( "link2" , 0.0 , 
-                                      homog_xfrom( x_trn( pi/2 ) , [ 0 , 0 , 2 ] ) , 
+                                       x_trn( pi/2 ) , [ 0 , 0 , 2 ] , 
                                       temp , "link1" )
     
     # ~ Link 3 ~
     temp = Cuboid( a3  , edge , edge , [ 0 , 0 , 0 ] )
     temp.add_vertex_offset( [ 0.0 , -edge/2.0 , -edge/2.0 ] )
     robot.create_add_link_w_graphics( "link3" , 0.0 , 
-                                      homog_xfrom( np.eye( 3 ) , [ 2 , 0 , 0 ] ) , 
+                                      np.eye( 3 ) , [ 2 , 0 , 0 ] , 
                                       temp , "link2" )
     
     # ~ Effector Frame ~
@@ -250,7 +249,10 @@ if __name__ == "__main__":
         print "Link 2 Markers" , link2.markers
     elif 1:
         qTest = [ pi/4 , pi/4 , pi/4 ] # Specify a test config
+        qDot  = [ 2.0  , 2.0  , 2.0  ]
         manipJacob = jacobn_manip( robot , 2 , qTest )
+        print "Manipulator Jacobian for" , qTest , endl , manipJacob
+        print "Effector Velocity for   " , qDot , endl , np.dot( manipJacob , qDot )
     
     # 4. Render!
     # window = OGL_App( [ link1 , link1axis , link2 , effectorAxis , CartAxes( 1 ) ] , caption = "Transformation Test" ) 

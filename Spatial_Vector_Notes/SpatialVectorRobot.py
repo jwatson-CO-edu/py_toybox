@@ -221,8 +221,8 @@ def homog_xfrom( E , r ):
     return np.vstack( ( np.hstack( (  E                              , [ [ r[0] ] , [ r[1] ] , [ r[2] ] ]  ) ) ,
                         np.hstack( (  [ 0 , 0 , 0 ]                  , [ 1 ]                               ) ) ) )
 
-def sp_trn_xfrm_vel( r ): # (2.21) of [5]
-    """ Return the spatial transformation of a velocity vector that corresponds to a translation of R3 vector 'r' """
+def sp_trn_xfrm_mtn( r ): # (2.21) of [5]
+    """ Return the spatial transformation of a motion vector that corresponds to a translation of R3 vector 'r' """
     return np.vstack( (  np.hstack( (  np.eye( 3 )                             , np.zeros( ( 3 , 3 ) )  ) ) , 
                          np.hstack( (  np.multiply( skew_sym_cross( r ) , -1 ) , np.eye( 3 )            ) ) ) )
 
@@ -237,9 +237,9 @@ def sp_rot_xfrm( E ): # Eq. (2.19) and (2.20) in [5]
     return np.vstack( (  np.hstack( (  E                     , np.zeros( ( 3 , 3 ) )  ) ) , 
                          np.hstack( (  np.zeros( ( 3 , 3 ) ) , E                      ) ) ) )    
 
-def spatl_xfrm_vel( E , r ): # (2.24) of [5]
-    """ Return the spatial velocity vector transformation that corresponds to a translation by 'r' followed by rotation by 'E' """
-    return np.dot( sp_rot_xfrm( E ) , sp_trn_xfrm_vel( r ) )
+def spatl_xfrm_mtn( E , r ): # (2.24) of [5]
+    """ Return the spatial motion vector transformation that corresponds to a translation by 'r' followed by rotation by 'E' """
+    return np.dot( sp_rot_xfrm( E ) , sp_trn_xfrm_mtn( r ) )
 
 def spatl_xfrm_frc( E , r ): # (2.25) of [5]
     """ Return the spatial force vector transformation that corresponds to a translation by 'r' followed by rotation by 'E' """
@@ -311,25 +311,28 @@ def XtoV( X ):
 
 class LinkSpatial:
     """ Represents a rigid link and the associated joint using spatial coordinates """
-    def __init__( self , pName , pPitch , xform = None ):
+    def __init__( self , pName , pPitch , E_xfrm = None , r_xfrm = None ):
         """ Rigid link struct """
-        self.name = pName # ----- String that uniquely identifies the link
-        self.pitch = pPitch # --- Describes the pitch (and therefore the type) of the associated joint
-        self.parent = None # ---- Reference to the parent link to which this link is attached
-        self.children = [] # ---- List of child links
-        self.linkIndex = 0 # ---- Index of link in q 
-        self.xform = xform # ---- Homogeneous coordinate transform that describes the relative position of this joint in the parent frame
-        self.pose = np.eye( 4 ) # Cached homogeneous transform that represents the pose of the link
-        self.poseReady = False #- Flag , False if the cached version is old , True if the cached pose is ready for use
-        self.I = None # --------- Spatial inertia for this link
-        self.q = 0 # ------------ Joint configuration ---> These used for caching and for preserving state across timesteps
-        self.qDot = 0 # --------- Joint Velocity        /
-        self.qDotDot = 0 # ------ Joint Acceleration  _/
-        self.v = 0 # ------------ Link Spatial Velocity     ---> These are the result of dynamics calculations
-        self.a = 0 # ------------ Link Spatial Acceleration   /
-        self.f = 0 # ------------ Joint Spatial Force        /
-        self.tau = 0 # ---------- Torque about this joint  _/
-        self.graphics = None # -- Graphic reprsentation of the link , Contains all of the draw routines , ex: Cuboid
+        print "DEBUG LinkSpatial.__init__" , endl , "E_xfrm" , endl , E_xfrm , endl , "r_xfrm" , endl , r_xfrm
+        self.name = pName # ------------------------------- String that uniquely identifies the link
+        self.pitch = pPitch # ----------------------------- Describes the pitch (and therefore the type) of the associated joint
+        self.parent = None # ------------------------------ Reference to the parent link to which this link is attached
+        self.children = [] # -----------------------------  List of child links
+        self.linkIndex = 0 # ------------------------------ Index of link in q 
+        self.xform = homog_xfrom( E_xfrm , r_xfrm ) # ----- Homogeneous coordinate transform -> position of this joint in the parent frame
+        self.xSptlMtn = spatl_xfrm_mtn( E_xfrm , r_xfrm ) # Spatial Motion Xform -> position of this joint in the parent frame
+        self.xSptlFrc = spatl_xfrm_frc( E_xfrm , r_xfrm ) # Spatial Force Xform -> position of this joint in the parent frame
+        self.pose = np.eye( 4 ) # ------------------------- Cached homogeneous transform that represents the pose of the link
+        self.poseReady = False # -------------------------- Flag , False if the cached version is old , True if the cached pose is ready for use
+        self.I = None # ----------------------------------- Spatial inertia for this link
+        self.q = 0 # -------------------------------------- Joint configuration ---> These used for caching and for preserving state across timesteps
+        self.qDot = 0 # ----------------------------------- Joint Velocity        /
+        self.qDotDot = 0 # -------------------------------- Joint Acceleration  _/
+        self.v = 0 # -------------------------------------- Link Spatial Velocity     ---> These are the result of dynamics calculations
+        self.a = 0 # -------------------------------------- Link Spatial Acceleration   /
+        self.f = 0 # -------------------------------------- Joint Spatial Force        /
+        self.tau = 0 # ------------------------------------ Torque about this joint  _/
+        self.graphics = None # ---------------------------- Graphic reprsentation of the link , Contains all of the draw routines , ex: Cuboid
         # NOTE : At this time , not asking LinkSpatial to do any of the graphics setup. This is probably best for keeping the implementation
         #        as simple and display-agnostic as possible
         
@@ -486,12 +489,18 @@ def jacobn_manip( model , bodyIndex , q ): # ( Featherstone: bodyJac )
         body = body.parent # This will become 'None' after the root link has been processed
     J = np.zeros( ( 6 , model.N ) ) # Matrix for the Jacobian
     # Xa = np.zeros( model.N ) # An array of transforms
-    Xa = np.zeros( ( model.N , model.N ) ) # An array of transforms
+    # Xa = np.zeros( ( model.N , model.N ) ) # An array of transforms
+    Xa =  [ None ] * model.N # An array of transforms
     for lnkDex , link in enumerate( model.links ): # For each link in the model
         if e[ lnkDex ]: # If the link is in the chain from the selected body to the root
+            print "DEBUG , jacobn_manip : In link" , lnkDex
             # [ XJ , s_i ] = joint_xform( link.pitch , q[ lnkDex ] )
             [ XJ , s_i ] = joint_spatl( link.pitch , q[ lnkDex ] )
-            Xa[ lnkDex ] = np.dot( XJ , link.xform )
+            print "DEBUG , jacobn_manip : XJ" , endl , XJ
+            print "DEBUG , jacobn_manip : link.xSptlMtn" , endl , link.xSptlMtn
+            print "DEBUG , jacobn_manip : np.dot( XJ , link.xSptlMtn )" , endl , np.dot( XJ , link.xSptlMtn )
+            Xa[ lnkDex ] = np.dot( XJ , link.xSptlMtn )
+            print "DEBUG , jacobn_manip : Xa[" , lnkDex , "]" , Xa[ lnkDex ]
             if link.parent:
                 Xa[ lnkDex ] = np.dot( Xa[ lnkDex ] , Xa[ link.parent.linkIndex ] )
             x , resid , rank , s = np.linalg.lstsq( Xa[ lnkDex ] , s_i ) # Solving what exactly?
