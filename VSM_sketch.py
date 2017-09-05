@@ -51,12 +51,35 @@ __builtin__.EPSILON = 1e-8 # A very small number below the precision we care abo
 
 class Sensor:
     """ A device for obtaining certain information from the environment """
-    # FIXME : START HERE
-    # set_state
-    # get_signal
+    
+    def __init__( self , state = None , observFunc = None ):
+        self.state = state
+        if observFunc:
+            self.observe = observFunc
+        else:
+            self.observe = self.dummy_observe
+            
+    def dummy_observe( self , state ):
+        """ Dummy observation function , does nothing """
+        return 0
+    
+    def set_state( self , x ):
+        self.state = x
+
 
 class BugAgent( object ):
     """ Agent with two sensors that can slide right or slide left """
+    
+    def __init__( self , world , x ):
+        self.env = world
+        self.pos = x
+        self.sensorOffsets = [ -0.5 ,  0.5 ]
+        self.sensors = []
+        for sensDex , offset in enumerate( self.sensorOffsets ):
+            pass
+            # FIXME : START HERE
+            # self.sensors.append( Sensor( self.pos + self.sensorOffsets[ sensDex ] ,  )
+    
     # TODO : TICK
     # TODO : WRITE AGENT SENSING
     # TODO : BRAITENBURG TEST
@@ -85,6 +108,8 @@ class SliderBugEnv( object ):
         """ Get the light intensity at position 'x' givent the light position 'x_Light' """
         return min( self.lightMax , self.lightMax / abs( x - x_Light )**2 ) # Divide the max intensity by the square of the distance between point and light pos
         
+    # FIXME : def get_intensity_at( self , x ):
+    
     def advance_timestep( self ):
         """ Run one simulation step """
         self.t += self.ticLen # Advance time
