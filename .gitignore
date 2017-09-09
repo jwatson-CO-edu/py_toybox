@@ -1,5 +1,7 @@
 *.py~
 *.pdf
+*.jpg
+*/*.jpg
 Voxel/pyCraft/
 Voxel/pyCraft/build
 Voxel/pyCraft/exMain.py
