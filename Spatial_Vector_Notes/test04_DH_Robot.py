@@ -199,7 +199,19 @@ class OGL_Robot( LinkModel ):
     
 def analytic_test_04( q , qDot , d1 , a2 , a3 ):
     """ Return the 6DOF task space velocity for the end effector of the robot on Image 96 of Intro to Robotics """
-    # FIXME : NEED TO TRANSLATE THE MIDFRAME EVALUATION INTO THE TASK SPACE
+    # Cache terms for readability and DRY
+    th1 = q[0] ; cs1 = cos(th1) ; sn1 = sin(th1) ; dt1 = qDot[0] 
+    th2 = q[1] ; cs2 = cos(th2) ; sn1 = sin(th2) ; dt2 = qDot[1] 
+    th3 = q[2] ; cs3 = cos(th3) ; sn1 = sin(th3) ; dt3 = qDot[2]
+    d23 = dt2 + dt3
+    
+    return [ -sn1*a2*cs2*dt1 - cs1*sn2*a2*dt2 + sn1*sn2*sn3*a3*dt1 \
+             -sn1*cs2*cs3*a3*dt1 - cs1*sn2*cs3#FIXME: TERM UNFINISHED!  ,
+              ,
+              ,
+              ,
+              ,
+              ]
     
 # == End Test ==
 
