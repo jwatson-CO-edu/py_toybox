@@ -40,10 +40,12 @@ __builtin__.EPSILON = 1e-8 # A very small number below the precision we care abo
     |Y| Light position as a function of time , f(t) - COMPLETE , tested
     |Y| Light intensity as a function of light position - COMPLETE , tested
     |Y| Step function , Light intensity evolution over time - COMPLETE , tested
+    | | Transition model for BugAgent
 [ ] 2. Bug
-    | | Fixed sensors , X2
-    | | Available outputs , { LEFT , RGHT }
-    | | Sense
+    |Y| Fixed sensors , X2 - COMPLETE
+    |Y| Available outputs , { LEFT , RGHT , IDLE } - COMPLETE
+    |Y| Sense - COMPLETE
+    
 [ ] N. Bug Dynamics
     | | Bug { momentum , acceleration } and slider damping
     
@@ -54,6 +56,7 @@ class Sensor:
     
     def __init__( self , state = None , observFunc = None ):
         self.state = state
+        self.observation = None
         if observFunc:
             self.observe = observFunc
         else:
@@ -66,6 +69,7 @@ class Sensor:
     def set_state( self , x ):
         self.state = x
 
+ACTIONS = set( [ "LEFT" , "RGHT" , "IDLE" ] )
 
 class BugAgent( object ):
     """ Agent with two sensors that can slide right or slide left """
@@ -75,30 +79,48 @@ class BugAgent( object ):
         self.pos = x
         self.sensorOffsets = [ -0.5 ,  0.5 ]
         self.sensors = []
+        self.action = "IDLE"
         for sensDex , offset in enumerate( self.sensorOffsets ):
-            pass
-            # FIXME : START HERE
-            # self.sensors.append( Sensor( self.pos + self.sensorOffsets[ sensDex ] ,  )
+            self.sensors.append( Sensor( self.pos + self.sensorOffsets[ sensDex ] , 
+                                         self.env.get_intensity_at ) )
+            
+    def observe( self ):
+        """ Populate sensors with observations """
+        for sensDex , sensor in enumerate( self.sensors ):
+            sensor.observation = sensor.observe( self.pos + self.sensorOffsets[ sensDex ] )
+        print [ sensor.observation for sensor in self.sensors ]
     
-    # TODO : TICK
-    # TODO : WRITE AGENT SENSING
-    # TODO : BRAITENBURG TEST
-    # TODO : STATE ASM TEST
-    # TODO : ADD THE ABOVE TO THE DEVELOPMENT PLAN
+    def act( self ):
+        """ Make decision based on the data """
+        if self.sensors[0].observation > self.sensors[1].observation:
+            self.action = "LEFT"
+        elif self.sensors[0].observation < self.sensors[1].observation:
+            self.action = "RGHT"
+        else:
+            self.action = "IDLE"
+    
+    def tick( self ):
+        """ Observe and act """
+        self.observe() # Retrieve data from the world
+        self.act() # Act on the data
+
+def transition_model( env , objName , state , action ):
+    """ Get s' = T(s,a) """
+    # FIXME : START HERE
 
 class SliderBugEnv( object ):
     """ Slider Bug Environment - For testing an agent with only two actions available """
     
-    def __init__( self , agentRef ):
-        self.agent       = agentRef # --------------------------- Reference to the agent that lives in the slider environment
+    def __init__( self ):
+        self.agent       = None # ------------------------------- Reference to the agent that lives in the slider environment , world must exist first
         self.slideSide   = 10 # --------------------------------- One-sided range of each slider
         self.slideLimits = [ -self.slideSide , self.slideSide ] # Limits of both the light and the bug sliders
         self.lightPos    = 0.0 # -------------------------------- Current position of the light
         self.lightMax    = 100 # -------------------------------- Maximum intensity of the light
         self.t           = 0.0 # -------------------------------- Current time
         self.ticLen      = 0.05 # ------------------------------- Amount of time to elapse each step
-        self.litePosFunc = self.lightFunc_sin
-        self.liteIntFunc = self.liteI_invSqr
+        self.litePosFunc = self.lightFunc_sin # ----------------- Position of the light as a function of the current time
+        self.liteIntFunc = self.liteI_invSqr # ------------------ Intensity of the light at the specified postion , given the current light pos
         
     def lightFunc_sin( self , t ):
         """ Light position as a sine function of 't' , Default """
@@ -108,26 +130,33 @@ class SliderBugEnv( object ):
         """ Get the light intensity at position 'x' givent the light position 'x_Light' """
         return min( self.lightMax , self.lightMax / abs( x - x_Light )**2 ) # Divide the max intensity by the square of the distance between point and light pos
         
-    # FIXME : def get_intensity_at( self , x ):
+    def get_intensity_at( self , x ):
+        """ Get the light intensity at state 'x' , given the present state of the light """
+        return self.liteIntFunc( x , self.lightPos )
     
-    def advance_timestep( self ):
+    def tick( self ):
         """ Run one simulation step """
-        self.t += self.ticLen # Advance time
+        # 1. Advance time
+        self.t += self.ticLen 
+        # 2. Update environment
         self.lightPos = self.litePosFunc( self.t )
         print "Light position: {0:6.2f}".format( self.lightPos ) , "  ,  Light intensity at 0 pos: {0:6.2f}".format( 
                 self.liteIntFunc( 0 , self.lightPos )
-        )
-        
+        ) , 
+        # 3. Update agents
+        self.agent.tick()
+        print "Agent Action  :" , self.agent.action
 
 
 # == Main ==================================================================================================================================
 
 if __name__ == "__main__":
     
-    LightEnv = SliderBugEnv( {} )
+    LightEnv = SliderBugEnv()
+    LightEnv.agent = BugAgent( LightEnv , 0.0 )
     
     for i in xrange( 100 ):
-        LightEnv.advance_timestep()
+        LightEnv.tick()
 
 # == End Main ==============================================================================================================================
 
