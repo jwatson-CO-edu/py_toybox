@@ -36,12 +36,12 @@ __builtin__.EPSILON = 1e-8 # A very small number below the precision we care abo
     * Might these parameters be matched to learned features?
 
 ~~~~~~ DEVELOPMENT PLAN ~~~~~~
-[ ] 1. Slider Bug Environment
+[Y] 1. Slider Bug Environment - COMPLETE
     |Y| Light position as a function of time , f(t) - COMPLETE , tested
     |Y| Light intensity as a function of light position - COMPLETE , tested
     |Y| Step function , Light intensity evolution over time - COMPLETE , tested
-    | | Transition model for BugAgent
-[ ] 2. Bug
+    |Y| Transition model for BugAgent
+[Y] 2. Bug - COMPLETE
     |Y| Fixed sensors , X2 - COMPLETE
     |Y| Available outputs , { LEFT , RGHT , IDLE } - COMPLETE
     |Y| Sense - COMPLETE
@@ -50,6 +50,18 @@ __builtin__.EPSILON = 1e-8 # A very small number below the precision we care abo
     | | Bug { momentum , acceleration } and slider damping
     
 """
+
+# == Utility Functions ==
+
+def clamp( val , lims ):
+    """ Return a version of val that is clamped to the range [ lims[0] , lims[1] ] , inclusive """
+    if val < lims[0]:
+        return lims[0]
+    if val > lims[1]:
+        return lims[1]
+    return val
+
+# == End Utility ==
 
 class Sensor:
     """ A device for obtaining certain information from the environment """
@@ -69,25 +81,25 @@ class Sensor:
     def set_state( self , x ):
         self.state = x
 
-ACTIONS = set( [ "LEFT" , "RGHT" , "IDLE" ] )
+
 
 class BugAgent( object ):
     """ Agent with two sensors that can slide right or slide left """
     
     def __init__( self , world , x ):
         self.env = world
-        self.pos = x
+        self.state = x
         self.sensorOffsets = [ -0.5 ,  0.5 ]
         self.sensors = []
         self.action = "IDLE"
         for sensDex , offset in enumerate( self.sensorOffsets ):
-            self.sensors.append( Sensor( self.pos + self.sensorOffsets[ sensDex ] , 
+            self.sensors.append( Sensor( self.state + self.sensorOffsets[ sensDex ] , 
                                          self.env.get_intensity_at ) )
             
     def observe( self ):
         """ Populate sensors with observations """
         for sensDex , sensor in enumerate( self.sensors ):
-            sensor.observation = sensor.observe( self.pos + self.sensorOffsets[ sensDex ] )
+            sensor.observation = sensor.observe( self.state + self.sensorOffsets[ sensDex ] )
         print [ sensor.observation for sensor in self.sensors ]
     
     def act( self ):
@@ -104,9 +116,27 @@ class BugAgent( object ):
         self.observe() # Retrieve data from the world
         self.act() # Act on the data
 
-def transition_model( env , objName , state , action ):
+# ~~ Bug Model Parameters ~~
+_BUGACTIONS = set( [ "LEFT" , "RGHT" , "IDLE" ] ) # Actions available to the bug
+_BUGSPEED   = 0.5 # Distance that the bug moves , per step
+
+def transition_model( env , agent , state , action ):
     """ Get s' = T(s,a) """
-    # FIXME : START HERE
+    name = agent.__class__.__name__
+    if name == "BugAgent":
+        if action in _BUGACTIONS:
+            s_prime = state
+            if action == "LEFT":
+                s_prime = clamp( state - _BUGSPEED , env.slideLimits ) 
+            elif action == "RGHT":
+                s_prime = clamp( state + _BUGSPEED , env.slideLimits )
+            elif action == "IDLE":
+                pass
+            return s_prime
+        else:
+            raise ValueError( "transition_model: " + str( action ) + " is not an action recognized by the transition model!" )
+    else:
+        raise ValueError( "transition_model: " + str( name ) + " is not a class recognized by the transition model!" )
 
 class SliderBugEnv( object ):
     """ Slider Bug Environment - For testing an agent with only two actions available """
@@ -146,6 +176,7 @@ class SliderBugEnv( object ):
         # 3. Update agents
         self.agent.tick()
         print "Agent Action  :" , self.agent.action
+        self.agent.state = transition_model( self , self.agent , self.agent.state , self.agent.action )
 
 
 # == Main ==================================================================================================================================
@@ -155,8 +186,21 @@ if __name__ == "__main__":
     LightEnv = SliderBugEnv()
     LightEnv.agent = BugAgent( LightEnv , 0.0 )
     
+    lightPos = []
+    agentPos = []
+    
     for i in xrange( 100 ):
         LightEnv.tick()
+        lightPos.append( LightEnv.lightPos )
+        agentPos.append( LightEnv.agent.state )
+        
+    if 1:
+        import matplotlib.pyplot as plt
+    
+        plt.plot( lightPos )
+        plt.plot( agentPos )
+        
+        plt.show()
 
 # == End Main ==============================================================================================================================
 
