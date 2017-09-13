@@ -200,18 +200,26 @@ class OGL_Robot( LinkModel ):
 def analytic_test_04( q , qDot , d1 , a2 , a3 ):
     """ Return the 6DOF task space velocity for the end effector of the robot on Image 96 of Intro to Robotics """
     # Cache terms for readability and DRY
-    th1 = q[0] ; cs1 = cos(th1) ; sn1 = sin(th1) ; dt1 = qDot[0] 
-    th2 = q[1] ; cs2 = cos(th2) ; sn1 = sin(th2) ; dt2 = qDot[1] 
-    th3 = q[2] ; cs3 = cos(th3) ; sn1 = sin(th3) ; dt3 = qDot[2]
+    th1 = q[0] ; cs1 = cos(th1) ; sn1 = sin(th1) ; dt1 = qDot[0] # Joint 1
+    th2 = q[1] ; cs2 = cos(th2) ; sn2 = sin(th2) ; dt2 = qDot[1] # Joint 2
+    th3 = q[2] ; cs3 = cos(th3) ; sn3 = sin(th3) ; dt3 = qDot[2] # Joint 3
     d23 = dt2 + dt3
     
-    return [ -sn1*a2*cs2*dt1 - cs1*sn2*a2*dt2 + sn1*sn2*sn3*a3*dt1 \
-             -sn1*cs2*cs3*a3*dt1 - cs1*sn2*cs3#FIXME: TERM UNFINISHED!  ,
-              ,
-              ,
-              ,
-              ,
-              ]
+    return [ 
+             -sn1*a2*cs2*dt1     - cs1*sn2*a2*dt2     + sn1*sn2*sn3*a3*dt1 \
+             -sn1*cs2*cs3*a3*dt1 - cs1*sn2*cs3*d23*a3 - cs1*cs2*sn3*d23*a3 , # dot( d_03 , x_0 )
+             
+              cs1*a2*cs2*dt1     + sn1*sn2*a2*dt2     + cs1*cs2*cs3*a3*dt1 \
+             -cs1*sn2*sn3*a3*dt1 + sn1*sn2*cs3*d23*a3 + sn1*cs2*sn3*d23*a3 , # dot( d_03 , y_0 )
+             
+              cs2*a2*dt2         + cs2*cs3*d23*a3                          , # dot( d_03 , z_0 )
+              
+              sn1*dt2            - cs1*sn2*cs3*dt3    - cs1*cs2*sn3*dt3    , # dot( omga_03 , x_0 )
+              
+             -cs1*dt2            + sn1*sn2*cs3*dt3    + sn1*cs2*sn3*dt3    , # dot( omga_03 , y_0 )
+             
+              dt1                + cs2*cs3*dt3        - sn2*sn3*dt3        , # dot( omga_03 , z_0 )
+    ]
     
 # == End Test ==
 
@@ -267,6 +275,7 @@ if __name__ == "__main__":
         manipJacob = jacobn_manip( robot , 2 , qTest )
         print "Manipulator Jacobian for" , qTest , endl , manipJacob
         print "Effector Velocity for   " , qDot , endl , np.dot( manipJacob , qDot )
+        print "Analytical Velocity     " , qDot , endl , analytic_test_04( qTest , qDot , d1 , a2 , a3 )
     
     # 4. Render!
     # window = OGL_App( [ link1 , link1axis , link2 , effectorAxis , CartAxes( 1 ) ] , caption = "Transformation Test" ) 
