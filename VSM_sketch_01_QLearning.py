@@ -17,8 +17,10 @@ Quick sketch of the Variable State Machine, A flexible decision process for AI
 # ~ Standard ~
 import time , os
 from math import cos , sin , acos , asin , tan , atan2 , radians , degrees , hypot , pi
+from random import choice
 # ~ Special ~
 import numpy as np
+from marchhare.Vector import vec_random_range
 # ~ Local ~
 
 # ~~ Aliases & Shortcuts ~~
@@ -46,35 +48,67 @@ __builtin__.EPSILON = 1e-8 # A very small number below the precision we care abo
     |Y| Available outputs , { LEFT , RGHT , IDLE } - COMPLETE
     |Y| Sense - COMPLETE
 [ ] 3. Q-Learning
-[ ] 4. Neural transitions
-    
-[ ] 5. Bug Dynamics
+    | | Standard Q-learning with human-prepared output actions
+    | | Random Q-Learning with decaying output actions
+[ ] 4. Re-read VSM idea notes
+[ ] 5. Neural transitions
+[ ] 6. Bug Dynamics
     | | Bug { momentum , acceleration , and damping } 
     
 """
 
 """
 ~~~~~~ NOTES ~~~~~~
-* What is a state?: It is a set of control efforts or configurations corresponding to every degree of freedom ( zero / no-op allowed )
-* Do all states give positive value? No
-* Are all states relevant to the problem? No
-* What is the search space?: All control states
+
+FIXME: WHAT IS THE SIMPLEST WAY TO EXPRESS THIS PROBLEM? ARE MODES ABSOLUTELY NECESSARY TO EXPRESS IT? - NO , left, right, and idle can be
+       expressed as a single value that represents the desired speed in a line
+
+* What is an Action?: It is a set of outputs corresponding to every degree of freedom, each output consisting of a mode and a parameter
+                      ( zero / no-op allowed )
+                      
+      DOF_1              , ... , DOF_n               
+    [ ( Mode X , param ) , ... , ( Mode X , param ) ]
+    
+
+    
+* Do all actions give positive value? No
+* Are all actions relevant to the problem? No
+* What is the search space?: All actions
+    - What is the dimensionality of all actions: Number of DOFs times number of configurations that those DOFs can assume
 
 * Variable Q-Learning
-    - Assemble states on the fly , starting with a random assortment of states
+    - Assemble actions on the fly , starting with a random assortment of actions
     - Do the best with the tools you have first
     - Try to invent new tools second
     - This might take even longer than regular Q-learning
 """
 
-class Output:
+class OutputSpec:
     """ One DOF output for an agent , consists of an action and a parameter """
-    def __init__( self ):
+    
+    def __init__( self , modeSet , outputRange ):
         """ Represents one action-parameter pair """
-        self.action = None
-        self.param = None
+        if isinstance( DOFset , ( list , tuple ) ):
+            self.actions = tuple( actionSet )
+        else:
+            raise ValueError( "OutputSpec.__init__: 'actionSet' must be an iterable, got " + str( outputRange ) )
+        if not isinstance( outputRange , ( list , tuple ) ) or len( outputRange ) != 2 or outputRange[0] > outputRange[1]:
+            raise ValueError( "OutputSpec.__init__: 'outputRange' must be an iterable of two elements defining a range, got " + str( outputRange ) )
+        else:
+            self.paramRange = tuple( outputRange )
         
-class State( object ):
+    def check_output( self , action , output ):
+        """ Check that the given output is valid """
+        if action in self.actions and output >= self.paramRange[0] and output <= self.paramRange[1]:
+            return True
+        else:
+            return False
+        
+    def rand_output( self ):
+        """ Get a random output actionlet """
+        return ( choice( self.actions ) , vec_random_range( 1 , *self.paramRange )  )
+        
+class Action( object ):
     """ Represents the complete action state for the agent """
     
     def __init__( self ):
@@ -146,8 +180,12 @@ class BugAgent( object ):
         self.act() # Act on the data
 
 # ~~ Bug Model Parameters ~~
-_BUGACTIONS = set( [ "LEFT" , "RGHT" , "IDLE" ] ) # Actions available to the bug
+_BUGACTIONS = [ "LEFT" , "RGHT" , "IDLE" ] # Actions available to the bug
 _BUGSPEED   = 0.5 # Distance that the bug moves , per step
+
+bugOutSpec = OutputSpec( _BUGACTIONS , [ -_BUGSPEED ,  _BUGSPEED ] )
+
+
 
 def transition_model( env , agent , state , action ):
     """ Get s' = T(s,a) """
