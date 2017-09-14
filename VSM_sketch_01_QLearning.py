@@ -20,7 +20,7 @@ from math import cos , sin , acos , asin , tan , atan2 , radians , degrees , hyp
 from random import choice
 # ~ Special ~
 import numpy as np
-from marchhare.Vector import vec_random_range
+# from marchhare.Vector import vec_random_range # Not in the CARGO environment!
 # ~ Local ~
 
 # ~~ Aliases & Shortcuts ~~
@@ -30,6 +30,38 @@ __builtin__.infty = float('inf') # Infinity
 __builtin__.EPSILON = 1e-8 # A very small number below the precision we care about
 
 # == End Init ==============================================================================================================================
+
+"""
+~~~~~~ NOTES ~~~~~~
+
+* What is an Action?: It is a set of efforts, each corresponding to a degree of freedom of the agent ( zero / no-op allowed )
+    - Can be used to represent on / off == 1 / 0
+    - Can be used to represent direction of DOF -N , +N
+    - IDLE == 0
+                      
+      DOF_1    , ... , DOF_n               
+    [ Effort_1 , ... , Effort_n ]
+     
+* Do all actions give positive value? No
+* Are all actions relevant to the problem? No
+* What is the search space?: All actions
+    - What is the dimensionality of all actions: Number of DOFs times number of efforts that the DOF can output ( may be continuous )
+
+* Variable Q-Learning
+    - Assemble actions on the fly , starting with a random assortment of actions
+    - Do the best with the tools you have first
+    - Try to invent new tools second
+    - This might take even longer than regular Q-learning
+    
+* Variable Action
+    - Is it possible for the machine to choose between discrete efforts and situation-dependent , parametric efforts?  How to do this?
+    - Does it make sense to give actions unique names?
+    
+* Variable State
+    - How to arrive at the internal states that I specified by hand?
+    - What is the advantage of having the machine invent internal states for itself?
+"""
+
 
 """
 ~~~~~~ Problem Statement ~~~~~~
@@ -47,9 +79,16 @@ __builtin__.EPSILON = 1e-8 # A very small number below the precision we care abo
     |Y| Fixed sensors , X2 - COMPLETE
     |Y| Available outputs , { LEFT , RGHT , IDLE } - COMPLETE
     |Y| Sense - COMPLETE
-[ ] 3. Q-Learning
-    | | Standard Q-learning with human-prepared output actions
-    | | Random Q-Learning with decaying output actions
+[ ] 3. Simple learning algo with human-prepared output actions
+    |Y| Define an action
+    |Y| Create a set of actions , Course
+    |Y| Look at Q-Learning and SARSA and decide which one to use ( The ONLINE one ) - COMPLETE , Either of these can be online / offline , 
+        Choosing SARSA first because it is simpler
+    | | Implement Learning
+    | | Compare SARSA and Q-Learning
+    | | Create a set of actions , Fine
+    | | See if this results in improvement , How much longer does it take to train?
+    | | Learning on random actions with decay
 [ ] 4. Re-read VSM idea notes
 [ ] 5. Neural transitions
 [ ] 6. Bug Dynamics
@@ -57,67 +96,11 @@ __builtin__.EPSILON = 1e-8 # A very small number below the precision we care abo
     
 """
 
-"""
-~~~~~~ NOTES ~~~~~~
 
-FIXME: WHAT IS THE SIMPLEST WAY TO EXPRESS THIS PROBLEM? ARE MODES ABSOLUTELY NECESSARY TO EXPRESS IT? - NO , left, right, and idle can be
-       expressed as a single value that represents the desired speed in a line
-
-* What is an Action?: It is a set of outputs corresponding to every degree of freedom, each output consisting of a mode and a parameter
-                      ( zero / no-op allowed )
-                      
-      DOF_1              , ... , DOF_n               
-    [ ( Mode X , param ) , ... , ( Mode X , param ) ]
-    
-
-    
-* Do all actions give positive value? No
-* Are all actions relevant to the problem? No
-* What is the search space?: All actions
-    - What is the dimensionality of all actions: Number of DOFs times number of configurations that those DOFs can assume
-
-* Variable Q-Learning
-    - Assemble actions on the fly , starting with a random assortment of actions
-    - Do the best with the tools you have first
-    - Try to invent new tools second
-    - This might take even longer than regular Q-learning
-"""
-
-class OutputSpec:
-    """ One DOF output for an agent , consists of an action and a parameter """
-    
-    def __init__( self , modeSet , outputRange ):
-        """ Represents one action-parameter pair """
-        if isinstance( DOFset , ( list , tuple ) ):
-            self.actions = tuple( actionSet )
-        else:
-            raise ValueError( "OutputSpec.__init__: 'actionSet' must be an iterable, got " + str( outputRange ) )
-        if not isinstance( outputRange , ( list , tuple ) ) or len( outputRange ) != 2 or outputRange[0] > outputRange[1]:
-            raise ValueError( "OutputSpec.__init__: 'outputRange' must be an iterable of two elements defining a range, got " + str( outputRange ) )
-        else:
-            self.paramRange = tuple( outputRange )
-        
-    def check_output( self , action , output ):
-        """ Check that the given output is valid """
-        if action in self.actions and output >= self.paramRange[0] and output <= self.paramRange[1]:
-            return True
-        else:
-            return False
-        
-    def rand_output( self ):
-        """ Get a random output actionlet """
-        return ( choice( self.actions ) , vec_random_range( 1 , *self.paramRange )  )
-        
-class Action( object ):
-    """ Represents the complete action state for the agent """
-    
-    def __init__( self ):
-        self.selector = []
-        self.outputs  = []
 
 # == Utility Functions ==
 
-def clamp( val , lims ):
+def clamp_val( val , lims ): # >>> MH
     """ Return a version of val that is clamped to the range [ lims[0] , lims[1] ] , inclusive """
     if val < lims[0]:
         return lims[0]
@@ -125,7 +108,67 @@ def clamp( val , lims ):
         return lims[1]
     return val
 
+def vec_random_range( dim , limLo , limHi ): # <<< MH
+    """ Return a vector in which each element takes on a random value between 'limLo' and 'limHi' with a uniform distribution """
+    rtnVec = []
+    randVec = vec_random( dim )
+    span = abs( limHi - limLo )
+    for elem in randVec:
+        rtnVec.append( elem * span + limLo )
+    return rtnVec
+
+def vec_random_limits( dim , limits ): # <<< MH
+    """ Return a vector in which each element takes on a random value between 'limits[i][0]' and 'limits[i][1]' with a uniform distribution """
+    rtnVec = []
+    randVec = vec_random( dim )
+    for i , elem in enumerate( randVec ):
+        span = abs( limits[i][1] - limits[i][0] )
+        rtnVec.append( elem * span + limits[i][0] )
+    return rtnVec
+
+def vec_check_limits( vec , limits ): # <<< MH
+    """ Return True of 'vec' [x_0 ... x_N] falls within 'limits' ( ( x0min , x0max ) ... ( xNmin , xNmax ) ) , otherwise false """
+    for i , lim in enumerate(limits):
+        if vec[i] < lim[0]:
+            return False
+        elif vec[i] > lim[1]:
+            return False
+    return True
+
 # == End Utility ==
+
+
+class ActionSpec( object ):
+    """ Contains the constraints and requirements for an agent action in the problem """
+    
+    def __init__( self , dimension , dimLims ):
+        """ Create a specification with the given dimensionality and limits """
+        if len( dimLims ) != dimension:
+            raise ValueError( "ActionSpec.__init__: Limits did not mention the given dimensionality!" )
+        self.dims = dimension
+        self.lims = dimLims
+                
+    def check_action( self , action ):
+        """ Return 'True' if 'action' has the correct dimensionality and limits """
+        if isinstance( action , ( list , tuple ) ):
+            if len( action ) == self.dims:
+                return vec_check_limits( action , self.lims )
+            else:
+                return False
+        else:
+            return False
+        
+    def gen_rand_action( self ):
+        """ Generate a random action that meets the specification """
+        return vec_random_limits( self.dims , self.lims )
+        
+    
+class Action:
+    """ Container , Represents the completely defined action for the agent """
+    
+    def __init__( self , efforts = [] ):
+        self.efforts  = efforts
+        
 
 class Sensor:
     """ A device for obtaining certain information from the environment """
@@ -146,15 +189,22 @@ class Sensor:
         self.state = x
 
 
+# ~~ Bug Model Parameters ~~
+_BUGSPEED   = 0.5 # Distance that the bug moves , per step
+# _BUGACTIONS = [ "LEFT" , "RGHT" , "IDLE" ] # Actions available to the bug
+_BUGACTIONS = [ [ -_BUGSPEED ] , [  _BUGSPEED ] , [ 0.0 ] ] # Actions available to the bug
+
+
 class BugAgent( object ):
     """ Agent with two sensors that can slide right or slide left """
     
     def __init__( self , world , x ):
         self.env = world
         self.state = x
+        self.internal = None
         self.sensorOffsets = [ -0.5 ,  0.5 ]
         self.sensors = []
-        self.action = "IDLE"
+        self.action = _BUGACTIONS[2]
         for sensDex , offset in enumerate( self.sensorOffsets ):
             self.sensors.append( Sensor( self.state + self.sensorOffsets[ sensDex ] , 
                                          self.env.get_intensity_at ) )
@@ -164,44 +214,35 @@ class BugAgent( object ):
         for sensDex , sensor in enumerate( self.sensors ):
             sensor.observation = sensor.observe( self.state + self.sensorOffsets[ sensDex ] )
         print [ sensor.observation for sensor in self.sensors ]
+        self.interpret()
+    
+    def interpret( self ):
+        """ Translate the sensor readings into an internal state """ # 
+        if self.sensors[0].observation > self.sensors[1].observation:
+            self.internal = 0 # self.action = _BUGACTIONS[0]
+        elif self.sensors[0].observation < self.sensors[1].observation:
+            self.internal = 1 # self.action = _BUGACTIONS[1]
+        else:
+            self.internal = 2 # self.action = _BUGACTIONS[2]
     
     def act( self ):
         """ Make decision based on the data """
-        if self.sensors[0].observation > self.sensors[1].observation:
-            self.action = "LEFT"
-        elif self.sensors[0].observation < self.sensors[1].observation:
-            self.action = "RGHT"
-        else:
-            self.action = "IDLE"
+        self.action = _BUGACTIONS[ self.internal ]
     
     def tick( self ):
         """ Observe and act """
         self.observe() # Retrieve data from the world
         self.act() # Act on the data
 
-# ~~ Bug Model Parameters ~~
-_BUGACTIONS = [ "LEFT" , "RGHT" , "IDLE" ] # Actions available to the bug
-_BUGSPEED   = 0.5 # Distance that the bug moves , per step
-
-bugOutSpec = OutputSpec( _BUGACTIONS , [ -_BUGSPEED ,  _BUGSPEED ] )
-
-
 
 def transition_model( env , agent , state , action ):
     """ Get s' = T(s,a) """
     name = agent.__class__.__name__
     if name == "BugAgent":
-        if action in _BUGACTIONS:
-            s_prime = state
-            if action == "LEFT":
-                s_prime = clamp( state - _BUGSPEED , env.slideLimits ) 
-            elif action == "RGHT":
-                s_prime = clamp( state + _BUGSPEED , env.slideLimits )
-            elif action == "IDLE":
-                pass
-            return s_prime
+        if len( action ) == 1:
+            return clamp_val( state + action[0] , env.slideLimits ) 
         else:
-            raise ValueError( "transition_model: " + str( action ) + " is not an action recognized by the transition model!" )
+            raise ValueError( "transition_model: " + str( action ) + " was of the wrong dimensionality for " + str( name ) + "!" )
     else:
         raise ValueError( "transition_model: " + str( name ) + " is not a class recognized by the transition model!" )
 
@@ -240,11 +281,12 @@ class SliderBugEnv( object ):
         print "Light position: {0:6.2f}".format( self.lightPos ) , "  ,  Light intensity at 0 pos: {0:6.2f}".format( 
                 self.liteIntFunc( 0 , self.lightPos )
         ) , 
-        # 3. Update agents
+        # 3. Update agents , Apply transitions resulting from actions
         self.agent.tick()
         print "Agent Action  :" , self.agent.action
         self.agent.state = transition_model( self , self.agent , self.agent.state , self.agent.action )
-
+        # 4. Assign Value
+        # 5. Agent learning
 
 # == Main ==================================================================================================================================
 
@@ -264,8 +306,8 @@ if __name__ == "__main__":
     if 1:
         import matplotlib.pyplot as plt
     
-        plt.plot( lightPos )
-        plt.plot( agentPos )
+        plt.plot( lightPos , linewidth = 2.0 )
+        plt.plot( agentPos , linewidth = 2.0 )
         
         plt.show()
 
