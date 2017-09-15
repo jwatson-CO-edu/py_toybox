@@ -29,21 +29,39 @@ Dependencies: SpatialVectorRobot , Pyglet
         !Y! Repair FK function - COMPLETE , Construction of the transformation matrix was incorrect , constructed the entire sequence of 
             transforms before multiplying
         !Y! Implement an effector frame - COMPLETE
-    |L| 3.c. Implement the same robot from (3.b) with DH Parameters (Hollerbach) and generalize - LATER
-    |Y| 3.d. Position - COMPLETE , Note that this is done in homogeneous 3D coords , however
-    | | 3.e. Speed
+    |Y| 3.c. Position - COMPLETE , Note that this is done in homogeneous 3D coords , however
+    | | 3.d. Speed
         !Y! Consider a Spatial Geo Primitive that contains transform operations common to all spatial geometry - COMPLETE , virtual class OGLDrawable
-        ! ! Instantiate a robot , set it in a configuration , and calculate the task-space velocity of the end effector
-        ISSUE : THE SIZE OF THE COORDINATE TRANSFORM MATRICES IS INCORRECT (4X4) , IT MUST BE 6X6
+        !Y! Instantiate a robot , set it in a configuration , and calculate the task-space velocity of the end effector - COMPLETE , to the best of my
+            knowledge , this is implemented in the day that Featherstone describes in [2].  However , either the answer obtained does not match that 
+            derived in class , or I did not correctly transform the class answer ( which was done using mid-frame evaluation ) to the lab frame
+        ISSUE      : THE SIZE OF THE COORDINATE TRANSFORM MATRICES IS INCORRECT (4X4) , IT MUST BE 6X6
             ;Y; Restore the coordinate transforms that were previously written to transform coordinates. These are coordinate transforms 
                 for Plucker bases , not positions - COMPLETE , Obtained clarification of formulae and notation from [5] that was less clear in
                 [1] and [2] , 2017-09-02 : UNTESTED
             ;Y; Write a function to be called on 'LinkSpatial.__init__' that automatically computes the homogeneous , spatial velocity , 
                 and spatial force transforms for the link - COMPLETE , Still unsure if they are correct
+        RESOLUTION : For now, computing Cartesian space transforms using homogeneous coordinates
         ! ! Compare to analytical sol'n from Intro to Robot (Image 96)
-    | | 3.f. Acceleration
+        ISSUE : THE ANALYTICAL SOLUTION DOES NOT LOOK ANYTHING LIKE THE FEATHERSTONE SOLUTION
+            ;Y; Look at the Featherstone definition of the Jacobian in [2] and [5] again, see if it means what you think it means - COMPLETE , 
+                Book and article use the typical def'n of Jacobian, but there isn't a mathematical reason to believe that this is tracking the
+                tool frame.  The derivation from my notes is for the tool frame, so I need to encode that in my implementation if I hope to see
+                the same results
+            ;Y; Try adding a zero-extent link to represent the tool frame, and ask Featherstone to get the Jacobian of this - COMPLETED , 
+                Displays as expected and runs without error.  Still completely different than the analytical test , which may be grossly wrong
+            ; ; Try a one-link robot , Rotational
+                : : Implement
+                : : Derive
+            ; ; Try a one-link robot , Prismatic
+                : : How to display a prismatic link?
+                : : Implement
+                : : Derive
+            ; ; Try a two link robot , Rotational
+    | | 3.e. Acceleration
         ! ! Instantiate a robot , set it in a configuration and angular velocity , and calculate the task-space acceleration of the end effector
         ! ! Compare to analytical sol'n from Intro to Robot
+    |L| 3.f. Implement the same robot from (3.b) with DH Parameters (Hollerbach) and generalize - LATER
 <\clip>
 
 ~~~ TODO ~~~
@@ -161,12 +179,29 @@ class OGL_Robot( LinkModel ):
         # 4. Create an empty container for markers associated with this link
         link.markers = [] # This will hold things like effector frame bases , etc
         
+    def add_link_no_draw( self , link , parentName = None ):
+        """ Set up the kinematic chain relationship and store the associated graphics """
+        # 1. Set up the kinematic chain relationship
+        LinkModel.add_and_attach( self , link , parentName )
+        # 2. Link has no associated graphics
+        link.graphics = NullDraw()
+        # 3. Create the coordinate axes that this link rotates in
+        axes = CartAxes( 1 ) # Default at the origin , Transformation will occur when the link's parent is examined
+        self.OGLDrawables.append( axes ) # Add the axes to the list of models
+        link.axes = axes # Associate the axes with this link
+        # 4. Create an empty container for markers associated with this link
+        link.markers = [] # This will hold things like effector frame bases , etc
+        
     def create_add_link_w_graphics( self , pName , pPitch , E , r , graphics , parentName = None ):
         """ Create a link , and Set up the kinematic chain relationship and store the associated graphics """
         link = LinkSpatial( pName , pPitch , E , r ) # ----------- 1. Create the link
         self.add_link_w_graphics( link , graphics , parentName ) # 2. Add the link
         
-    # TODO : Figure out how to handle the effector frame!
+    def create_add_link_no_draw( self , pName , pPitch , E , r , parentName = None ):
+        """ Create a link , and Set up the kinematic chain relationship , without any associated graphics (except auto-gen axes) """
+        link = LinkSpatial( pName , pPitch , E , r ) # ----------- 1. Create the link
+        self.add_link_no_draw( link , parentName ) # 2. Add the link
+    
     def add_marker_w_transform( self , linkName , marker , transform ):
         """ Add a OGLDrawable 'marker' to 'linkName' with a relative 'transform' such that it moves with link with an offset """
         link = self.link_ref_by_name( linkName )
@@ -234,6 +269,7 @@ if __name__ == "__main__":
     edge = 0.25
     
     robot = OGL_Robot()
+    
     # ~~ 2. Add links ~~
     
     # ~ Link 1 ~
@@ -257,8 +293,13 @@ if __name__ == "__main__":
                                       np.eye( 3 ) , [ 2 , 0 , 0 ] , 
                                       temp , "link2" )
     
-    # ~ Effector Frame ~
-    robot.add_marker_w_transform( "link3" , CartAxes( unitLen = 1.0 ) , homog_xfrom( x_trn( -pi/2 ) , [ 2 , 0 , 0 ] ) )
+    # ~ Tool Frame ~
+    robot.create_add_link_no_draw( "toolFrame" , 0.0 , 
+                                    np.eye( 3 ) , [ 2 , 0 , 0 ] , 
+                                    "link3" )
+    
+#    # ~ Effector Frame ~
+#    robot.add_marker_w_transform( "link3" , CartAxes( unitLen = 1.0 ) , homog_xfrom( x_trn( -pi/2 ) , [ 2 , 0 , 0 ] ) )
     
     if 0: # Set to 1 to check links and connections
         print robot.link_ref_by_name( "link1" ) , "has parent" , robot.link_ref_by_name( "link1" ).parent
@@ -270,9 +311,10 @@ if __name__ == "__main__":
         print "Link 2 xform" , endl , link2.xform
         print "Link 2 Markers" , link2.markers
     elif 1:
-        qTest = [ pi/4 , pi/4 , pi/4 ] # Specify a test config
-        qDot  = [ 2.0  , 2.0  , 2.0  ]
-        manipJacob = jacobn_manip( robot , 2 , qTest )
+        qTest = [ pi/4 , pi/4 , pi/4 , 0 ] # Specify a test config
+        qDot  = [ 2.0  , 2.0  , 2.0  , 0 ] # Last elem is always 0 for the tool frame
+        print robot.get_link_names()
+        manipJacob = jacobn_manip( robot , 3 , qTest )
         print "Manipulator Jacobian for" , qTest , endl , manipJacob
         print "Effector Velocity for   " , qDot , endl , np.dot( manipJacob , qDot )
         print "Analytical Velocity     " , qDot , endl , analytic_test_04( qTest , qDot , d1 , a2 , a3 )
@@ -289,7 +331,7 @@ if __name__ == "__main__":
     def update( ):
         """ Per-frame changes to make prior to redraw """
         q = ctrlWin.get_q()
-        robot.apply_FK_all( q )
+        robot.apply_FK_all( q + [0] ) # The tool frame link is always 0
         if not window.has_exit: 
             window.dispatch_events() # Handle window events
             window.on_draw() # Redraw the scene

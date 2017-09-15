@@ -384,6 +384,10 @@ class LinkModel(object):
             raise IndexError( "LinkModel.set_q: 'len(q)' must equal the number of links!" )
         for lnkDex , link in enumerate( self.links ):
             link.q = q[ lnkDex ]
+            
+    def get_link_names( self ):
+        """ Return a list of all the link names """
+        return [ lnk.name for lnk in self.links ]
        
 """
 ~~~~~~~ FIXME ~~~~~~~
@@ -546,6 +550,6 @@ if __name__ == "__main__":
 [3] Featherstone, Roy. "Robot dynamics algorithms." (1984).
 [4] Ralf Grosse-Kunstleve. "scitbx_rigid_body_essence Python Library" ,Lawrence Berkeley National Laboratory , Computational Crystallography Initiative
     http://cctbx.sourceforge.net/scitbx_rigid_body_essence/
-[5] Featherstone, Roy. Rigid body dynamics algorithms. Springer, 2014.
+[5] Featherstone, Roy. Rigid body dynamics algorithms. Springer, 2008.
 """
 # === End Ref ===

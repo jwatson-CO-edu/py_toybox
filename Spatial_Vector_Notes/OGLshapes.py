@@ -55,7 +55,9 @@ def concat_arr( *arrays ): # TODO: Update MARCHHARE
 
 # == End Helper ==
 
-# === OpenGL Classes ===
+# ==== OpenGL Classes ====
+        
+# === Drawable Classes ===
 
 # == class OGLDrawable ==
 
@@ -137,8 +139,6 @@ class OGLDrawable( object ):
         # [4]. If OGL transforms enabled , Return the OGL state machine to previous rendering frame
         # self.state_untransform()
         
-        
-
 # == end OGLDrawable ==
 
 
@@ -326,6 +326,53 @@ class Cuboid( OGLDrawable ):
         self.state_untransform()
 
 # == End Cuboid ==
+        
+# == class NullDraw ==
+        
+class NullDraw( OGLDrawable ):
+    """ An empty OGL object with dummy functions """
+    
+    def __init__( self , pnt = [ 0 , 0 , 0 ] ):
+        """ Set up the parent functions """
+        OGLDrawable.__init__( self , pnt ) # - Parent class init
+        
+    def add_vertex_offset( self , offset = [] ):
+        """ Calc the relative positions of vertices given the center , Set a new offset if specified """
+        pass
+        
+    def set_offset( self , offset ):
+        """ Set center to that specified , Calc the relative positions of vertices given the center """
+        pass
+        
+    def xform_homog( self , homogXform ):
+        """ Transform all of the vertices with 'homogXform' (4x4) and store the result for rendering """
+        pass
+    
+    def xform_Z_rot( self , thetaZrad ):
+        """ Rotate all of the vertices in the list about the local Z axis """
+        pass
+        
+    def xform_ang_axs( self , thetaRad , k ):
+        """ Rotate all of the vertices in the list about the local Z axis """
+        pass
+
+    def state_transform( self ):
+        """ Set the transformation matrix in the OGL state machine for this object """
+        # If OGL transforms enabled , Translate and rotate the OGL state machine to desired rendering frame
+        pass
+            
+    def state_untransform( self ):
+        """ Unset the transformation matrix in the OGL state machine for this object , so that other shapes can set it for themselves """
+        pass
+
+    def draw( self ): # VIRTUAL
+        """ Render the INHERITED_CLASS """
+        pass
+    
+        
+# == End NullDraw ==
+        
+# === End Drawable ===
 
 # == class OGL_App ==
         
@@ -380,7 +427,7 @@ class OGL_App( pyglet.window.Window ):
 
 # == End OGL_App ==
             
-# === End OpenGL ===
+# ==== End OpenGL ====
             
             
 # === Spare Parts ==========================================================================================================================
