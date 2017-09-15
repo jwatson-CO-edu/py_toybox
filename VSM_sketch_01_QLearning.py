@@ -98,7 +98,7 @@ __builtin__.EPSILON = 1e-8 # A very small number below the precision we care abo
 
 
 
-# == Utility Functions ==
+# == Utility Functions & Classes ==
 
 def clamp_val( val , lims ): # >>> MH
     """ Return a version of val that is clamped to the range [ lims[0] , lims[1] ] , inclusive """
@@ -134,6 +134,28 @@ def vec_check_limits( vec , limits ): # <<< MH
         elif vec[i] > lim[1]:
             return False
     return True
+
+
+class Counter( dict ): # << MH
+    """ The counter object acts as a dict, but sets previously unused keys to 0 , in the style of 6300 """
+    
+    def __init__( self , *args , **kw ):
+        """ Standard dict init """
+        dict.__init__( self , *args , **kw )
+        
+    def __getitem__( self , a ):
+        """ Get the val with key , otherwise return 0 if key DNE """
+        if a in self: 
+            return dict.__getitem__( self , a )
+        return 0
+    
+    # __setitem__ provided by 'dict'
+    
+    def sorted_keyVals( self ):
+        """ Return a list of sorted key-value tuples """
+        sortedItems = self.items()
+        sortedItems.sort( cmp = lambda keyVal1 , keyVal2 :  sign( keyVal2[1] - keyVal1[1] ) )
+        return sortedItems
 
 # == End Utility ==
 
@@ -199,15 +221,20 @@ class BugAgent( object ):
     """ Agent with two sensors that can slide right or slide left """
     
     def __init__( self , world , x ):
-        self.env = world
-        self.state = x
-        self.internal = None
-        self.sensorOffsets = [ -0.5 ,  0.5 ]
-        self.sensors = []
-        self.action = _BUGACTIONS[2]
-        for sensDex , offset in enumerate( self.sensorOffsets ):
+        self.env = world # ------------------- Environment that the agent exists in
+        self.state = x # --------------------- Position in the world
+        self.internal = None # --------------- Internal State
+        self.sensorOffsets = [ -0.5 ,  0.5 ] # Offset from the agent to the sensor
+        self.sensors = [] # ------------------ Provide information from the environment
+        self.action = _BUGACTIONS[2] # ------- Current action for the agent
+        for sensDex , offset in enumerate( self.sensorOffsets ): # Instantiate sensors
             self.sensors.append( Sensor( self.state + self.sensorOffsets[ sensDex ] , 
                                          self.env.get_intensity_at ) )
+        self.QVal = Counter() # -------------- Q-Values for the agent
+        self.policy = Counter() # ------------ Policy for the agent
+        self.learnRate = 0.25 # -------------- TODO: Look at variable learning rates
+        self.discount  = 0.25 # -------------- Discount rate for future prediction
+        self.count     = 0 # ----------------- Number of episodes that this agent has experienced
             
     def observe( self ):
         """ Populate sensors with observations """
@@ -228,9 +255,26 @@ class BugAgent( object ):
     def act( self ):
         """ Make decision based on the data """
         self.action = _BUGACTIONS[ self.internal ]
+        # Decide whether to be on policy or to explore
+        # Get state
+        # Lookup in policy
+        # If there is no policy , then explore
+        
+    def learn( self , state , action , s_prime , reward ):
+        """ Compute the new Q-Value from { s , a , R , s' , a' } """
+        
+        self.QVal[ ( state , action ) ] = ( 1 - self.learnRate ) * self.QVal[ ( state , action ) ] + \
+                                           self.learnRate * ( reward + self.discount * self.QVal[ ( s_prime , self.policy[ s_prime ] ) ] )
+    
+    def policy_update( self ):
+        """ Choose new actions for each state """
+        # For each state
+        # For each action in that state fetch the value
+        # Get the max of all the values
     
     def tick( self ):
         """ Observe and act """
+        self.count += 1 # Increment episode
         self.observe() # Retrieve data from the world
         self.act() # Act on the data
 
