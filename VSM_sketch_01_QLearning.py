@@ -17,7 +17,7 @@ Quick sketch of the Variable State Machine, A flexible decision process for AI
 # ~ Standard ~
 import time , os
 from math import cos , sin , acos , asin , tan , atan2 , radians , degrees , hypot , pi
-from random import choice
+from random import choice , random
 # ~ Special ~
 import numpy as np
 # from marchhare.Vector import vec_random_range # Not in the CARGO environment!
@@ -135,6 +135,9 @@ def vec_check_limits( vec , limits ): # <<< MH
             return False
     return True
 
+def index_max( pList ):
+    """ Return the first index of 'pList' with the maximum numeric value """
+    return pList.index( max( pList ) )
 
 class Counter( dict ): # << MH
     """ The counter object acts as a dict, but sets previously unused keys to 0 , in the style of 6300 """
@@ -156,6 +159,19 @@ class Counter( dict ): # << MH
         sortedItems = self.items()
         sortedItems.sort( cmp = lambda keyVal1 , keyVal2 :  sign( keyVal2[1] - keyVal1[1] ) )
         return sortedItems
+
+class HeartRate: # <<< MH
+    """ Sleeps for a time such that the period between calls to sleep results in a frequency not greater than the specified 'Hz' """
+    def __init__( self , Hz ):
+        """ Create a rate object with a Do-Not-Exceed frequency in 'Hz' """
+        self.period = 1.0 / Hz; # Set the period as the inverse of the frequency , hearbeat will not exceed 'Hz' , but can be lower
+        self.last = time.time()
+    def sleep( self ):
+        """ Sleep for a time so that the frequency is not exceeded """
+        elapsed = time.time() - self.last
+        if elapsed < self.period:
+            time.sleep( self.period - elapsed )
+        self.last = time.time()
 
 # == End Utility ==
 
@@ -214,7 +230,7 @@ class Sensor:
 # ~~ Bug Model Parameters ~~
 _BUGSPEED   = 0.5 # Distance that the bug moves , per step
 # _BUGACTIONS = [ "LEFT" , "RGHT" , "IDLE" ] # Actions available to the bug
-_BUGACTIONS = [ [ -_BUGSPEED ] , [  _BUGSPEED ] , [ 0.0 ] ] # Actions available to the bug
+_BUGACTIONS = [ tuple( item ) for item in [ [ -_BUGSPEED ] , [  _BUGSPEED ] , [ 0.0 ] ] ] # Actions available to the bug
 
 
 class BugAgent( object ):
@@ -235,6 +251,8 @@ class BugAgent( object ):
         self.learnRate = 0.25 # -------------- TODO: Look at variable learning rates
         self.discount  = 0.25 # -------------- Discount rate for future prediction
         self.count     = 0 # ----------------- Number of episodes that this agent has experienced
+        self.random_policy() # --------------- Start with a random policy
+        self.exploreRate = 0.25 # ------------ Rate at which we go off-policy
             
     def observe( self ):
         """ Populate sensors with observations """
@@ -252,13 +270,14 @@ class BugAgent( object ):
         else:
             self.internal = 2 # self.action = _BUGACTIONS[2]
     
-    def act( self ):
+    def act( self , state ):
         """ Make decision based on the data """
         self.action = _BUGACTIONS[ self.internal ]
         # Decide whether to be on policy or to explore
-        # Get state
-        # Lookup in policy
-        # If there is no policy , then explore
+        if random() <= self.exploreRate: # If exploring , choose a random action
+            self.action = choice( _BUGACTIONS )
+        else: # else on-policy , Lookup in policy
+            self.action = self.policy[ state ]
         
     def learn( self , state , action , s_prime , reward ):
         """ Compute the new Q-Value from { s , a , R , s' , a' } """
@@ -266,17 +285,24 @@ class BugAgent( object ):
         self.QVal[ ( state , action ) ] = ( 1 - self.learnRate ) * self.QVal[ ( state , action ) ] + \
                                            self.learnRate * ( reward + self.discount * self.QVal[ ( s_prime , self.policy[ s_prime ] ) ] )
     
+    def random_policy( self ):
+        """ Assign random actions to all of the states """
+        for state in [ 0 , 1 , 2 ]: # For each state
+            self.policy[ state ] = choice( _BUGACTIONS )
+    
     def policy_update( self ):
         """ Choose new actions for each state """
-        # For each state
-        # For each action in that state fetch the value
-        # Get the max of all the values
+        for state in [ 0 , 1 , 2 ]: # For each state
+            # For each action in that state fetch the value
+            values = [ Q[ ( state , action ) ] for action in _BUGACTIONS ]
+            maxDex = index_max( values ) # Get the max of all the values
+            self.policy[ state ] = maxDex # Change the policy to the action with the greatest value
     
     def tick( self ):
         """ Observe and act """
         self.count += 1 # Increment episode
         self.observe() # Retrieve data from the world
-        self.act() # Act on the data
+        self.act( self.internal ) # Act on the data
 
 
 def transition_model( env , agent , state , action ):
@@ -327,14 +353,25 @@ class SliderBugEnv( object ):
         ) , 
         # 3. Update agents , Apply transitions resulting from actions
         self.agent.tick()
+        state = self.agent.internal
+        action = self.agent.action
         print "Agent Action  :" , self.agent.action
         self.agent.state = transition_model( self , self.agent , self.agent.state , self.agent.action )
-        # 4. Assign Value
-        # 5. Agent learning
+        self.agent.observe()
+        s_prime = self.agent.internal
+        # 4. Assign Value & Agent learning
+        self.agent.learn( state , action , s_prime , self.get_intensity_at( self.agent.state ) )
 
 # == Main ==================================================================================================================================
 
+N = 5000 # Number of episodes to run
+
 if __name__ == "__main__":
+    
+    import matplotlib
+    from matplotlib import pyplot as plt    
+    
+    # ~~ Simulation Init ~~
     
     LightEnv = SliderBugEnv()
     LightEnv.agent = BugAgent( LightEnv , 0.0 )
@@ -342,18 +379,56 @@ if __name__ == "__main__":
     lightPos = []
     agentPos = []
     
-    for i in xrange( 100 ):
+    # ~~ Animation Init ~~
+    
+    winWidth = 100
+    
+    fig , ax = plt.subplots(1, 1)
+    ax.set_aspect( 'equal' )
+    ax.set_xlim( -winWidth ,  0 )
+    ax.set_ylim(       -10 , 10 )
+    plt.show( False )
+    plt.draw()
+    # cache the background
+    background = fig.canvas.copy_from_bbox( ax.bbox )    
+    rate = HeartRate( 60 )    
+    
+    pts1 = ax.plot( 0 , 0 , linewidth = 2.0 )[0]
+    pts2 = ax.plot( 0 , 0 , linewidth = 2.0 )[0]
+    
+    for i in xrange( winWidth ):
+        LightEnv.tick()
+        lightPos.append( LightEnv.lightPos )
+        agentPos.append( LightEnv.agent.state )    
+    
+    for i in xrange( N ):
         LightEnv.tick()
         lightPos.append( LightEnv.lightPos )
         agentPos.append( LightEnv.agent.state )
         
-    if 1:
-        import matplotlib.pyplot as plt
-    
-        plt.plot( lightPos , linewidth = 2.0 )
-        plt.plot( agentPos , linewidth = 2.0 )
+        ax.set_xlim( i - winWidth , i )
         
-        plt.show()
+        # update the xy data
+        pts1.set_data( range( len( lightPos ) ) , lightPos )
+        # print len( range( winWidth + 2 ) ) , len( lightPos )
+        pts2.set_data( range( len( agentPos ) ) , agentPos )
+        
+        # restore background
+        fig.canvas.restore_region( background )
+    
+        # redraw just the points
+        ax.draw_artist( pts1 )
+        ax.draw_artist( pts2 )
+    
+        # fill in the axes rectangle
+        fig.canvas.blit( ax.bbox )
+        
+        # Wait sleep until next frame
+        rate.sleep()
+    
+    plt.close( fig )        
+        
+
 
 # == End Main ==============================================================================================================================
 
