@@ -294,13 +294,15 @@ class BugAgent( object ):
         """ Choose new actions for each state """
         for state in [ 0 , 1 , 2 ]: # For each state
             # For each action in that state fetch the value
-            values = [ Q[ ( state , action ) ] for action in _BUGACTIONS ]
+            values = [ self.QVal[ ( state , action ) ] for action in _BUGACTIONS ]
             maxDex = index_max( values ) # Get the max of all the values
-            self.policy[ state ] = maxDex # Change the policy to the action with the greatest value
+            self.policy[ state ] = tuple( [ maxDex ] ) # Change the policy to the action with the greatest value
     
     def tick( self ):
         """ Observe and act """
         self.count += 1 # Increment episode
+        if self.count % 50 == 0:
+            self.policy_update()
         self.observe() # Retrieve data from the world
         self.act( self.internal ) # Act on the data
 
