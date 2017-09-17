@@ -173,6 +173,31 @@ class HeartRate: # <<< MH
             time.sleep( self.period - elapsed )
         self.last = time.time()
 
+class RollingList( list ): # << MH
+    """ A rolling window based on 'list' """ 
+    
+    def __init__( self , winLen , *args ):
+        """ Normal 'list' init """
+        list.__init__( self , [ 0 ] * winLen , *args )
+        
+    def append( self , item ):
+        """ Append an item to the back of the list """
+        list.append( self , item )
+        del self[0]
+        
+    def prepend( self , item ):
+        """ Prepend an item to the front of the list """
+        self.insert( 0 , item )
+        del self[-1]
+        
+    def get_average( self ):
+        """ Get the rolling average , NOTE: Calling this function after inserting non-numeric data will result in an error """
+        return sum( self ) * 1.0 / len( self )
+        
+    def item_list( self ):
+        """ Return a copy of the RollingList as a list """
+        return self[:]
+
 # == End Utility ==
 
 
@@ -253,6 +278,8 @@ class BugAgent( object ):
         self.count     = 0 # ----------------- Number of episodes that this agent has experienced
         self.random_policy() # --------------- Start with a random policy
         self.exploreRate = 0.25 # ------------ Rate at which we go off-policy
+        self.avgWin = 100 # ------------------ 
+        self.avgReward = 0.0 # --------------- Average reward for the last
             
     def observe( self ):
         """ Populate sensors with observations """
