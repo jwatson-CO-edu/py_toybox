@@ -253,8 +253,6 @@ class BugAgent( object ):
         self.count     = 0 # ----------------- Number of episodes that this agent has experienced
         self.random_policy() # --------------- Start with a random policy
         self.exploreRate = 0.25 # ------------ Rate at which we go off-policy
-        self.avgWin = 100 # ------------------ 
-        self.avgReward = 0.0 # --------------- Average reward for the last
             
     def observe( self ):
         """ Populate sensors with observations """
