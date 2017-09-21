@@ -253,8 +253,8 @@ class BugAgent( object ):
         self.count     = 0 # ----------------- Number of episodes that this agent has experienced
         self.random_policy() # --------------- Start with a random policy
         self.exploreRate = 0.25 # ------------ Rate at which we go off-policy
-        self.rewardWin = RollingList( 100 ) #- Rolling window of previous rewards
-        self.avgRwrd = 0.0 # ----------------- Average reward for the rolling window
+        self.avgWin = 100 # ------------------ 
+        self.avgReward = 0.0 # --------------- Average reward for the last
             
     def observe( self ):
         """ Populate sensors with observations """
@@ -286,10 +286,6 @@ class BugAgent( object ):
         
         self.QVal[ ( state , action ) ] = ( 1 - self.learnRate ) * self.QVal[ ( state , action ) ] + \
                                            self.learnRate * ( reward + self.discount * self.QVal[ ( s_prime , self.policy[ s_prime ] ) ] )
-                                           
-        self.rewardWin.append( reward )
-        self.avgRwrd = self.rewardWin.get_average()
-        self.exploreRate = min( max( 1 - self.avgRwrd / 100 , 0 ) , 1 )
     
     def random_policy( self ):
         """ Assign random actions to all of the states """
@@ -356,20 +352,19 @@ class SliderBugEnv( object ):
         self.t += self.ticLen 
         # 2. Update environment
         self.lightPos = self.litePosFunc( self.t )
-#        print "Light position: {0:6.2f}".format( self.lightPos ) , "  ,  Light intensity at 0 pos: {0:6.2f}".format( 
-#                self.liteIntFunc( 0 , self.lightPos )
-#        ) , 
+        print "Light position: {0:6.2f}".format( self.lightPos ) , "  ,  Light intensity at 0 pos: {0:6.2f}".format( 
+                self.liteIntFunc( 0 , self.lightPos )
+        ) , 
         # 3. Update agents , Apply transitions resulting from actions
         self.agent.tick()
         state = self.agent.internal
         action = self.agent.action
-#        print "Agent Action  :" , self.agent.action
+        print "Agent Action  :" , self.agent.action
         self.agent.state = transition_model( self , self.agent , self.agent.state , self.agent.action )
         self.agent.observe()
         s_prime = self.agent.internal
         # 4. Assign Value & Agent learning
         self.agent.learn( state , action , s_prime , self.get_intensity_at( self.agent.state ) )
-        print "Average Agent Reward:" , self.agent.avgRwrd
 
 # == Main ==================================================================================================================================
 
@@ -398,19 +393,12 @@ if __name__ == "__main__":
     ax.set_ylim(       -10 , 10 )
     plt.show( False )
     plt.draw()
-    
+    # cache the background
+    background = fig.canvas.copy_from_bbox( ax.bbox )    
     rate = HeartRate( 60 )    
-    
-    _BLIT = False
-    
-    if _BLIT:
-        # cache the background
-        background = fig.canvas.copy_from_bbox( ax.bbox )    
     
     pts1 = ax.plot( 0 , 0 , linewidth = 2.0 )[0]
     pts2 = ax.plot( 0 , 0 , linewidth = 2.0 )[0]
-    
-    
     
     for i in xrange( winWidth ):
         LightEnv.tick()
@@ -429,22 +417,15 @@ if __name__ == "__main__":
         # print len( range( winWidth + 2 ) ) , len( lightPos )
         pts2.set_data( range( len( agentPos ) ) , agentPos )
         
-        if _BLIT:
-        
-            # restore background
-            fig.canvas.restore_region( background )
-        
-            # redraw just the points
-            ax.draw_artist( pts1 )
-            ax.draw_artist( pts2 )
-        
-            # fill in the axes rectangle
-            fig.canvas.blit( ax.bbox )
-            
-        else:
-            
-            # redraw everything
-            fig.canvas.draw()
+        # restore background
+        fig.canvas.restore_region( background )
+    
+        # redraw just the points
+        ax.draw_artist( pts1 )
+        ax.draw_artist( pts2 )
+    
+        # fill in the axes rectangle
+        fig.canvas.blit( ax.bbox )
         
         # Wait sleep until next frame
         rate.sleep()
