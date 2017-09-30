@@ -497,14 +497,14 @@ def jacobn_manip( model , bodyIndex , q ): # ( Featherstone: bodyJac )
     Xa =  [ None ] * model.N # An array of transforms
     for lnkDex , link in enumerate( model.links ): # For each link in the model
         if e[ lnkDex ]: # If the link is in the chain from the selected body to the root
-            print "DEBUG , jacobn_manip : In link" , lnkDex
+            # print "DEBUG , jacobn_manip : In link" , lnkDex
             # [ XJ , s_i ] = joint_xform( link.pitch , q[ lnkDex ] )
             [ XJ , s_i ] = joint_spatl( link.pitch , q[ lnkDex ] )
-            print "DEBUG , jacobn_manip : XJ" , endl , XJ
-            print "DEBUG , jacobn_manip : link.xSptlMtn" , endl , link.xSptlMtn
-            print "DEBUG , jacobn_manip : np.dot( XJ , link.xSptlMtn )" , endl , np.dot( XJ , link.xSptlMtn )
+#            print "DEBUG , jacobn_manip : XJ" , endl , XJ
+#            print "DEBUG , jacobn_manip : link.xSptlMtn" , endl , link.xSptlMtn
+#            print "DEBUG , jacobn_manip : np.dot( XJ , link.xSptlMtn )" , endl , np.dot( XJ , link.xSptlMtn )
             Xa[ lnkDex ] = np.dot( XJ , link.xSptlMtn )
-            print "DEBUG , jacobn_manip : Xa[" , lnkDex , "]" , Xa[ lnkDex ]
+            # print "DEBUG , jacobn_manip : Xa[" , lnkDex , "]" , Xa[ lnkDex ]
             if link.parent:
                 Xa[ lnkDex ] = np.dot( Xa[ lnkDex ] , Xa[ link.parent.linkIndex ] )
             x , resid , rank , s = np.linalg.lstsq( Xa[ lnkDex ] , s_i ) # Solving what exactly?

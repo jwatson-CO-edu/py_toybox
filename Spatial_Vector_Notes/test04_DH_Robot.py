@@ -51,7 +51,7 @@ Dependencies: SpatialVectorRobot , Pyglet
             ;Y; Try adding a zero-extent link to represent the tool frame, and ask Featherstone to get the Jacobian of this - COMPLETED , 
                 Displays as expected and runs without error.  Still completely different than the analytical test , which may be grossly wrong
             ; ; Try a one-link robot , Rotational
-                : : Implement
+                :Y: Implement - COMPLETE , Task space velcity looks nice, but have to derive and compare
                 : : Derive
             ; ; Try a one-link robot , Prismatic
                 : : How to display a prismatic link?
@@ -232,29 +232,7 @@ class OGL_Robot( LinkModel ):
 
 # == Test Functions ==
     
-def analytic_test_04( q , qDot , d1 , a2 , a3 ):
-    """ Return the 6DOF task space velocity for the end effector of the robot on Image 96 of Intro to Robotics """
-    # Cache terms for readability and DRY
-    th1 = q[0] ; cs1 = cos(th1) ; sn1 = sin(th1) ; dt1 = qDot[0] # Joint 1
-    th2 = q[1] ; cs2 = cos(th2) ; sn2 = sin(th2) ; dt2 = qDot[1] # Joint 2
-    th3 = q[2] ; cs3 = cos(th3) ; sn3 = sin(th3) ; dt3 = qDot[2] # Joint 3
-    d23 = dt2 + dt3
-    
-    return [ 
-             -sn1*a2*cs2*dt1     - cs1*sn2*a2*dt2     + sn1*sn2*sn3*a3*dt1 \
-             -sn1*cs2*cs3*a3*dt1 - cs1*sn2*cs3*d23*a3 - cs1*cs2*sn3*d23*a3 , # dot( d_03 , x_0 )
-             
-              cs1*a2*cs2*dt1     + sn1*sn2*a2*dt2     + cs1*cs2*cs3*a3*dt1 \
-             -cs1*sn2*sn3*a3*dt1 + sn1*sn2*cs3*d23*a3 + sn1*cs2*sn3*d23*a3 , # dot( d_03 , y_0 )
-             
-              cs2*a2*dt2         + cs2*cs3*d23*a3                          , # dot( d_03 , z_0 )
-              
-              sn1*dt2            - cs1*sn2*cs3*dt3    - cs1*cs2*sn3*dt3    , # dot( omga_03 , x_0 )
-              
-             -cs1*dt2            + sn1*sn2*cs3*dt3    + sn1*cs2*sn3*dt3    , # dot( omga_03 , y_0 )
-             
-              dt1                + cs2*cs3*dt3        - sn2*sn3*dt3        , # dot( omga_03 , z_0 )
-    ]
+
     
 # == End Test ==
 
@@ -279,24 +257,24 @@ if __name__ == "__main__":
     robot.create_add_link_w_graphics( "link1" , 0.0 , 
                                       np.eye( 3 ) , [ 0 , 0 , 0 ] , 
                                       temp , None )
-    # ~ Link 2 ~
-    temp = Cuboid( a2  , edge , edge , [ 0 , 0 , 0 ] )
-    temp.add_vertex_offset( [ 0.0 , -edge/2.0 , -edge/2.0 ] )
-    robot.create_add_link_w_graphics( "link2" , 0.0 , 
-                                       x_trn( pi/2 ) , [ 0 , 0 , 2 ] , 
-                                      temp , "link1" )
-    
-    # ~ Link 3 ~
-    temp = Cuboid( a3  , edge , edge , [ 0 , 0 , 0 ] )
-    temp.add_vertex_offset( [ 0.0 , -edge/2.0 , -edge/2.0 ] )
-    robot.create_add_link_w_graphics( "link3" , 0.0 , 
-                                      np.eye( 3 ) , [ 2 , 0 , 0 ] , 
-                                      temp , "link2" )
+#    # ~ Link 2 ~
+#    temp = Cuboid( a2  , edge , edge , [ 0 , 0 , 0 ] )
+#    temp.add_vertex_offset( [ 0.0 , -edge/2.0 , -edge/2.0 ] )
+#    robot.create_add_link_w_graphics( "link2" , 0.0 , 
+#                                       x_trn( pi/2 ) , [ 0 , 0 , 2 ] , 
+#                                      temp , "link1" )
+#    
+#    # ~ Link 3 ~
+#    temp = Cuboid( a3  , edge , edge , [ 0 , 0 , 0 ] )
+#    temp.add_vertex_offset( [ 0.0 , -edge/2.0 , -edge/2.0 ] )
+#    robot.create_add_link_w_graphics( "link3" , 0.0 , 
+#                                      np.eye( 3 ) , [ 2 , 0 , 0 ] , 
+#                                      temp , "link2" )
     
     # ~ Tool Frame ~
     robot.create_add_link_no_draw( "toolFrame" , 0.0 , 
-                                    np.eye( 3 ) , [ 2 , 0 , 0 ] , 
-                                    "link3" )
+                                    np.eye( 3 ) , [ 0 , 0 , 2 ] , 
+                                    "link1" )
     
 #    # ~ Effector Frame ~
 #    robot.add_marker_w_transform( "link3" , CartAxes( unitLen = 1.0 ) , homog_xfrom( x_trn( -pi/2 ) , [ 2 , 0 , 0 ] ) )
@@ -311,13 +289,17 @@ if __name__ == "__main__":
         print "Link 2 xform" , endl , link2.xform
         print "Link 2 Markers" , link2.markers
     elif 1:
-        qTest = [ pi/4 , pi/4 , pi/4 , 0 ] # Specify a test config
-        qDot  = [ 2.0  , 2.0  , 2.0  , 0 ] # Last elem is always 0 for the tool frame
+        qTest = [ pi/4 ,  0 ] # Specify a test config
+        qDot  = [ 2.0  ,  0 ] # Last elem is always 0 for the tool frame
         print robot.get_link_names()
-        manipJacob = jacobn_manip( robot , 3 , qTest )
-        print "Manipulator Jacobian for" , qTest , endl , manipJacob
-        print "Effector Velocity for   " , qDot , endl , np.dot( manipJacob , qDot )
-        print "Analytical Velocity     " , qDot , endl , analytic_test_04( qTest , qDot , d1 , a2 , a3 )
+        
+        print "Manipulator Jacobian for" , qTest , "Index" , 0 , endl , jacobn_manip( robot , 0 , qTest )
+        print "Manipulator Jacobian for" , qTest , "Index" , 1 , endl , jacobn_manip( robot , 1 , qTest )
+        manipJacob = jacobn_manip( robot , 1 , qTest )
+        index = 1
+        for i in xrange( len( robot.links ) ):
+            print "Effector Velocity for   " , qDot , "Index" , i , endl , np.dot( jacobn_manip( robot , i , qTest ) , qDot )
+        # print "Analytical Velocity     " , qDot , endl , analytic_test_04( qTest , qDot , d1 , a2 , a3 )
     
     # 4. Render!
     # window = OGL_App( [ link1 , link1axis , link2 , effectorAxis , CartAxes( 1 ) ] , caption = "Transformation Test" ) 
@@ -337,7 +319,7 @@ if __name__ == "__main__":
             window.on_draw() # Redraw the scene
             window.flip()
         
-    ctrlWin = TKOGLRobotCtrl( 600 , 200 , title = "Transform Test" , numJoints = 3 ) # Default refresh rate is 30 Hz
+    ctrlWin = TKOGLRobotCtrl( 600 , 200 , title = "Transform Test" , numJoints = len( robot.links ) - 1 ) # Default refresh rate is 30 Hz
         
     # ~~ Run ~~
     ctrlWin.add_update_func( update )
@@ -349,6 +331,34 @@ if __name__ == "__main__":
 
         
 # == Spare Parts ===========================================================================================================================
+
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+#def analytic_test_04( q , qDot , d1 , a2 , a3 ): # NOTE: This function 
+#    """ Return the 6DOF task space velocity for the end effector of the robot on Image 96 of Intro to Robotics """
+#    # Cache terms for readability and DRY
+#    th1 = q[0] ; cs1 = cos(th1) ; sn1 = sin(th1) ; dt1 = qDot[0] # Joint 1
+#    th2 = q[1] ; cs2 = cos(th2) ; sn2 = sin(th2) ; dt2 = qDot[1] # Joint 2
+#    th3 = q[2] ; cs3 = cos(th3) ; sn3 = sin(th3) ; dt3 = qDot[2] # Joint 3
+#    d23 = dt2 + dt3
+#    
+#    return [ 
+#             -sn1*a2*cs2*dt1     - cs1*sn2*a2*dt2     + sn1*sn2*sn3*a3*dt1 \
+#             -sn1*cs2*cs3*a3*dt1 - cs1*sn2*cs3*d23*a3 - cs1*cs2*sn3*d23*a3 , # dot( d_03 , x_0 )
+#             
+#              cs1*a2*cs2*dt1     + sn1*sn2*a2*dt2     + cs1*cs2*cs3*a3*dt1 \
+#             -cs1*sn2*sn3*a3*dt1 + sn1*sn2*cs3*d23*a3 + sn1*cs2*sn3*d23*a3 , # dot( d_03 , y_0 )
+#             
+#              cs2*a2*dt2         + cs2*cs3*d23*a3                          , # dot( d_03 , z_0 )
+#              
+#              sn1*dt2            - cs1*sn2*cs3*dt3    - cs1*cs2*sn3*dt3    , # dot( omga_03 , x_0 )
+#              
+#             -cs1*dt2            + sn1*sn2*cs3*dt3    + sn1*cs2*sn3*dt3    , # dot( omga_03 , y_0 )
+#             
+#              dt1                + cs2*cs3*dt3        - sn2*sn3*dt3        , # dot( omga_03 , z_0 )
+#    ]
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

@@ -6,10 +6,19 @@ from __future__ import division # MUST be run before all other expressions , inc
 
 """
 OGLshapes.py
-James Watson , YYYY MONTHNAME , Written on Spyder 3 / Python 2.7
-A ONE LINE DESCRIPTION OF THE FILE
+James Watson , 2017 August , Written on Spyder 3 / Python 2.7
+Primitive shapes and meshes to display in Pyglet / OpenGL 
 
-Dependencies: numpy
+Dependencies: numpy , pyglet
+"""
+
+"""
+~~~~~ Development Plan ~~~~~
+
+[ ] Meshes
+[ ] Flying camera
+[ ] Vector array optimization ( See Drawable )
+
 """
 
 # == Init ==================================================================================================================================
