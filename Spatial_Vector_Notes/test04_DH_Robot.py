@@ -50,15 +50,18 @@ Dependencies: SpatialVectorRobot , Pyglet
                 the same results
             ;Y; Try adding a zero-extent link to represent the tool frame, and ask Featherstone to get the Jacobian of this - COMPLETED , 
                 Displays as expected and runs without error.  Still completely different than the analytical test , which may be grossly wrong
-            ; ; Try a one-link robot , Rotational
+            ;Y; Try a one-link robot , Rotational - COMPLETE
                 :Y: Implement - COMPLETE , Task space velcity looks nice, but have to derive and compare
-                : : Derive
+                :Y: Derive - COMPLETE , Analytical and Featherstone match , keep in mind that the result of multiplying the class jacobian by the
+                    joint-space velocity, the linear and rotational parts are switched compared to Featherstone
+                    components are switched around from the 
             ; ; Try a one-link robot , Prismatic
-                : : How to display a prismatic link?
+                : : Implement a stretching prismatic link
                 : : Implement
                 : : Derive
             ; ; Try a two link robot , Rotational
-    | | 3.e. Acceleration
+            ; ; Try a two link robot , Rotational + Prismatic
+    | | 3.e. Test05 _ Acceleration
         ! ! Instantiate a robot , set it in a configuration and angular velocity , and calculate the task-space acceleration of the end effector
         ! ! Compare to analytical sol'n from Intro to Robot
     |L| 3.f. Implement the same robot from (3.b) with DH Parameters (Hollerbach) and generalize - LATER
