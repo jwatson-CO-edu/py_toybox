@@ -56,8 +56,11 @@ Dependencies: SpatialVectorRobot , Pyglet
                     joint-space velocity, the linear and rotational parts are switched compared to Featherstone
                     components are switched around from the 
             ; ; Try a one-link robot , Prismatic
-                : : Implement a stretching prismatic link
-                : : Implement
+                :N: Implement a stretching prismatic link - NOT IMPLEMENTED , Current implementation calls for a transformation to be applied
+                    to the link geometry , and so having two of the three joint types actually changing the link geometry would be awkward
+                    and provide no real benefit: *However* , added functions to stretch Cuboid geometry to "OGLshapes.py" anyway , just in case
+                :Y: Implement - COMPLETE , link slides up and down in a straight line through space with slider control , no change to the contols
+                    were necessary
                 : : Derive
             ; ; Try a two link robot , Rotational
             ; ; Try a two link robot , Rotational + Prismatic
@@ -257,7 +260,7 @@ if __name__ == "__main__":
     temp = Cuboid( edge , edge , d1 , [ 0 , 0 , 0 ] )
     temp.add_vertex_offset( [ -edge/2.0 , -edge/2.0 , 0.0 ] )
     # pName , pPitch , E , r , graphics , parentName
-    robot.create_add_link_w_graphics( "link1" , 0.0 , 
+    robot.create_add_link_w_graphics( "link1" , infty , 
                                       np.eye( 3 ) , [ 0 , 0 , 0 ] , 
                                       temp , None )
 #    # ~ Link 2 ~

@@ -263,11 +263,9 @@ class CartAxes( OGLDrawable ):
 class Cuboid( OGLDrawable ):
     """ Rectnagular prism rendered in Pyglet """
     
-    def __init__( self , l , w , h , pos = [ 0 , 0 , 0 ] ):
-        """ Create a rectangular prism with 'l' (x) , 'w' (y) , 'h' (z) """
-        OGLDrawable.__init__( self , pos ) # -- Parent class init , Center will be used for OGL rendering transform
-        # OGLDrawable.__init__( pos ) # -- Parent class init , Center will be used for OGL rendering transform
-        
+    def resize( self , l , w , h ):
+        """ Assign the extents of the Cuboid in 'l'ength , 'w'idth , 'h'eight """
+        self.l = l ; self.w = w ; self.h = h
         self.vertices = ( # ------------------ Tuple of vertices that define the drawable geometry
             0 , 0 , 0 ,	# vertex 0    3-------2     # NOTE: Z+ is UP
             l , 0 , 0 ,	# vertex 1    !\      !\
@@ -278,8 +276,14 @@ class Cuboid( OGLDrawable ):
             0 , w , h ,	# vertex 6      \|      Y|
             l , w , h ,	# vertex 7       5=======4
         )
-        
         self.vertX = list( self.vertices ) # List of transformed vertices
+    
+    def __init__( self , l , w , h , pos = [ 0 , 0 , 0 ] ):
+        """ Create a rectangular prism with 'l' (x) , 'w' (y) , 'h' (z) """
+        OGLDrawable.__init__( self , pos ) # -- Parent class init , Center will be used for OGL rendering transform
+        # OGLDrawable.__init__( pos ) # -- Parent class init , Center will be used for OGL rendering transform
+        
+        self.resize( l , w , h ) # Assign the extents of the cuboid
         
         self.faceDices = ( #                                       NOTE: Vertices must have CCW order to point the normals towards exterior , 
              0 , 1 , 3 , 2 , # back face      3-----2    3-----2       right hand rule , otherwise dot products computed for backface-culling 
@@ -307,6 +311,10 @@ class Cuboid( OGLDrawable ):
         
         self.colors = ( (  88 , 181 ,  74 ) , # Body color
                         (   0 ,   0 , 255 ) ) # Line color
+        
+    def set_len( self , l ):
+        """ Set the length of the Cuboid """
+        self.resize( l , self.w , self.h )
         
     def draw( self ):
         """ Render the cuboid in OGL , This function assumes that a graphics context already exists """

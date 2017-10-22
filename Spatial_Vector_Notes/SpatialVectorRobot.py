@@ -411,12 +411,12 @@ def joint_spatl( pitch , q ): # Featherstone: jcalc
     elif pitch == infty: #- Prismatic Joint : Implements pure translation
         E = np.eye( 3 ); r = [ 0 , 0 , q ]
         s_i = [ 0 , 0 , 0 , 0 , 0 , 1 ]
-        XJ_s = sp_trn_xfrm( r )
+        XJ_s = sp_trn_xfrm_mtn( r )
         
     else: # --------------- Helical Joint   : Implements a screwing motion
         E = z_trn( q ); r = [ 0 , 0 , pitch * q ]
         s_i = [ 0 , 0 , 1 , 0 , 0 , pitch ]
-        XJ_s = np.dot( sp_rot_xfrm( E ) , sp_trn_xfrm( r ) )
+        XJ_s = np.dot( sp_rot_xfrm( E ) , sp_trn_xfrm_mtn( r ) )
     
     return XJ_s , s_i 
     #      ^-- Assume Featherstone intends this to be XJ in Figure 4 of [2]
