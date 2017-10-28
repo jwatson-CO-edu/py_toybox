@@ -55,15 +55,23 @@ Dependencies: SpatialVectorRobot , Pyglet
                 :Y: Derive - COMPLETE , Analytical and Featherstone match , keep in mind that the result of multiplying the class jacobian by the
                     joint-space velocity, the linear and rotational parts are switched compared to Featherstone
                     components are switched around from the 
-            ; ; Try a one-link robot , Prismatic
+                :Y: Compare - COMPLETE , As Expected: [ 0.  0.  2.  0.  0.  0.]
+            ;Y; Try a one-link robot , Prismatic
                 :N: Implement a stretching prismatic link - NOT IMPLEMENTED , Current implementation calls for a transformation to be applied
                     to the link geometry , and so having two of the three joint types actually changing the link geometry would be awkward
                     and provide no real benefit: *However* , added functions to stretch Cuboid geometry to "OGLshapes.py" anyway , just in case
                 :Y: Implement - COMPLETE , link slides up and down in a straight line through space with slider control , no change to the contols
                     were necessary
-                : : Derive
+                :N: Derive , Should just be a vector in the Z direction only - NOT NECESSARY , Just a vector in the Z direction only
+                :Y: Compare - COMPLETE , As Expected: [ 0.  0.  0.  0.  0.  2.]
             ; ; Try a two link robot , Rotational
+                :Y: Implement - COMPLETE , This obviously works , since I have done it at least a dozen times with this module
+                : : Derive
+                : : Compare
             ; ; Try a two link robot , Rotational + Prismatic
+                : : Implement
+                : : Derive
+                : : Compare
     | | 3.e. Test05 _ Acceleration
         ! ! Instantiate a robot , set it in a configuration and angular velocity , and calculate the task-space acceleration of the end effector
         ! ! Compare to analytical sol'n from Intro to Robot
@@ -260,15 +268,15 @@ if __name__ == "__main__":
     temp = Cuboid( edge , edge , d1 , [ 0 , 0 , 0 ] )
     temp.add_vertex_offset( [ -edge/2.0 , -edge/2.0 , 0.0 ] )
     # pName , pPitch , E , r , graphics , parentName
-    robot.create_add_link_w_graphics( "link1" , infty , 
+    robot.create_add_link_w_graphics( "link1" , 0.0 , 
                                       np.eye( 3 ) , [ 0 , 0 , 0 ] , 
                                       temp , None )
-#    # ~ Link 2 ~
-#    temp = Cuboid( a2  , edge , edge , [ 0 , 0 , 0 ] )
-#    temp.add_vertex_offset( [ 0.0 , -edge/2.0 , -edge/2.0 ] )
-#    robot.create_add_link_w_graphics( "link2" , 0.0 , 
-#                                       x_trn( pi/2 ) , [ 0 , 0 , 2 ] , 
-#                                      temp , "link1" )
+    # ~ Link 2 ~
+    temp = Cuboid( a2  , edge , edge , [ 0 , 0 , 0 ] )
+    temp.add_vertex_offset( [ 0.0 , -edge/2.0 , -edge/2.0 ] )
+    robot.create_add_link_w_graphics( "link2" , 0.0 , 
+                                       x_trn( pi/2 ) , [ 0 , 0 , 2 ] , 
+                                      temp , "link1" )
 #    
 #    # ~ Link 3 ~
 #    temp = Cuboid( a3  , edge , edge , [ 0 , 0 , 0 ] )
@@ -279,8 +287,8 @@ if __name__ == "__main__":
     
     # ~ Tool Frame ~
     robot.create_add_link_no_draw( "toolFrame" , 0.0 , 
-                                    np.eye( 3 ) , [ 0 , 0 , 2 ] , 
-                                    "link1" )
+                                    np.eye( 3 ) , [ 2 , 0 , 0 ] , 
+                                    "link2" )
     
 #    # ~ Effector Frame ~
 #    robot.add_marker_w_transform( "link3" , CartAxes( unitLen = 1.0 ) , homog_xfrom( x_trn( -pi/2 ) , [ 2 , 0 , 0 ] ) )
@@ -295,8 +303,8 @@ if __name__ == "__main__":
         print "Link 2 xform" , endl , link2.xform
         print "Link 2 Markers" , link2.markers
     elif 1:
-        qTest = [ pi/4 ,  0 ] # Specify a test config
-        qDot  = [ 2.0  ,  0 ] # Last elem is always 0 for the tool frame
+        qTest = [  0.0 ,  0.0 ,  0.0 ] # Specify a test config
+        qDot  = [  2.0 ,  2.0 ,  0.0 ] # Last elem is always 0 for the tool frame
         print robot.get_link_names()
         
         print "Manipulator Jacobian for" , qTest , "Index" , 0 , endl , jacobn_manip( robot , 0 , qTest )
