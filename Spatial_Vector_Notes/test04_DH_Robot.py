@@ -246,7 +246,24 @@ class OGL_Robot( LinkModel ):
 
 # == Test Functions ==
     
-
+def jacobian_two_link_rot_analytical( d1 , a2 , q ):
+    """ Given the dimensions and config of a 2-link rotational robot , return the manipulator Jacobian """
+    theta1 = q[0]      ; theta2 = q[1]
+    c1 = cos( theta1 ) ; c2 = cos( theta2 )
+    s1 = sin( theta1 ) ; s2 = sin( theta2 )
+#    return [ [ -a2*s1*c2 , -a2*c1*s2                  ] ,
+#             [  a2*c1*c2 , -a2*s1*s2                  ] ,
+#             [  0        ,  a2*c1*c1*c2 + a2*s1*s1*c2 ] ,
+#             [  0        ,  s1                        ] ,
+#             [  0        , -c1                        ] ,
+#             [  1        ,  0                         ] ]
+    return [ [  0        ,  s1                        ] ,
+             [  0        , -c1                        ] ,
+             [  1        ,  0                         ] ,
+             [ -a2*s1*c2 , -a2*c1*s2                  ] ,
+             [  a2*c1*c2 , -a2*s1*s2                  ] ,
+             [  0        ,  a2*c1*c1*c2 + a2*s1*s1*c2 ] ]
+             
     
 # == End Test ==
 
@@ -307,13 +324,15 @@ if __name__ == "__main__":
         qDot  = [  2.0 ,  2.0 ,  0.0 ] # Last elem is always 0 for the tool frame
         print robot.get_link_names()
         
-        print "Manipulator Jacobian for" , qTest , "Index" , 0 , endl , jacobn_manip( robot , 0 , qTest )
-        print "Manipulator Jacobian for" , qTest , "Index" , 1 , endl , jacobn_manip( robot , 1 , qTest )
+        
+        
         manipJacob = jacobn_manip( robot , 1 , qTest )
         index = 1
         for i in xrange( len( robot.links ) ):
+            print "Manipulator Jacobian for" , qTest , "Index" , i , endl , jacobn_manip( robot , i , qTest )
             print "Effector Velocity for   " , qDot , "Index" , i , endl , np.dot( jacobn_manip( robot , i , qTest ) , qDot )
-        # print "Analytical Velocity     " , qDot , endl , analytic_test_04( qTest , qDot , d1 , a2 , a3 )
+        print "Analytical Jacobian     " , qDot , endl , jacobian_two_link_rot_analytical( d1 , a2 , qTest[:-1] )
+        print "Analytical Velocity     " , qDot , endl , np.dot( jacobian_two_link_rot_analytical( d1 , a2 , qTest[:-1] ) , qDot[:-1] )
     
     # 4. Render!
     # window = OGL_App( [ link1 , link1axis , link2 , effectorAxis , CartAxes( 1 ) ] , caption = "Transformation Test" ) 
