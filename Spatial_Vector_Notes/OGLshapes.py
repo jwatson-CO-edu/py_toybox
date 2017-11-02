@@ -21,7 +21,7 @@ Dependencies: numpy , pyglet
 
 """
 
-# == Init ==================================================================================================================================
+# === Init =================================================================================================================================
 
 # ~~ Helpers ~~
 
@@ -40,7 +40,7 @@ from SpatialVectorRobot import apply_homog , homogeneous_Z , homog_ang_axs
 
 # ~~ Setup ~~
 
-# == End Init ==============================================================================================================================
+# ___ End Init _____________________________________________________________________________________________________________________________
 
 # == Helper Functions ==
 
@@ -62,7 +62,7 @@ def concat_arr( *arrays ): # TODO: Update MARCHHARE
     else: # else there was only one , return it
         return arrays[0] 
 
-# == End Helper ==
+# __ End Helper __
 
 # ==== OpenGL Classes ====
         
@@ -148,7 +148,7 @@ class OGLDrawable( object ):
         # [4]. If OGL transforms enabled , Return the OGL state machine to previous rendering frame
         # self.state_untransform()
         
-# == end OGLDrawable ==
+# __ end OGLDrawable __
 
 
 # == class Point ==
@@ -188,7 +188,7 @@ class Point( OGLDrawable ):
         if self.trnsByOGL:
             glTranslated( *np.multiply( self.pos3D , -1 ) ) # Reset the transform coordinates
         
-# == End Point ==
+# __ End Point __
 
 # == class CartAxes ==
 
@@ -254,14 +254,14 @@ class CartAxes( OGLDrawable ):
         # [4]. If OGL transforms enabled , Return the OGL state machine to previous rendering frame
         self.state_untransform()
             
-# == End CartAxes ==
+# __ End CartAxes __
 
 # URL , Spatial Transforms: http://drake.mit.edu/doxygen_cxx/group__multibody__spatial__pose.html
 
 # == class Cuboid ==
 
 class Cuboid( OGLDrawable ):
-    """ Rectnagular prism rendered in Pyglet """
+    """ Rectangular prism rendered in Pyglet """
     
     def resize( self , l , w , h ):
         """ Assign the extents of the Cuboid in 'l'ength , 'w'idth , 'h'eight """
@@ -342,7 +342,41 @@ class Cuboid( OGLDrawable ):
         # [4]. If OGL transforms enabled , Return the OGL state machine to previous rendering frame
         self.state_untransform()
 
-# == End Cuboid ==
+# __ End Cuboid __
+        
+        
+# == class Icosahedron ==
+
+class Icosahedron_Reg( OGLDrawable ):
+    """ Regular icosahedron rendered in Pyglet """
+    
+    def __init__( self , rad , pos = [ 0 , 0 , 0 ] )
+        self.sqrt5 = sqrt( 5.0 )
+        self.phi = ( 1.0  + sqrt5 ) * 0.5 # "golden ratio"
+        self.ratio = sqrt( 10.0 + ( 2.0  * sqrt5 ) ) / ( 4.0 * phi ) # ratio of edge length to radius
+        self.a = ( rad / ratio ) * 0.5;
+        self.b = ( rad / ratio ) / ( 2.0 * phi );
+        
+        self.vertices = (
+             0 ,  b , -a ,
+             b ,  a ,  0 ,
+            -b ,  a ,  0 ,
+             0 ,  b ,  a ,
+             0 , -b ,  a ,
+            -a ,  0 ,  b ,
+             0 , -b , -a ,
+             a ,  0 , -b ,
+             a ,  0 ,  b ,
+            -a ,  0 , -b ,
+             b , -a ,  0 ,
+            -b , -a ,  0
+        )
+        
+        # FIXME : START HERE
+        # http://paulbourke.net/geometry/platonic/icosahedron.vf
+
+# __ End Icosahedron __
+
         
 # == class NullDraw ==
         
@@ -387,9 +421,9 @@ class NullDraw( OGLDrawable ):
         pass
     
         
-# == End NullDraw ==
+# __ End NullDraw __
         
-# === End Drawable ===
+# ___ End Drawable ___
 
 # == class OGL_App ==
         
@@ -442,9 +476,9 @@ class OGL_App( pyglet.window.Window ):
         if self.showFPS:
             print "FPS:" , pyglet.clock.get_fps() # Print the framerate
 
-# == End OGL_App ==
+# __ End OGL_App __
             
-# ==== End OpenGL ====
+# ____ End OpenGL ____
             
             
 # === Spare Parts ==========================================================================================================================
@@ -460,4 +494,4 @@ A VertexList is a list of vertices and their attributes, stored in an efficient 
 upload to the video card. On newer video cards (supporting OpenGL 1.5 or later) the data is actually stored in video memory.
 """
             
-# === End Parts ============================================================================================================================
+# ___ End Parts ____________________________________________________________________________________________________________________________
