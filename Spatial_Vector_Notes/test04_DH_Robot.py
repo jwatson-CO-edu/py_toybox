@@ -66,8 +66,11 @@ Dependencies: SpatialVectorRobot , Pyglet
                 :Y: Compare - COMPLETE , As Expected: [ 0.  0.  0.  0.  0.  2.]
             ; ; Try a two link robot , Rotational
                 :Y: Implement - COMPLETE , This obviously works , since I have done it at least a dozen times with this module
-                : : Derive
+                :Y: Derive - COMPLETE
                 : : Compare
+                    ISSUE : THE DERIVED JACOBIAN IS STILL NOT THE SAME AS THAT RETURNED BY THE FEATHERSTONE FUNCTIONS WRITTEN , SUSPECT THAT
+                            THIS HAS TO DO WITH THE REPRESENTATION OF SCREW VELOCITY VERSUS CARTESIAN VELOCITY
+                        / / Work out the Feathersone example problem with the functions written
             ; ; Try a two link robot , Rotational + Prismatic
                 : : Implement
                 : : Derive

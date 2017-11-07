@@ -82,7 +82,7 @@ def add_valid_to_path( pathList ):
 # ~~ Imports ~~
 # ~ Standard ~
 import os
-from math import cos , sin
+from math import cos , sin , acos , degrees
 # ~ Special ~
 import numpy as np
 # ~ Local ~
@@ -110,6 +110,29 @@ def left_divide( A , b ):
     x , resid , rank , s = np.linalg.lstsq( A , b )
     return x
 
+def concat_arr( *arrays ): 
+    """ Concatenate all 'arrays' , any of which can be either a Python list or a Numpy array """
+    # URL , Test if any in an iterable belongs to a certain class : https://stackoverflow.com/a/16705879
+    if any( isinstance( arr , np.ndarray ) for arr in arrays ): # If any of the 'arrays' are Numpy , work for all cases , 
+        if len( arrays ) == 2: # Base case 1 , simple concat    # but always returns np.ndarray
+            return np.concatenate( arrays[0] , arrays[1] )  
+        elif len( arrays ) > 2: # If there are more than 2 , concat the first two and recur
+            return concat_arr( np.concatenate( arrays[0] , arrays[1] ) , *arrays[2:] )
+        else: # Base case 2 , there is only once arg , return it
+            return arrays[0]
+    if len( arrays ) > 1: # else no 'arrays' are Numpy 
+        rtnArr = arrays[0]
+        for arr in arrays[1:]: # If there are more than one , just use addition operator in a line
+            rtnArr += arr
+        return rtnArr
+    else: # else there was only one , return it
+        return arrays[0] 
+    
+def enumerate_rev( L ): # URL: https://stackoverflow.com/a/529466
+    """ Generator to 'enumerate' a list in the reverse order """
+    for index in reversed( xrange( len( L ) ) ):
+        yield index , L[ index ]    
+
 # == End Utility ==
 
 # === Geometry ===
@@ -129,7 +152,7 @@ def np_dot( *args ):
 
 # == End Vector ==
 
-# == Trigonometry == # TODO: Chech that these are in MARCHHARE
+# == Trigonometry == # TODO: Check that these are in MARCHHARE
 
 def ver( theta ):
     """ Versine , radians """
@@ -300,6 +323,13 @@ def XtoV( X ):
     If A and B are close together , then 'XtoV' approximates the the velocity vector that would move frame A to coincide with B after one
     timestep. This is invariant to 'X' and therefore would be the same for A and B. """
 
+
+# = Spatial <--> Cartesian =
+    
+# [6] Part V , Page 4
+    
+# _ End Sptl <--> Cart _
+
 # == End Plucker ==
 
 
@@ -448,7 +478,8 @@ def inverse_dynamics( model ): # , q , qDot , qDotDot ):
     # NOTE: This function assumes that 'model' has 'q' , 'qDot' , 'qDotDot' set for joints
     # ~ Forward Pass ~
     for lnkDex , link in enumerate( model.links ): # For every link in the model , do
-        [ XJ , s_i ] = joint_xform( link.pitch , link.q ) # (FS: 'jcalc') calc the joint transformation and freedom (selection) matrix
+#        [ XJ , s_i ] = joint_xform( link.pitch , link.q ) # (FS: 'jcalc') calc the joint transformation and freedom (selection) matrix
+        [ XJ , s_i ] = joint_spatl( link.pitch , link.q ) # (FS: 'jcalc') calc the joint transformation and freedom (selection) matrix
         vJ = np.dot( s_i , link.qDot ) # Calc joint velocity
         Xup = np.dot( XJ , link.xform ) # Transform the link coordinates into the world frame
         if not link.parent: # if there is no parent link
@@ -540,7 +571,7 @@ def IK_pos( model , body , Xd , q0 , criterion = 1e-10 ):
 if __name__ == "__main__":
     pass
 
-# == End Main ==============================================================================================================================
+# __ End Main ______________________________________________________________________________________________________________________________
     
 
 # === References ===
@@ -551,5 +582,7 @@ if __name__ == "__main__":
 [4] Ralf Grosse-Kunstleve. "scitbx_rigid_body_essence Python Library" ,Lawrence Berkeley National Laboratory , Computational Crystallography Initiative
     http://cctbx.sourceforge.net/scitbx_rigid_body_essence/
 [5] Featherstone, Roy. Rigid body dynamics algorithms. Springer, 2008.
+[6] Featherstone, Roy. "Plucker basis vectors." In Robotics and Automation, 2006. ICRA 2006. Proceedings 2006 IEEE International Conference on, pp. 1892-1897. IEEE, 2006.
+[7] Featherstone, Roy. "A Short Course on Spatial Vector Algebra: The Easy Way to do Rigid Body Dynamics", Dept. Information Engineering, RSISE, The Autralian National University
 """
-# === End Ref ===
+# ___ End Ref ___

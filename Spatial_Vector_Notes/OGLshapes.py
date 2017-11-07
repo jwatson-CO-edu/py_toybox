@@ -31,6 +31,7 @@ Dependencies: numpy , pyglet
 # ~ Special ~
 import numpy as np
 import pyglet # --------- Package for OpenGL
+from math import sqrt
 #- OpenGL flags and state machine
 from pyglet.gl import ( GL_LINES , glColor3ub , GL_TRIANGLES , glTranslated , GL_QUADS , glRotated , glClearColor , glEnable , GL_DEPTH_TEST , 
                         glMatrixMode , GL_PROJECTION , glLoadIdentity , gluPerspective , GL_MODELVIEW , gluLookAt , GL_POINTS , glPointSize )
@@ -350,12 +351,12 @@ class Cuboid( OGLDrawable ):
 class Icosahedron_Reg( OGLDrawable ):
     """ Regular icosahedron rendered in Pyglet """
     
-    def __init__( self , rad , pos = [ 0 , 0 , 0 ] )
+    def __init__( self , rad , pos = [ 0 , 0 , 0 ] ):
         self.sqrt5 = sqrt( 5.0 )
-        self.phi = ( 1.0  + sqrt5 ) * 0.5 # "golden ratio"
+        self.phi = ( 1.0  + self.sqrt5 ) * 0.5 # "golden ratio"
         self.ratio = sqrt( 10.0 + ( 2.0  * sqrt5 ) ) / ( 4.0 * phi ) # ratio of edge length to radius
-        self.a = ( rad / ratio ) * 0.5;
-        self.b = ( rad / ratio ) / ( 2.0 * phi );
+        a = self.a = ( rad / self.ratio ) * 0.5;
+        b = self.b = ( rad / self.ratio ) / ( 2.0 * phi );
         
         self.vertices = (
              0 ,  b , -a ,
