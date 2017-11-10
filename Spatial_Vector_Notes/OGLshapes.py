@@ -257,6 +257,36 @@ class CartAxes( OGLDrawable ):
             
 # __ End CartAxes __
 
+
+# == class Vector ==
+        
+class Vector( OGLDrawable ):
+    """ A directed line segment """
+    
+    def __init__( self , origin = [ 0 , 0 , 0 ] , vec = [ 1 , 0 , 0 ] , frac = 0.2 ):
+        """ Set up the vertices for the vector """
+        OGLDrawable.__init__( self , origin ) # ------------------------- Parent class init
+        
+        drct80 = np.add( origin , np.multiply( vec , ( 1 - frac ) ) )
+        totalV = np.add( origin , vec )
+        vecLen = vec_len( vec )
+        subLen = vecLen * frac # Arrowhead 20% of the total length
+        hd1dir = vec_unit( np.cross( vec , [ 1 , 0 , 0 ] ) )
+        hd2dir = vec_unit( np.cross( vec , hd1dir        ) )
+        pointA # FIXME : START HERE
+        pointB
+        pointC
+        pointD
+        
+        self.vertices = ( # --------------------------------------------- Tuples of vertices that define the drawable geometry
+            origin[0] , origin[1] , origin[2] ,
+            totalV[0] , totalV[1] , totalV[2] ,
+            
+        )
+        
+# __ End Vector __
+
+
 # URL , Spatial Transforms: http://drake.mit.edu/doxygen_cxx/group__multibody__spatial__pose.html
 
 # == class Cuboid ==
