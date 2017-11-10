@@ -28,16 +28,16 @@ Dependencies: numpy , pyglet
 
 # ~~ Imports ~~
 # ~ Standard ~
+from math import sqrt
 # ~ Special ~
 import numpy as np
 import pyglet # --------- Package for OpenGL
-from math import sqrt
 #- OpenGL flags and state machine
 from pyglet.gl import ( GL_LINES , glColor3ub , GL_TRIANGLES , glTranslated , GL_QUADS , glRotated , glClearColor , glEnable , GL_DEPTH_TEST , 
                         glMatrixMode , GL_PROJECTION , glLoadIdentity , gluPerspective , GL_MODELVIEW , gluLookAt , GL_POINTS , glPointSize )
 from pyglet import clock # Animation timing
 # ~ Local ~
-from SpatialVectorRobot import apply_homog , homogeneous_Z , homog_ang_axs , vec_unit , vec_len
+from SpatialVectorRobot import apply_homog , homogeneous_Z , homog_ang_axs
 
 # ~~ Setup ~~
 
@@ -256,37 +256,6 @@ class CartAxes( OGLDrawable ):
         self.state_untransform()
             
 # __ End CartAxes __
-        
-
-# == class Vector ==
-        
-class Vector( OGLDrawable ):
-    """ A directed line segment """
-    
-    def __init__( self , origin = [ 0 , 0 , 0 ] , vec = [ 1 , 0 , 0 ] , frac = 0.2 ):
-        """ Set up the vertices for the vector """
-        OGLDrawable.__init__( self , origin ) # ------------------------- Parent class init
-        
-        drct80 = np.add( origin , np.multiply( vec , ( 1 - frac ) ) )
-        totalV = np.add( origin , vec )
-        vecLen = vec_len( vec )
-        subLen = vecLen * frac # Arrowhead 20% of the total length
-        hd1dir = vec_unit( np.cross( vec , [ 1 , 0 , 0 ] ) )
-        hd2dir = vec_unit( np.cross( vec , hd1dir        ) )
-        pointA # FIXME : START HERE
-        pointB
-        pointC
-        pointD
-        
-        self.vertices = ( # --------------------------------------------- Tuples of vertices that define the drawable geometry
-            origin[0] , origin[1] , origin[2] ,
-            totalV[0] , totalV[1] , totalV[2] ,
-            
-        )
-        
-# __ End Vector __
-
-
 
 # URL , Spatial Transforms: http://drake.mit.edu/doxygen_cxx/group__multibody__spatial__pose.html
 
@@ -383,11 +352,14 @@ class Icosahedron_Reg( OGLDrawable ):
     """ Regular icosahedron rendered in Pyglet """
     
     def __init__( self , rad , pos = [ 0 , 0 , 0 ] ):
+        """ Generate vertices from radius """
+        # http://paulbourke.net/geometry/platonic/icosahedron.vf
+        OGLDrawable.__init__( self , pos ) # -- Parent class init , Center will be used for OGL rendering transform
         self.sqrt5 = sqrt( 5.0 )
         self.phi = ( 1.0  + self.sqrt5 ) * 0.5 # "golden ratio"
-        self.ratio = sqrt( 10.0 + ( 2.0  * sqrt5 ) ) / ( 4.0 * phi ) # ratio of edge length to radius
+        self.ratio = sqrt( 10.0 + ( 2.0  * self.sqrt5 ) ) / ( 4.0 * self.phi ) # ratio of edge length to radius
         a = self.a = ( rad / self.ratio ) * 0.5;
-        b = self.b = ( rad / self.ratio ) / ( 2.0 * phi );
+        b = self.b = ( rad / self.ratio ) / ( 2.0 * self.phi );
         
         self.vertices = (
              0 ,  b , -a ,
@@ -401,11 +373,63 @@ class Icosahedron_Reg( OGLDrawable ):
              a ,  0 ,  b ,
             -a ,  0 , -b ,
              b , -a ,  0 ,
-            -b , -a ,  0
+            -b , -a ,  0 ,
+        )
+        self.vertX = list( self.vertices ) # List of transformed vertices
+        
+        self.faceDices = ( 
+        #   CCW         ||  CW
+            2 ,  1 ,  0 , #  v0    v1    v2
+            1 ,  2 ,  3 , #  v3    v2    v1
+            5 ,  4 ,  3 , #  v3    v4    v5
+            4 ,  8 ,  3 , #  v3    v8    v4
+            7 ,  6 ,  0 , #  v0    v6    v7
+            6 ,  9 ,  0 , #  v0    v9    v6
+           11 , 10 ,  4 , #  v4   v10   v11
+           10 , 11 ,  6 , #  v6   v11   v10
+            9 ,  5 ,  2 , #  v2    v5    v9
+            5 ,  9 , 11 , # v11    v9    v5
+            8 ,  7 ,  1 , #  v1    v7    v8
+            7 ,  8 , 10 , # v10    v8    v7
+            2 ,  5 ,  3 , #  v3    v5    v2
+            8 ,  1 ,  3 , #  v3    v1    v8
+            9 ,  2 ,  0 , #  v0    v2    v9
+            1 ,  7 ,  0 , #  v0    v7    v1
+           11 ,  9 ,  6 , #  v6    v9   v11
+            7 , 10 ,  6 , #  v6   v10    v7
+            5 , 11 ,  4 , #  v4   v11    v5
+           10 ,  8 ,  4 , #  v4    v8   v10
         )
         
-        # FIXME : START HERE
-        # http://paulbourke.net/geometry/platonic/icosahedron.vf
+        self.colors = ( (  88 , 181 ,  74 ) , # Body color
+                        (   0 ,   0 , 255 ) ) # Line color
+        
+    def draw( self ):
+        """ Render the Icosahedron in OGL , This function assumes that a graphics context already exists """
+        # [1]. If OGL transforms enabled , Translate and rotate the OGL state machine to desired rendering frame
+        self.state_transform()
+        # [2]. Set color , size , and shape-specific parameters
+        glColor3ub( *self.colors[0] ) # Get the color according to the voxel type
+        # [3]. Render! 
+        pyglet.graphics.draw_indexed( 
+            12 , # --------------------- Number of seqential triplet in vertex list
+            GL_TRIANGLES , # -------------- Draw quadrilaterals
+            self.faceDices , # ---------- Indices where the coordinates are stored
+            ( 'v3f' , self.vertX ) # vertex list , OpenGL offers an optimized vertex list object , but this is not it
+        ) #   'v3i' # This is for integers I suppose!
+        # [2]. Set color , size , and shape-specific parameters
+        glColor3ub( *self.colors[1] ) # Get the color according to the voxel type
+        pyglet.gl.glLineWidth( 3 )
+        # [3]. Render! 
+        pyglet.graphics.draw_indexed( 
+            8 , # --------------------- Number of seqential triplet in vertex list
+            GL_LINES , # -------------- Draw quadrilaterals
+            self.linDices , # ---------- Indices where the coordinates are stored
+            ( 'v3f' , self.vertX ) # vertex list , OpenGL offers an optimized vertex list object , but this is not it
+        ) #   'v3i' # This is for integers I suppose!
+        # [4]. If OGL transforms enabled , Return the OGL state machine to previous rendering frame
+        self.state_untransform()
+        
 
 # __ End Icosahedron __
 
