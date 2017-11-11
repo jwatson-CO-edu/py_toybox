@@ -143,7 +143,7 @@ def vec_unit( vec ):
     """ Return a vector in the direction of 'vec' with unit length """
     return np.divide( vec , np.linalg.norm( vec ) )
 
-vec_len = np.linalg.norm # Alias for 'np.linalg.norm'
+vec_mag = np.linalg.norm # Alias for 'np.linalg.norm'
     
 
 def np_dot( *args ): 

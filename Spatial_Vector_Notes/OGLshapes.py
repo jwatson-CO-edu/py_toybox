@@ -37,7 +37,7 @@ from pyglet.gl import ( GL_LINES , glColor3ub , GL_TRIANGLES , glTranslated , GL
                         glMatrixMode , GL_PROJECTION , glLoadIdentity , gluPerspective , GL_MODELVIEW , gluLookAt , GL_POINTS , glPointSize )
 from pyglet import clock # Animation timing
 # ~ Local ~
-from SpatialVectorRobot import apply_homog , homogeneous_Z , homog_ang_axs
+from SpatialVectorRobot import apply_homog , homogeneous_Z , homog_ang_axs , vec_unit , vec_mag
 
 # ~~ Setup ~~
 
@@ -269,20 +269,56 @@ class Vector( OGLDrawable ):
         
         drct80 = np.add( origin , np.multiply( vec , ( 1 - frac ) ) )
         totalV = np.add( origin , vec )
-        vecLen = vec_len( vec )
+        vecLen = vec_mag( vec )
         subLen = vecLen * frac # Arrowhead 20% of the total length
         hd1dir = vec_unit( np.cross( vec , [ 1 , 0 , 0 ] ) )
         hd2dir = vec_unit( np.cross( vec , hd1dir        ) )
-        pointA # FIXME : START HERE
-        pointB
-        pointC
-        pointD
+        pointA = np.add( drct80 , np.multiply( hd1dir ,  subLen ) )
+        pointB = np.add( drct80 , np.multiply( hd1dir , -subLen ) )
+        pointC = np.add( drct80 , np.multiply( hd2dir ,  subLen ) )
+        pointD = np.add( drct80 , np.multiply( hd2dir , -subLen ) )
         
         self.vertices = ( # --------------------------------------------- Tuples of vertices that define the drawable geometry
-            origin[0] , origin[1] , origin[2] ,
-            totalV[0] , totalV[1] , totalV[2] ,
-            
+            origin[0] , origin[1] , origin[2] , # 0. Vector Tail
+            totalV[0] , totalV[1] , totalV[2] , # 1. Vector Head
+            pointA[0] , pointA[1] , pointA[2] , # 2. Fletching 1 Side 1
+            pointB[0] , pointB[1] , pointB[2] , # 3. Fletching 1 Side 2
+            pointC[0] , pointC[1] , pointC[2] , # 4. Fletching 2 Side 1
+            pointD[0] , pointD[1] , pointD[2] , # 5. Fletching 2 Side 2
         )
+        
+        self.ndx_vctr = ( 0 , 1 )
+        self.ndx_flt1 = ( 1 , 2 , 3 )
+        self.ndx_flt2 = ( 1 , 4 , 5 )
+        self.fltchngs = [ self.ndx_flt1 , self.ndx_flt2 ]
+        
+        self.colors = ( (  88 , 181 ,  74 ) ) # Body color
+        
+    def draw( self ):
+        """ Draw the axes """
+        # [1]. If OGL transforms enabled , Translate and rotate the OGL state machine to desired rendering frame
+        self.state_transform()
+        # [2]. Set color , size , and shape-specific parameters
+        pyglet.gl.glLineWidth( 3 )
+        # [3]. Render! # Basis vectors are drawn one at a time in the conventional colors
+        glColor3ub( *self.colors[0] )
+        # Draw the vector shaft
+        pyglet.graphics.draw_indexed( 
+            10 , # ------------------ Number of seqential triplet in vertex list
+            GL_LINES , # ------------ Draw quadrilaterals
+            self.vectors[i] , # ----- Indices where the coordinates are stored
+            ( 'v3f' , self.vertX ) #- Vertex list , OpenGL offers an optimized vertex list object , but this is not it
+        )
+        # Draw the fletchings
+        for i in xrange( len( self.fltchngs ) ): # FIXME: START HERE
+            pyglet.graphics.draw_indexed( 
+                10 , # ------------------ Number of seqential triplet in vertex list
+                GL_TRIANGLES , # -------- Draw quadrilaterals
+                self.arrows[i] , # ------ Indices where the coordinates are stored
+                ( 'v3f' , self.vertX ) #- Vertex list , OpenGL offers an optimized vertex list object , but this is not it
+            )
+        # [4]. If OGL transforms enabled , Return the OGL state machine to previous rendering frame
+        self.state_untransform()
         
 # __ End Vector __
 
