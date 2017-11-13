@@ -15,6 +15,9 @@ Dependencies: numpy , pyglet
 """
 ~~~~~ Development Plan ~~~~~
 
+[ ] Test Vector
+[ ] Give all classes OGL-specific names
+[ ] Test Icosahedron
 [ ] Meshes
 [ ] Flying camera
 [ ] Vector array optimization ( See Drawable )
@@ -50,9 +53,12 @@ def concat_arr( *arrays ): # TODO: Update MARCHHARE
     # URL , Test if any in an iterable belongs to a certain class : https://stackoverflow.com/a/16705879
     if any( isinstance( arr , np.ndarray ) for arr in arrays ): # If any of the 'arrays' are Numpy , work for all cases , 
         if len( arrays ) == 2: # Base case 1 , simple concat    # but always returns np.ndarray
-            return np.concatenate( arrays[0] , arrays[1] )  
+            return np.concatenate( ( arrays[0] , arrays[1] ) )
         elif len( arrays ) > 2: # If there are more than 2 , concat the first two and recur
-            return concat_arr( np.concatenate( arrays[0] , arrays[1] ) , *arrays[2:] )
+            return concat_arr( 
+                np.concatenate( ( arrays[0] , arrays[1] ) ) , 
+                *arrays[2:] 
+            )
         else: # Base case 2 , there is only one arg , return it
             return arrays[0]
     if len( arrays ) > 1: # else no 'arrays' are Numpy 
@@ -287,12 +293,14 @@ class Vector( OGLDrawable ):
             pointD[0] , pointD[1] , pointD[2] , # 5. Fletching 2 Side 2
         )
         
+        self.vertX = list( self.vertices ) # ---------------------------- List of transformed vertices
+        
         self.ndx_vctr = ( 0 , 1 )
         self.ndx_flt1 = ( 1 , 2 , 3 )
         self.ndx_flt2 = ( 1 , 4 , 5 )
         self.fltchngs = [ self.ndx_flt1 , self.ndx_flt2 ]
         
-        self.colors = ( (  88 , 181 ,  74 ) ) # Body color
+        self.colors = tuple( [ tuple( [  88 , 181 ,  74 ] ) ] ) # Body color
         
     def draw( self ):
         """ Draw the axes """
@@ -301,20 +309,20 @@ class Vector( OGLDrawable ):
         # [2]. Set color , size , and shape-specific parameters
         pyglet.gl.glLineWidth( 3 )
         # [3]. Render! # Basis vectors are drawn one at a time in the conventional colors
-        glColor3ub( *self.colors[0] )
+        glColor3ub( *self.colors[0] ) # There is only one color
         # Draw the vector shaft
         pyglet.graphics.draw_indexed( 
-            10 , # ------------------ Number of seqential triplet in vertex list
+            6 , # ------------------ Number of seqential triplet in vertex list
             GL_LINES , # ------------ Draw quadrilaterals
-            self.vectors[i] , # ----- Indices where the coordinates are stored
+            self.ndx_vctr , # ----- Indices where the coordinates are stored
             ( 'v3f' , self.vertX ) #- Vertex list , OpenGL offers an optimized vertex list object , but this is not it
         )
         # Draw the fletchings
         for i in xrange( len( self.fltchngs ) ): # FIXME: START HERE
             pyglet.graphics.draw_indexed( 
-                10 , # ------------------ Number of seqential triplet in vertex list
+                6 , # ------------------ Number of seqential triplet in vertex list
                 GL_TRIANGLES , # -------- Draw quadrilaterals
-                self.arrows[i] , # ------ Indices where the coordinates are stored
+                self.fltchngs[i] , # ------ Indices where the coordinates are stored
                 ( 'v3f' , self.vertX ) #- Vertex list , OpenGL offers an optimized vertex list object , but this is not it
             )
         # [4]. If OGL transforms enabled , Return the OGL state machine to previous rendering frame

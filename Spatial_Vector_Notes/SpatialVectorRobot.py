@@ -83,6 +83,7 @@ def add_valid_to_path( pathList ):
 # ~ Standard ~
 import os
 from math import cos , sin , acos , degrees
+from random import random
 # ~ Special ~
 import numpy as np
 # ~ Local ~
@@ -152,6 +153,14 @@ def np_dot( *args ):
         return np.dot( args[0] , np_dot( *args[1:] ) ) # Note the star operator is needed for recursive call, unpack to positional args
     else: # base case, there are 2 args*, use vanilla 'np.add'
         return np.dot( args[0] , args[1] ) # *NOTE: This function assumes there are at least two args, if only 1 an error will occur
+    
+def vec_randrange( rangeSpec ):
+    """ Create a random vector , the same dimensionality as rangeSpec , which is defined as [ ... [ x_{i,min} , x_{i,max} ] ...  ] """
+    rtnVec = []
+    for dimRange in rangeSpec:
+        span = abs( dimRange[1] - dimRange[0] )
+        rtnVec.append( dimRange[0] + random() * span )
+    return rtnVec
 
 # == End Vector ==
 

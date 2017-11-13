@@ -38,8 +38,8 @@ def add_valid_to_path( pathList ):
 
 # ~~ Imports ~~
 # ~ Standard ~
-import os , random
-from math import pi , cos , sin , degrees , radians
+import os 
+from math import pi , cos , sin # , degrees , radians
 from Tkinter import Frame , HORIZONTAL , GROOVE , LEFT , SUNKEN , Scale , TOP , Entry
 # ~ Special ~
 import numpy as np
@@ -49,9 +49,9 @@ import numpy as np
 # ~ Local ~
 localPaths = [ os.path.join( "C:" , os.sep , "Users" , "jwatson" , "Documents" , "Python Scripts" ) ] # List of paths to your custom modules
 add_valid_to_path( localPaths )
-from SpatialVectorRobot import *
-from OGLshapes import *
-from TKBasicUI import *
+from SpatialVectorRobot import LinkModel , LinkSpatial , FK , x_trn , jacobn_manip
+from OGLshapes import CartAxes , NullDraw , Cuboid , OGL_App
+from TKBasicUI import TKBasicApp
 
 # ~~ Aliases & Shortcuts ~~
 infty = float('inf') # infinity
