@@ -19,7 +19,7 @@ from math import cos , sin , acos , asin , tan , atan2 , radians , degrees , hyp
 import numpy as np
 # ~ Local ~
 from SpatialVectorRobot import vec_randrange , rot_matx_ang_axs , z_rot
-from OGLshapes import Vector , OGL_App
+from OGLshapes import Vector_OGL , OGL_App
 
 # ~~ Aliases & Shortcuts ~~
 endl    = os.linesep # - Line separator
@@ -38,7 +38,7 @@ class CircleOrbit:
     def __call__( self , theta ):
         """ Return the point in R3 for angle 'theta' """
         offset = np.dot( z_rot( theta ) , [ self.radius , 0 , 0 ] )
-        print "Offset:" , offset
+        # print "Offset:" , offset
         return np.add( self.center , offset )
 
 # === Main =================================================================================================================================
@@ -50,13 +50,15 @@ vecDrawList = []
 camOrbit    = CircleOrbit( [ 0 , 0 ,0 ] , 1.25 )
 dTheta      = pi / 90.0
 
+Vector_OGL.set_vec_props(  )
+
 if __name__ == "__main__":
     # 1. Create a collection of random vectors in a set volume
     for i in xrange( numVectors ):
         head = vec_randrange( [ dimRange for j in xrange(3) ] )
         tail = vec_randrange( [ dimRange for j in xrange(3) ] )
         vecCoords.append( [ tail , np.subtract( head , tail ) ] )
-        vecDrawList.append( Vector( *vecCoords[-1] ) )
+        vecDrawList.append( Vector_OGL( *vecCoords[-1] ) )
     
     # 2. Create an OGL window
     window = OGL_App( vecDrawList , caption = "Vector Drawing Test" )

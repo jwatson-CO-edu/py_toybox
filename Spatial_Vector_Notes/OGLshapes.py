@@ -16,10 +16,15 @@ Dependencies: numpy , pyglet
 ~~~~~ Development Plan ~~~~~
 
 [ ] Test Vector
-[ ] Give all classes OGL-specific names
+    | | Display test - COMPLETE
+    |Y| Rename - COMPLETE
+    | | Style Setters
+        ! ! Dynamic
+        ! ! Constant
+[Y] Give all common class names OGL-specific names - COMPLETE
 [ ] Test Icosahedron
-[ ] Meshes
-[ ] Flying camera
+[ ] Meshes ( This likely requires "numpy-stl" or similar mesh-processing library )
+[Y] Flying camera - COMPLETE , This is fully user settable , so if the client code desires this can change over time
 [ ] Vector array optimization ( See Drawable )
 
 """
@@ -38,7 +43,7 @@ import pyglet # --------- Package for OpenGL
 #- OpenGL flags and state machine
 from pyglet.gl import ( GL_LINES , glColor3ub , GL_TRIANGLES , glTranslated , GL_QUADS , glRotated , glClearColor , glEnable , GL_DEPTH_TEST , 
                         glMatrixMode , GL_PROJECTION , glLoadIdentity , gluPerspective , GL_MODELVIEW , gluLookAt , GL_POINTS , glPointSize )
-from pyglet import clock # Animation timing
+from pyglet import clock # Animation timing ( Not sure why would prefer this over vanilla Python timing? )
 # ~ Local ~
 from SpatialVectorRobot import apply_homog , homogeneous_Z , homog_ang_axs , vec_unit , vec_mag
 
@@ -160,7 +165,7 @@ class OGLDrawable( object ):
 
 # == class Point ==
      
-class Point( OGLDrawable ):
+class Point_OGL( OGLDrawable ):
     """ Visible representation of a 1D point """
     
     def __init__( self , pnt = [ 0 , 0 , 0 ] , size = 8 , color = ( 255 , 255 , 255 ) ):
@@ -266,17 +271,40 @@ class CartAxes( OGLDrawable ):
 
 # == class Vector ==
         
-class Vector( OGLDrawable ):
+class Vector_OGL( OGLDrawable ):
     """ A directed line segment """
+    
+    lineWidth  = 4 # - "LineWidth" # --------- Line width 
+    arwLenFrac = 0.2 # "ArrowLengthFraction" # Fraction of the vector length that the arrowhead occupies
+    arwWdtFrac = 0.1 # "ArrowWidthFraction" #- Fraction of the vector length that the arrowhead extends perpendicularly to the vector
+    arwLngtLim = 0.5 # "ArrowLengthLimit" # -- Hard limit on arrowhead length in units -OR- Constant arrowhead length
+    arwWdthLim = 0.5 # "ArrowWidthLimit" # --- Hard limit on arrowhead width in units  -OR- Constant arrowhead width
+    
+    @classmethod
+    def set_vec_props( cls , **kwargs ):
+        """ Set the visual properties of all the 'Vector_OGL' that will be subsequently created """
+        if "LineWidth" in kwargs:
+            cls.lineWidth  = kwargs["LineWidth"]
+        if "ArrowLengthFraction" in kwargs:
+            cls.arwLenFrac = kwargs["ArrowLengthFraction"]
+        if "ArrowWidthFraction" in kwargs:
+            cls.arwWdtFrac = kwargs["ArrowWidthFraction"]
+        if "ArrowLengthLimit" in kwargs:
+            cls.arwLngtLim = kwargs["ArrowLengthLimit"]
+        if "ArrowWidthLimit" in kwargs:
+            cls.arwWdthLim = kwargs["ArrowWidthLimit"]
     
     def __init__( self , origin = [ 0 , 0 , 0 ] , vec = [ 1 , 0 , 0 ] , frac = 0.2 ):
         """ Set up the vertices for the vector """
         OGLDrawable.__init__( self , origin ) # ------------------------- Parent class init
+        thisCls = self.__class__
         
-        drct80 = np.add( origin , np.multiply( vec , ( 1 - frac ) ) )
+        drct80 = np.add( origin , np.multiply( vec , ( 1 - thisCls.arwLenFrac ) ) )
+        if vec_mag( drct80 ) * thisCls.arwLenFrac > thisCls.arwLngtLim:
+            drct80 = np.add( origin , np.multiply( vec , ( 1 - thisCls.arwLngtLim / vec_mag( drct80 ) ) ) )
         totalV = np.add( origin , vec )
         vecLen = vec_mag( vec )
-        subLen = vecLen * frac # Arrowhead 20% of the total length
+        subLen = vecLen * thisCls.arwWdtFrac 
         hd1dir = vec_unit( np.cross( vec , [ 1 , 0 , 0 ] ) )
         hd2dir = vec_unit( np.cross( vec , hd1dir        ) )
         pointA = np.add( drct80 , np.multiply( hd1dir ,  subLen ) )
@@ -546,8 +574,8 @@ class NullDraw( OGLDrawable ):
         """ Unset the transformation matrix in the OGL state machine for this object , so that other shapes can set it for themselves """
         pass
 
-    def draw( self ): # VIRTUAL
-        """ Render the INHERITED_CLASS """
+    def draw( self ): 
+        """ Render NOTHING """
         pass
     
         
