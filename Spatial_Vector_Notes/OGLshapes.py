@@ -302,7 +302,11 @@ class Vector_OGL( OGLDrawable ):
         self.origin = origin
         self.offset = vec
         
+        # print "DEBUG , origin _______________________________________ :" , origin
+        # print "DEBUG , np.multiply( vec , ( 1 - thisCls.arwLenFrac ) ):" , np.multiply( vec , ( 1 - thisCls.arwLenFrac ) )
+        
         drct80 = np.add( origin , np.multiply( vec , ( 1 - thisCls.arwLenFrac ) ) )
+        
         if vec_mag( drct80 ) * thisCls.arwLenFrac > thisCls.arwLngtLim:
             drct80 = np.add( origin , np.multiply( vec , ( 1 - thisCls.arwLngtLim / vec_mag( drct80 ) ) ) )
         totalV = np.add( origin , vec )
@@ -335,7 +339,11 @@ class Vector_OGL( OGLDrawable ):
         """ Set up the vertices for the vector """
         OGLDrawable.__init__( self , origin ) # ------------------------- Parent class init
         self.set_origin_displace( origin , vec )
-        self.colors = tuple( [ tuple( [  88 , 181 ,  74 ] ) ] ) # Body color
+        self.colors =  [ tuple( [  88 , 181 ,  74 ] ) ] # Body color
+        
+    def set_color( self , clrTpl ):
+        """ Set the color of the vector """
+        self.colors[0] = tuple( clrTpl )
         
     def draw( self ):
         """ Draw the axes """

@@ -49,7 +49,7 @@ import numpy as np
 # ~ Local ~
 localPaths = [ os.path.join( "C:" , os.sep , "Users" , "jwatson" , "Documents" , "Python Scripts" ) ] # List of paths to your custom modules
 add_valid_to_path( localPaths )
-from SpatialVectorRobot import LinkModel , LinkSpatial , FK , x_trn , jacobn_manip
+from SpatialVectorRobot import LinkModel , LinkSpatial , FK , x_trn , jacobn_manip , linear_comp_spatl , vec_mag
 from OGLshapes import CartAxes , NullDraw , Cuboid , OGL_App , Vector_OGL
 from TKBasicUI import TKBasicApp
 
@@ -291,28 +291,36 @@ if __name__ == "__main__":
         print "Analytical Jacobian     " , qDot , endl , jacobian_two_link_rot_analytical( d1 , a2 , qTest[:-1] )
         print "Analytical Velocity     " , qDot , endl , np.dot( jacobian_two_link_rot_analytical( d1 , a2 , qTest[:-1] ) , qDot[:-1] )
     
-    # 4. Render!
-    # window = OGL_App( [ link1 , link1axis , link2 , effectorAxis , CartAxes( 1 ) ] , caption = "Transformation Test" ) 
-    window = OGL_App( robot.get_graphics_list() , caption = "Transformation Test" ) 
-    window.set_camera( [ 4 , 4 , 4 ] , [ 0 , 0 , 0 ] , [ 0 , 0 , 1 ] )
     
-    # ~ Begin animation ~
-    window.set_visible()
     
-    t      = 0.0 # s
-    dt     = 0.1 # s , advance by this each timestep
-    angSpd = pi / 4.0 # rad/s
-    q      = [ 0      , 0      , 0 ]
-    qDot   = [ angSpd , angSpd , 0 ]
+    
+    
+    
     
     Vector_OGL.set_vec_props( LineWidth           = 4.00 ,
                               ArrowWidthFraction  = 0.08 ,
                               ArrowLengthFraction = 0.20 )
     
     # Instantiate a graphic for the analytical velocity
-    drawVecAna = Vector_OGL()
+    drawVecAna = Vector_OGL() ; drawVecAna.set_color( [ 255 , 195 ,   0 ] ) # Analytical : ORANGE , CORRECT DIRECTION
     # Instantiate a graphic for the Featherstone velocity
-    drawVecFth = Vector_OGL()
+    drawVecFth = Vector_OGL() ; drawVecFth.set_color( [ 191 , 127 , 255 ] )
+    
+    drawList = robot.get_graphics_list() + [ drawVecAna , drawVecFth ]
+    
+    # 4. Render!
+    # window = OGL_App( [ link1 , link1axis , link2 , effectorAxis , CartAxes( 1 ) ] , caption = "Transformation Test" ) 
+    window = OGL_App( drawList , caption = "Transformation Test" ) 
+    window.set_camera( [ 4 , 4 , 4 ] , [ 0 , 0 , 0 ] , [ 0 , 0 , 1 ] )    
+    
+    # ~ Begin animation ~
+    window.set_visible()    
+    
+    t      = 0.0 # s
+    dt     = 0.1 # s , advance by this each timestep
+    angSpd = pi / 8.0 # rad/s
+    q      = [ 0      , 0      , 0 ]
+    qDot   = [ angSpd , 0      , 0 ]    
     
     def advance():
         """ Advance timestep , update the robot position """
@@ -320,16 +328,27 @@ if __name__ == "__main__":
         # 1. Update time
         t += dt 
         # 2. Update position
-        q[0] += dt * angSpd ; q[1] += dt * angSpd 
+        q[0] += dt * angSpd ; # q[1] += dt * angSpd 
         # 3. Update robot
         robot.apply_FK_all( q ) 
         # 4. Fetch effector position
-        robot.get_origin_lab_by_index( 2 )
-        # 5. Calc analytical speed
-        effectorVelA = np.dot( jacobian_two_link_rot_analytical( d1 , a2 , q[:-1] ) , qDot[:-1] )
-        # 6. Calc Featherstone speed
-        effectorVelF = np.dot( jacobn_manip( robot , 2 , q )                        , qDot      )
-        
+        effectorPos = robot.get_origin_lab_by_index( 2 )
+        print "effectorPos:" , effectorPos
+        # 5. Calc analytical speed , display
+        effectorVelA = linear_comp_spatl( np.dot( jacobian_two_link_rot_analytical( d1 , a2 , q[:-1] ) , qDot[:-1] ) )
+        drawVecAna.set_origin_displace( effectorPos , effectorVelA )
+        # 6. Calc Featherstone speed , display
+        effectorVelF = np.multiply( 
+            linear_comp_spatl( np.dot( jacobn_manip( robot , 2 , q )                        , qDot      ) ) ,
+            10
+        )
+        drawVecFth.set_origin_displace( effectorPos , effectorVelF )
+        print "Featherstone Length:" , vec_mag( linear_comp_spatl( np.dot( jacobn_manip( robot , 2 , q )                        , qDot      ) ) )
+        # 7. Draw!
+        if not window.has_exit: 
+            window.dispatch_events() # Handle window events
+            window.on_draw() # Redraw the scene
+            window.flip()        
     
     # ~ Set up animation ~
     def update():
@@ -344,7 +363,8 @@ if __name__ == "__main__":
     ctrlWin = TKOGLRobotCtrl( 600 , 200 , title = "Transform Test" , numJoints = len( robot.links ) - 1 ) # Default refresh rate is 30 Hz
         
     # ~~ Run ~~
-    ctrlWin.add_update_func( update )
+    # ctrlWin.add_update_func( update ) # Enable for manual control
+    ctrlWin.add_update_func( advance ) # Enable for autmatic control
     ctrlWin.rootWin.after( 100 , ctrlWin.run ) # Start the simulation after a 100 ms delay
     ctrlWin.rootWin.mainloop() # --------------- Show window and begin the simulation / animation
 

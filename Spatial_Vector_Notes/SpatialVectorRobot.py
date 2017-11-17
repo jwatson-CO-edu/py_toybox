@@ -328,13 +328,16 @@ def cross_forc_matx( forceVec ): # (Featherstone: crf) # Acts on a force vector 
     
 def XtoV( X ):
     """ Calculate the small-magnitude motion vector from the transform for a small change in coordinates """
+    # Suppose A and B are two Cartesian frames ( and also the Plucker coordinate systems defined by those frames ) 
+    #  If A and B are close together , then 'XtoV' approximates the the velocity vector that would move frame A to coincide with B after one
+    #  timestep. This is invariant to 'X' and therefore would be the same for A and B. 
     return np.multiply( 0.5 , 
                         [ X[1][2] - X[2][1]  ,  X[2][0] - X[0][2]  ,  X[0][1] - X[1][0] , 
                           X[4][2] - X[5][1]  ,  X[5][0] - X[3][2]  ,  X[3][1] - X[4][0] ] )
-    """ Suppose A and B are two Cartesian frames ( and also the Plucker coordinate systems defined by those frames ) 
-    If A and B are close together , then 'XtoV' approximates the the velocity vector that would move frame A to coincide with B after one
-    timestep. This is invariant to 'X' and therefore would be the same for A and B. """
-
+    
+def linear_comp_spatl( spatialVec ):
+    """ Return the linear component of a spatial vector """
+    return spatialVec[3:]
 
 # = Spatial <--> Cartesian =
     
