@@ -43,14 +43,17 @@ class CircleOrbit:
 
 # === Main =================================================================================================================================
 
-numVectors  = 10
-dimRange    = [ -1 ,  1 ]
+numVectors  = 30
+dimRange    = [ -1   ,  1 ]
+perturb     = [ -0.1 ,  0.1 ]
 vecCoords   = []
 vecDrawList = []
-camOrbit    = CircleOrbit( [ 0 , 0 ,0 ] , 1.25 )
+camOrbit    = CircleOrbit( [ 0 , 0 ,0 ] , 2.0 )
 dTheta      = pi / 90.0
 
-Vector_OGL.set_vec_props(  )
+Vector_OGL.set_vec_props( LineWidth           = 4.00 ,
+                          ArrowWidthFraction  = 0.08 ,
+                          ArrowLengthFraction = 0.20 )
 
 if __name__ == "__main__":
     # 1. Create a collection of random vectors in a set volume
@@ -69,7 +72,10 @@ if __name__ == "__main__":
     theta = 0
     
     # 4. Draw & Display
-    while not window.has_exit:
+    while not window.has_exit:        
+        for vec in vecDrawList:
+            vec.set_origin_displace( np.add( vec.origin , vec_randrange( [ perturb for j in xrange(3) ] ) ) ,
+                                     np.add( vec.offset , vec_randrange( [ perturb for j in xrange(3) ] ) ) )
         theta += dTheta
         window.set_camera( camOrbit( theta ) , [ 0 , 0 , 0 ] , [ 0 , 0 , 1 ] )
         window.dispatch_events() # Handle window events

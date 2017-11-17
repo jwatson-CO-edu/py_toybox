@@ -50,7 +50,7 @@ import numpy as np
 localPaths = [ os.path.join( "C:" , os.sep , "Users" , "jwatson" , "Documents" , "Python Scripts" ) ] # List of paths to your custom modules
 add_valid_to_path( localPaths )
 from SpatialVectorRobot import LinkModel , LinkSpatial , FK , x_trn , jacobn_manip
-from OGLshapes import CartAxes , NullDraw , Cuboid , OGL_App
+from OGLshapes import CartAxes , NullDraw , Cuboid , OGL_App , Vector_OGL
 from TKBasicUI import TKBasicApp
 
 # ~~ Aliases & Shortcuts ~~
@@ -119,8 +119,9 @@ class OGL_Robot( LinkModel ):
     
     def __init__( self ):
         """ Constructor """
-        LinkModel.__init__( self ) # Init parent class
-        self.OGLDrawables = [] # --- List of all render models of class OGLDrawable 
+        LinkModel.__init__( self ) # ---- Init parent class
+        self.OGLDrawables = [] # -------- List of all render models of class OGLDrawable 
+        
         
     def add_link_w_graphics( self , link , graphics , parentName = None ):
         """ Set up the kinematic chain relationship and store the associated graphics """
@@ -135,6 +136,7 @@ class OGL_Robot( LinkModel ):
         link.axes = axes # Associate the axes with this link
         # 4. Create an empty container for markers associated with this link
         link.markers = [] # This will hold things like effector frame bases , etc
+        link.xformHomog = np.eye( 4 ) # Init with zero transform
         
     def add_link_no_draw( self , link , parentName = None ):
         """ Set up the kinematic chain relationship and store the associated graphics """
@@ -148,16 +150,21 @@ class OGL_Robot( LinkModel ):
         link.axes = axes # Associate the axes with this link
         # 4. Create an empty container for markers associated with this link
         link.markers = [] # This will hold things like effector frame bases , etc
+        link.xformHomog = np.eye( 4 ) # Init with zero transform
         
     def create_add_link_w_graphics( self , pName , pPitch , E , r , graphics , parentName = None ):
         """ Create a link , and Set up the kinematic chain relationship and store the associated graphics """
         link = LinkSpatial( pName , pPitch , E , r ) # ----------- 1. Create the link
         self.add_link_w_graphics( link , graphics , parentName ) # 2. Add the link
+        link.xformHomog = np.eye( 4 ) # Init with zero transform
+        return link # -------------------------------------------- 3. Return reference to link
         
     def create_add_link_no_draw( self , pName , pPitch , E , r , parentName = None ):
         """ Create a link , and Set up the kinematic chain relationship , without any associated graphics (except auto-gen axes) """
-        link = LinkSpatial( pName , pPitch , E , r ) # ----------- 1. Create the link
-        self.add_link_no_draw( link , parentName ) # 2. Add the link
+        link = LinkSpatial( pName , pPitch , E , r ) # 1. Create the link
+        self.add_link_no_draw( link , parentName ) # - 2. Add the link
+        link.xformHomog = np.eye( 4 ) # Init with zero transform
+        return link # -------------------------------- 3. Return reference to the link
     
     def add_marker_w_transform( self , linkName , marker , transform ):
         """ Add a OGLDrawable 'marker' to 'linkName' with a relative 'transform' such that it moves with link with an offset """
@@ -178,12 +185,19 @@ class OGL_Robot( LinkModel ):
             # 1. Apply transform to the link
             linkXform = FK( self , linkDex , qList )
             link.graphics.xform_homog( linkXform )
+            link.xformHomog = linkXform # Store the transform
             # 2. Apply transform to the parent axes # How to do this without rewriting the function
             if link.parent:
                 link.axes.xform_homog( np.dot( FK( self , link.parent.linkIndex , qList ) , link.xform ) )
             # 3. If there are markers , apply the transform to the markers
             for mrkr in link.markers:
                 mrkr.xform_homog( np.dot( linkXform , mrkr.xform ) )
+                
+    def get_origin_lab_by_index( self , index ):
+        """ Get the origin of the local basis as computed by 'FK' """
+        # NOTE: This function assumes that the transform stored by 'apply_FK_all' is current
+        # Fetch the linear offset from the homogeneous transformation
+        return [ self.links[ index ].xformHomog[0][3] , self.links[ index ].xformHomog[1][3] , self.links[ index ].xformHomog[2][3] ]
         
 # == End OGL_Robot ==
 
@@ -246,9 +260,9 @@ if __name__ == "__main__":
 #                                      temp , "link2" )
     
     # ~ Tool Frame ~
-    robot.create_add_link_no_draw( "toolFrame" , 0.0 , 
-                                    np.eye( 3 ) , [ 2 , 0 , 0 ] , 
-                                    "link2" )
+    effector = robot.create_add_link_no_draw( "toolFrame" , 0.0 , 
+                                              np.eye( 3 ) , [ 2 , 0 , 0 ] , 
+                                              "link2" )
     
 #    # ~ Effector Frame ~
 #    robot.add_marker_w_transform( "link3" , CartAxes( unitLen = 1.0 ) , homog_xfrom( x_trn( -pi/2 ) , [ 2 , 0 , 0 ] ) )
@@ -285,8 +299,40 @@ if __name__ == "__main__":
     # ~ Begin animation ~
     window.set_visible()
     
+    t      = 0.0 # s
+    dt     = 0.1 # s , advance by this each timestep
+    angSpd = pi / 4.0 # rad/s
+    q      = [ 0      , 0      , 0 ]
+    qDot   = [ angSpd , angSpd , 0 ]
+    
+    Vector_OGL.set_vec_props( LineWidth           = 4.00 ,
+                              ArrowWidthFraction  = 0.08 ,
+                              ArrowLengthFraction = 0.20 )
+    
+    # Instantiate a graphic for the analytical velocity
+    drawVecAna = Vector_OGL()
+    # Instantiate a graphic for the Featherstone velocity
+    drawVecFth = Vector_OGL()
+    
+    def advance():
+        """ Advance timestep , update the robot position """
+        global t , q
+        # 1. Update time
+        t += dt 
+        # 2. Update position
+        q[0] += dt * angSpd ; q[1] += dt * angSpd 
+        # 3. Update robot
+        robot.apply_FK_all( q ) 
+        # 4. Fetch effector position
+        robot.get_origin_lab_by_index( 2 )
+        # 5. Calc analytical speed
+        effectorVelA = np.dot( jacobian_two_link_rot_analytical( d1 , a2 , q[:-1] ) , qDot[:-1] )
+        # 6. Calc Featherstone speed
+        effectorVelF = np.dot( jacobn_manip( robot , 2 , q )                        , qDot      )
+        
+    
     # ~ Set up animation ~
-    def update( ):
+    def update():
         """ Per-frame changes to make prior to redraw """
         q = ctrlWin.get_q()
         robot.apply_FK_all( q + [0] ) # The tool frame link is always 0

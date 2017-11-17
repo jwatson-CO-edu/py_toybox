@@ -15,12 +15,13 @@ Dependencies: numpy , pyglet
 """
 ~~~~~ Development Plan ~~~~~
 
-[ ] Test Vector
-    | | Display test - COMPLETE
+[Y] Test Vector - COMPLETE
+    |Y| Display test - COMPLETE
     |Y| Rename - COMPLETE
-    | | Style Setters
-        ! ! Dynamic
-        ! ! Constant
+    |Y| Style Setters
+        !L! Dynamic - LATER , Not sure what I meant by this
+        !Y! Constant - COMPLETE
+    |Y| Test endpoint change - COMPLETE
 [Y] Give all common class names OGL-specific names - COMPLETE
 [ ] Test Icosahedron
 [ ] Meshes ( This likely requires "numpy-stl" or similar mesh-processing library )
@@ -294,10 +295,12 @@ class Vector_OGL( OGLDrawable ):
         if "ArrowWidthLimit" in kwargs:
             cls.arwWdthLim = kwargs["ArrowWidthLimit"]
     
-    def __init__( self , origin = [ 0 , 0 , 0 ] , vec = [ 1 , 0 , 0 ] , frac = 0.2 ):
-        """ Set up the vertices for the vector """
-        OGLDrawable.__init__( self , origin ) # ------------------------- Parent class init
+    def set_origin_displace( self , origin , vec ):
+        """ Set the vector so that it begins at 'origin' and has 'offset' """
         thisCls = self.__class__
+        
+        self.origin = origin
+        self.offset = vec
         
         drct80 = np.add( origin , np.multiply( vec , ( 1 - thisCls.arwLenFrac ) ) )
         if vec_mag( drct80 ) * thisCls.arwLenFrac > thisCls.arwLngtLim:
@@ -327,7 +330,11 @@ class Vector_OGL( OGLDrawable ):
         self.ndx_flt1 = ( 1 , 2 , 3 )
         self.ndx_flt2 = ( 1 , 4 , 5 )
         self.fltchngs = [ self.ndx_flt1 , self.ndx_flt2 ]
-        
+    
+    def __init__( self , origin = [ 0 , 0 , 0 ] , vec = [ 1 , 0 , 0 ] ):
+        """ Set up the vertices for the vector """
+        OGLDrawable.__init__( self , origin ) # ------------------------- Parent class init
+        self.set_origin_displace( origin , vec )
         self.colors = tuple( [ tuple( [  88 , 181 ,  74 ] ) ] ) # Body color
         
     def draw( self ):
@@ -335,7 +342,7 @@ class Vector_OGL( OGLDrawable ):
         # [1]. If OGL transforms enabled , Translate and rotate the OGL state machine to desired rendering frame
         self.state_transform()
         # [2]. Set color , size , and shape-specific parameters
-        pyglet.gl.glLineWidth( 3 )
+        pyglet.gl.glLineWidth( self.__class__.lineWidth )
         # [3]. Render! # Basis vectors are drawn one at a time in the conventional colors
         glColor3ub( *self.colors[0] ) # There is only one color
         # Draw the vector shaft
