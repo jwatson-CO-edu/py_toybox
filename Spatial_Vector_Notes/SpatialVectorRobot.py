@@ -270,7 +270,13 @@ def sp_rot_xfrm( E ): # Eq. (2.19) and (2.20) in [5]
     """ Return the spatial transformation that corresponds to a 3x3 rotation matrix 'E' """
     # NOTE: Transform is the same for both velocity and force vectors , [5]
     return np.vstack( (  np.hstack( (  E                     , np.zeros( ( 3 , 3 ) )  ) ) , 
-                         np.hstack( (  np.zeros( ( 3 , 3 ) ) , E                      ) ) ) )    
+                         np.hstack( (  np.zeros( ( 3 , 3 ) ) , E                      ) ) ) )
+    
+def sp_rot_xfrm_alt( E ): # Eq. (2.19) and (2.20) in [5]
+    """ Return the spatial transformation that corresponds to a 3x3 rotation matrix 'E' """
+    # NOTE: Transform is the same for both velocity and force vectors , [5]
+    return np.vstack( (  np.hstack( (  np.zeros( ( 3 , 3 ) ) , E                      ) ) , 
+                         np.hstack( (  E                     , np.zeros( ( 3 , 3 ) )  ) ) ) )    
 
 def spatl_xfrm_mtn( E , r ): # (2.24) of [5]
     """ Return the spatial motion vector transformation that corresponds to a translation by 'r' followed by rotation by 'E' """
@@ -337,6 +343,12 @@ def XtoV( X ):
     
 def linear_comp_spatl( spatialVec ):
     """ Return the linear component of a spatial vector """
+    return spatialVec[3:]
+
+def frnt_half( spatialVec ):
+    return spatialVec[:3]
+
+def back_half( spatialVec ):
     return spatialVec[3:]
 
 # = Spatial <--> Cartesian =
@@ -449,9 +461,12 @@ def joint_spatl( pitch , q ): # Featherstone: jcalc
     # NOTE : This function is for transform coordinate bases , not positions
     
     if eq( pitch , 0.0 ): # Revolute Joint : Implements pure rotation 
-        E = z_trn( q ); r = [ 0 , 0 , 0 ]
+        E = z_trn( q )
+#        E = z_rot( q )
+        r = [ 0 , 0 , 0 ]
         s_i = [ 0 , 0 , 1 , 0 , 0 , 0 ]
         XJ_s = sp_rot_xfrm( E )
+#        XJ_s = sp_rot_xfrm_alt( E )
         
     elif pitch == infty: #- Prismatic Joint : Implements pure translation
         E = np.eye( 3 ); r = [ 0 , 0 , q ]
@@ -531,7 +546,7 @@ def FK( model , bodyIndex , q ): # ( Featherstone: bodypos ) # This is modified 
         
 def jacobn_manip( model , bodyIndex , q ): # ( Featherstone: bodyJac )
     """ Compute the manipulator jacobian up to the specified link in the tree """
-    # NOTE: This function does not depend on the presently stored q state , returned pose depends only on given 'q'
+    # NOTE: This function does not depend on the presently stored q state , returned jacobian depends only on given 'q'
     e = np.zeros( model.N ) # Selector vector
     body = model.links[ bodyIndex ] # Fetch the link by index
     while body: # Build the selector vector

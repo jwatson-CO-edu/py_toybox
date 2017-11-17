@@ -49,7 +49,7 @@ import numpy as np
 # ~ Local ~
 localPaths = [ os.path.join( "C:" , os.sep , "Users" , "jwatson" , "Documents" , "Python Scripts" ) ] # List of paths to your custom modules
 add_valid_to_path( localPaths )
-from SpatialVectorRobot import LinkModel , LinkSpatial , FK , x_trn , jacobn_manip , linear_comp_spatl , vec_mag
+from SpatialVectorRobot import LinkModel , LinkSpatial , FK , x_trn , jacobn_manip , linear_comp_spatl , vec_mag , back_half , frnt_half
 from OGLshapes import CartAxes , NullDraw , Cuboid , OGL_App , Vector_OGL
 from TKBasicUI import TKBasicApp
 
@@ -304,7 +304,7 @@ if __name__ == "__main__":
     # Instantiate a graphic for the analytical velocity
     drawVecAna = Vector_OGL() ; drawVecAna.set_color( [ 255 , 195 ,   0 ] ) # Analytical : ORANGE , CORRECT DIRECTION
     # Instantiate a graphic for the Featherstone velocity
-    drawVecFth = Vector_OGL() ; drawVecFth.set_color( [ 191 , 127 , 255 ] )
+    drawVecFth = Vector_OGL() ; drawVecFth.set_color( [ 255 , 198 , 255 ] ) # Featherstone: PINK , 
     
     drawList = robot.get_graphics_list() + [ drawVecAna , drawVecFth ]
     
@@ -320,7 +320,7 @@ if __name__ == "__main__":
     dt     = 0.1 # s , advance by this each timestep
     angSpd = pi / 8.0 # rad/s
     q      = [ 0      , 0      , 0 ]
-    qDot   = [ angSpd , 0      , 0 ]    
+    qDot   = [ 0      , angSpd , 0 ]    
     
     def advance():
         """ Advance timestep , update the robot position """
@@ -328,22 +328,25 @@ if __name__ == "__main__":
         # 1. Update time
         t += dt 
         # 2. Update position
-        q[0] += dt * angSpd ; # q[1] += dt * angSpd 
+        q = np.add( q ,
+                    np.multiply( qDot , dt ) )
+#        # q[0] += dt * angSpd 
+#        q[1] += dt * angSpd 
         # 3. Update robot
         robot.apply_FK_all( q ) 
         # 4. Fetch effector position
         effectorPos = robot.get_origin_lab_by_index( 2 )
-        print "effectorPos:" , effectorPos
+        # print "effectorPos:" , effectorPos
         # 5. Calc analytical speed , display
         effectorVelA = linear_comp_spatl( np.dot( jacobian_two_link_rot_analytical( d1 , a2 , q[:-1] ) , qDot[:-1] ) )
         drawVecAna.set_origin_displace( effectorPos , effectorVelA )
         # 6. Calc Featherstone speed , display
         effectorVelF = np.multiply( 
-            linear_comp_spatl( np.dot( jacobn_manip( robot , 2 , q )                        , qDot      ) ) ,
-            10
+            back_half( np.dot( jacobn_manip( robot , 2 , q )                        , qDot      ) ) ,
+            2
         )
         drawVecFth.set_origin_displace( effectorPos , effectorVelF )
-        print "Featherstone Length:" , vec_mag( linear_comp_spatl( np.dot( jacobn_manip( robot , 2 , q )                        , qDot      ) ) )
+        print "Featherstone Length:" , vec_mag( linear_comp_spatl( np.dot( jacobn_manip( robot , 2 , q ) , qDot      ) ) )
         # 7. Draw!
         if not window.has_exit: 
             window.dispatch_events() # Handle window events
@@ -360,7 +363,7 @@ if __name__ == "__main__":
             window.on_draw() # Redraw the scene
             window.flip()
         
-    ctrlWin = TKOGLRobotCtrl( 600 , 200 , title = "Transform Test" , numJoints = len( robot.links ) - 1 ) # Default refresh rate is 30 Hz
+    ctrlWin = TKOGLRobotCtrl( 600 , 600 , title = "Transform Test" , numJoints = len( robot.links ) - 1 ) # Default refresh rate is 30 Hz
         
     # ~~ Run ~~
     # ctrlWin.add_update_func( update ) # Enable for manual control
