@@ -304,7 +304,7 @@ if __name__ == "__main__":
     # Instantiate a graphic for the analytical velocity
     drawVecAna = Vector_OGL() ; drawVecAna.set_color( [ 255 , 195 ,   0 ] ) # Analytical : ORANGE , CORRECT DIRECTION
     # Instantiate a graphic for the Featherstone velocity
-    drawVecFth = Vector_OGL() ; drawVecFth.set_color( [ 255 , 198 , 255 ] ) # Featherstone: PINK , 
+    drawVecFth = Vector_OGL() ; drawVecFth.set_color( [ 255 , 198 , 255 ] ) # Featherstone: PINK , INCORRECT
     
     drawList = robot.get_graphics_list() + [ drawVecAna , drawVecFth ]
     
@@ -320,7 +320,7 @@ if __name__ == "__main__":
     dt     = 0.1 # s , advance by this each timestep
     angSpd = pi / 8.0 # rad/s
     q      = [ 0      , 0      , 0 ]
-    qDot   = [ 0      , angSpd , 0 ]    
+    qDot   = [ angSpd , angSpd , 0 ]    
     
     def advance():
         """ Advance timestep , update the robot position """

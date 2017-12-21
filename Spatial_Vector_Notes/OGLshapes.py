@@ -75,6 +75,25 @@ def concat_arr( *arrays ): # TODO: Update MARCHHARE
     else: # else there was only one , return it
         return arrays[0] 
 
+def generate_segment_indices_for_VFN( V , F , N ):
+    """ Obtain indices for line segments connecting vertices at facet edges , without interior segments or repeats """
+    def pairs_eq( pair1 , pair2 ):
+        """ Determine if two pairs have the same elements """
+        return ( ( pair1[0] == pair2[0] ) and ( pair1[1] == pair2[1] ) ) or ( ( pair1[0] == pair2[1] ) and ( pair1[1] == pair2[0] ) )
+    def pair_in_list( pair , pairList ):
+        """ Determine if 'pair' is in 'ls' """
+        for testPair in pairList:
+            if pairs_eq( testPair , pair ):
+                return True
+        return False
+    usedPairs = []
+    triPairs  = ( ( 0 , 1 ) , ( 1 , 2 ) , ( 2 , 0 ) )
+    for i , f_i in enumerate( F ):
+        # FIXME: START HERE
+        pass
+        
+        
+
 # __ End Helper __
 
 # ==== OpenGL Classes ====
