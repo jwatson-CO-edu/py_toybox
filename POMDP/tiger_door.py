@@ -35,6 +35,34 @@ def __prog_signature__(): return __progname__ + " , Version " + __version__ # Re
 
 # ___ End Init _____________________________________________________________________________________________________________________________
 
+# ~~~ Problem Statement ~~~
+
+
+# ~~~ Problem Setup ~~~
+ACTIONS = set( range(3) ) # { 0: Listen , 1: Open Left , 2: Open Right }
+STATES  = set( range(2) ) # { S0: Tiger Left , S1: Tiger Right }
+REWARD  = {}
+for state in STATES:
+    for action in ACTIONS:
+        if action == 0:
+            r =   -1
+        elif state + 1 == action:
+            r = -100
+        else:
+            r =   10
+        REWARD[ ( state , action ) ] = r
+    
+
+# ~~ Belief ~~
+# Belief state: Probability of S0 vs S1 being true underlying state
+belief = {}
+for s in STATES:
+    belief[ s ] = 1.0 / len( STATES ) # Initial belief state: p(S0) = p(S1) = 0.5
+
+# ~~ Policy ~~
+# Policy \pi is a map from Belief [ 0 , 1 ] to Action { 0: Listen , 1: Open Left , 2: Open Right }
+
+
 class DoorPair:
     """ A pair of doors that either has a tiger in the Right or Left Door , But this cannot be observed directly """
     
@@ -48,10 +76,21 @@ class DoorPair:
     
 def take_observation( door , observationModel ):
     """ Return an observation that simulates listening 'door' , given an 'observationModel' """
+    pass
+
+def reward_for_action( belief , action ):
+    """ The expected reward is the reward for acting in a state times the expectation of being in that state, like Expectimax. """
+    # r( b , a ) = \sum_{s}( b[s] * r( s , a ) )
+    reward_ba = 0.0
+    for s in STATES:
+        reward_ba += belief[s] * REWARD[ ( s , action ) ]
+    return reward_ba
 
 # === Main Application =====================================================================================================================
 
 # = Program Vars =
+
+
 
 
 
@@ -60,6 +99,8 @@ def take_observation( door , observationModel ):
 if __name__ == "__main__":
     print __prog_signature__()
     termArgs = sys.argv[1:] # Terminal arguments , if they exist
+    
+    print "Belief:" , belief
     
 
 # ___ End Main _____________________________________________________________________________________________________________________________
