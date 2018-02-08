@@ -28,13 +28,6 @@ Dependencies: SpatialVectorRobot , Pyglet
 # == Init ==================================================================================================================================
 
 # ~~ Helpers ~~
-def add_valid_to_path( pathList ):
-    """ Add all the valid paths in 'pathList' to the Python path """
-    import sys , os
-    for path in pathList:
-        if os.path.isdir( path ):
-            sys.path.append( path )
-            print "Loaded" , path
 
 # ~~ Imports ~~
 # ~ Standard ~
@@ -47,11 +40,11 @@ import numpy as np
 #from pyglet.gl import * #- OpenGL flags and state machine
 #from pyglet import clock # Animation timing
 # ~ Local ~
-localPaths = [ os.path.join( "C:" , os.sep , "Users" , "jwatson" , "Documents" , "Python Scripts" ) ] # List of paths to your custom modules
-add_valid_to_path( localPaths )
-from SpatialVectorRobot import LinkModel , LinkSpatial , FK , x_trn , jacobn_manip , linear_comp_spatl , vec_mag , back_half , frnt_half
-from OGLshapes import CartAxes , NullDraw , Cuboid , OGL_App , Vector_OGL
-from TKBasicUI import TKBasicApp
+from marchhare.Vector import vec_mag 
+from marchhare.VectorMath.Vector3D import x_trn 
+from marchhare.VectorMath.SpatialVectorRobot import LinkModel , LinkSpatial , FK , jacobn_manip , linear_comp_spatl , back_half
+from marchhare.OGLshapes import CartAxes , NullDraw , Cuboid , OGL_App , Vector_OGL
+from marchhare.TKBasicUI import TKBasicApp
 
 # ~~ Aliases & Shortcuts ~~
 infty = float('inf') # infinity
@@ -59,7 +52,7 @@ endl  = os.linesep # - Line separator (OS Specific)
 
 # ~~ Setup ~~
 
-# == End Init ==============================================================================================================================
+# __ End Init ______________________________________________________________________________________________________________________________
 
 # == class TKOGLRobotCtrl ==
 
@@ -278,7 +271,7 @@ if __name__ == "__main__":
         print "Link 2 Markers" , link2.markers
     elif 1:
         qTest = [  0.0 ,  0.0 ,  0.0 ] # Specify a test config
-        qDot  = [  2.0 ,  2.0 ,  0.0 ] # Last elem is always 0 for the tool frame
+        qDot  = [  2.0 ,  0.0 ,  0.0 ] # Last elem is always 0 for the tool frame
         print robot.get_link_names()
         
         
@@ -320,7 +313,7 @@ if __name__ == "__main__":
     dt     = 0.1 # s , advance by this each timestep
     angSpd = pi / 8.0 # rad/s
     q      = [ 0      , 0      , 0 ]
-    qDot   = [ angSpd , angSpd , 0 ]    
+    qDot   = [ 0      , angSpd , 0 ]    
     
     def advance():
         """ Advance timestep , update the robot position """
