@@ -4,3 +4,6 @@
 [submodule "POMDP/marchhare"]
 	path = POMDP/marchhare
 	url = https://jwatson_utah_edu@bitbucket.org/jwatson_utah_edu/marchhare.git
+[submodule "GIFkit3D/marchhare"]
+	path = GIFkit3D/marchhare
+	url = https://jwatson_utah_edu@bitbucket.org/jwatson_utah_edu/marchhare.git

@@ -44,8 +44,8 @@ class CircleOrbit:
 
 # === Main =================================================================================================================================
 
-camOrbit    = CircleOrbit( [ 0 , 0 ,0 ] , 5.0 )
-dTheta      = pi / 90.0
+camOrbit    = CircleOrbit( [ 0 , 0 ,0 ] , 3.5 )
+dTheta      = pi / 180.0
 
 if __name__ == "__main__":
     # 1. Create an icosahedron
