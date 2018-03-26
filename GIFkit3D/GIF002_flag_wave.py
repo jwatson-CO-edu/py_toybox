@@ -144,17 +144,19 @@ class WavyFlag( OGLDrawable ):
             btm2.append( np.add( btmEdgePoints[i] , 
                                  np.multiply( N_btm , -self.separation / 2.0 ) ) )
         # 4. Load all of the points into a flat structure
-        self.vertX1.extend( flatten_nested_sequence( [ top1 , btm1 ] ) ) 
-        self.vertX2.extend( flatten_nested_sequence( [ top2 , btm2 ] ) )
+        self.vertX1 = flatten_nested_sequence( [ top1 , btm1 ] )
+        self.vertX2 = flatten_nested_sequence( [ top2 , btm2 ] )
         # 6. Load the original points into a flat structure
         self.borderVerts = flatten_nested_sequence( [ topEdgePoints , btmEdgePoints ] )
         # 7. Get edge indices for the flag border
         self.linDices = flatten_nested_sequence( [ range( self.numPts )  , range( 2 * self.numPts - 1 , self.numPts - 1 , -1 ) , 0 ] )
         
         # ~ DEBUG OUTPUT ~
-        print "DEBUG , Side 1 has" , len( self.vertX1 ) , "vertices"
+        print "DEBUG , Side 1 has" , len( self.vertX1 ) , "vertices , Elem 0:" , self.vertX1[0]
         print "DEBUG , Side 2 has" , len( self.vertX2 ) , "vertices"
         print "DEBUG , Border has" , len( self.borderVerts ) , "vertices"
+        print "DUBUG , Therea are" , self.numTri , "triangles"
+        print "DUBUG , Therea are" , len( self.F ) , "triangle vertex indices"
         
     def draw( self ):
         """ Render both sides of the flag as well as the border """
@@ -167,7 +169,7 @@ class WavyFlag( OGLDrawable ):
         glColor3ub( *self.colors[1] )
         # 2.B. Draw Side 1 Tris
         pyglet.graphics.draw_indexed( 
-            self.numTri , # --------------------- Number of seqential triplet in vertex list
+            self.numPts * 2 , # --------------------- Number of seqential triplet in vertex list
             GL_TRIANGLES , # -------------- Draw quadrilaterals
             self.F , # ---------- Indices where the coordinates are stored
             ( 'v3f' , self.vertX1 ) # vertex list , OpenGL offers an optimized vertex list object , but this is not it
@@ -176,7 +178,7 @@ class WavyFlag( OGLDrawable ):
         glColor3ub( *self.colors[2] )
         # 2.D. Draw Side 2 Tris
         pyglet.graphics.draw_indexed( 
-            self.numTri , # --------------------- Number of seqential triplet in vertex list
+            self.numPts * 2 , # --------------------- Number of seqential triplet in vertex list
             GL_TRIANGLES , # -------------- Draw quadrilaterals
             self.F , # ---------- Indices where the coordinates are stored
             ( 'v3f' , self.vertX2 ) # vertex list , OpenGL offers an optimized vertex list object , but this is not it
@@ -187,7 +189,7 @@ class WavyFlag( OGLDrawable ):
         pyglet.gl.glLineWidth( 3 )
         # [3]. Render! 
         pyglet.graphics.draw_indexed( 
-            self.numSeg , # --------------------- Number of seqential triplet in vertex list
+            self.numPts * 2, # --------------------- Number of seqential triplet in vertex list
             GL_LINES , # -------------- Draw quadrilaterals
             self.linDices , # ---------- Indices where the coordinates are stored
             ( 'v3f' , self.borderVerts ) # vertex list , OpenGL offers an optimized vertex list object , but this is not it
