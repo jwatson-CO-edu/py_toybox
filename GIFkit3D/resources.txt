@@ -1,2 +1,4 @@
 URL , Capture frames from Pyglet: http://pyglet.readthedocs.io/en/pyglet-1.3-maintenance/programming_guide/image.html#saving-an-image
-URL , Overcome Pyglet PUINT Error (Windows): https://bitbucket.org/pyglet/pyglet/commits/a69ff38c23dc5bec51b2a53c4697b671885d35da
+URL , Overcome Pyglet PUINT Error (Windows 10): https://bitbucket.org/pyglet/pyglet/commits/a69ff38c23dc5bec51b2a53c4697b671885d35da
+URL , Compress GIF by saving only changed pixels: http://www.lcdf.org/gifsicle/
+URL , Execute terminal commands with subprocess: https://stackoverflow.com/a/35874988

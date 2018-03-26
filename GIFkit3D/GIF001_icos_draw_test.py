@@ -42,29 +42,30 @@ EPSILON = 1e-8 # ------- A very small number below the precision we care about
 # ___ End Init _____________________________________________________________________________________________________________________________
 
 class CircleOrbit:
-    
+
     def __init__( self , center , radius ):
         """ Set all the params for a circular orbit """
         self.center    = center
         self.radius    = radius
-        
+
     def __call__( self , theta ):
         """ Return the point in R3 for angle 'theta' """
         offset = np.dot( z_rot( theta ) , [ self.radius , 0 , 0 ] )
         # print "Offset:" , offset
         return np.add( self.center , offset )
-		
+
 def ensure_dir( dirName ):
-	""" Create the directory if it does not exist """
-	if not os.path.exists( dirName ):
-		os.makedirs( dirName )
+    """ Create the directory if it does not exist """
+    if not os.path.exists( dirName ):
+        os.makedirs( dirName )
 
 # === Main =================================================================================================================================
 
 # == Program Vars ==
-        
+
 # ~ FLAGS ~
 _SAVEGRAPHICS = False # Set to True to create an animated GIF of the generated graphics
+#                       Be patient for the save process to finish after graphics window exit 'X' is clicked
 
 # ~ Generation Settings ~
 camOrbit    = CircleOrbit( [ 0 , 0 ,0 ] , 3.5 ) # Camera will circle the given point in the X-Y plane at the given radius
@@ -84,7 +85,7 @@ outFileName = "icoshearyou.gif" # Name of the output file
 # __ End Vars __
 
 if __name__ == "__main__":
-    
+
     # 0. Erase previous frames
     if _SAVEGRAPHICS:
         prevFrames = os.listdir( subDirName )
@@ -92,18 +93,18 @@ if __name__ == "__main__":
             fullName = os.path.join( subDirName , pFrame )
             if fullName.endswith( ".png" ):
                 os.remove( fullName )
-    
+
     # === GRAPHICS CREATION ================================================================================================================
-    
+
     # 1. Create an icosahedron
     icos = Icosahedron_Reg( 2 , pos = [ 0 , 0 , 0 ] )
-    
+
     # 2. Create an OGL window
     window = OGL_App( [ icos ] , caption = "ICOSHEARYOU" )
-    
+
     # 3. Set the camera to look at the collection
     window.set_camera( [ 2 , 2 , 2 ] , [ 0 , 0 , 0 ] , [ 0 , 0 , 1 ] )
-    
+
     theta = 0
     ensure_dir( subDirName )
 
@@ -114,17 +115,17 @@ if __name__ == "__main__":
         window.dispatch_events() # Handle window events
         window.on_draw() # Redraw the scene
         window.flip()
-        
+
         # ___ END GRAPHICS _________________________________________________________________________________________________________________
-        
+
         if _SAVEGRAPHICS:
             # Save one complete rotation
             if frmCount <= totalFames:
                 frmCount += 1
-                if frmCount > 1:
+                if frmCount > 1: # For some reason the first saved frame is always empty ( 2018-03-22 , Windows 10 )
                     fName = os.path.join( subDirName , prefix + str( frmCount ).zfill( 4 ) + postfix )
                     pyglet.image.get_buffer_manager().get_color_buffer().save( fName )
-                    
+
     # 5. Create an animated GIF after the graphics window has been closed by the user
     if _SAVEGRAPHICS:
         images = [] # Buffer for each frame
@@ -133,7 +134,7 @@ if __name__ == "__main__":
                 file_path = os.path.join( subdir , file )
                 if file_path.endswith( ".png" ):
                     images.append( imageio.imread( file_path ) )
-        			
-        imageio.mimsave( os.path.join( subDirName , outFileName ) , images , fps = FPS )
+
+        imageio.mimsave( os.path.join( subDirName , outFileName ) , images , fps = FPS ) # This creates the GIF , Please wait on exit
 
 # ___ End Main _____________________________________________________________________________________________________________________________
