@@ -7,3 +7,9 @@
 [submodule "GIFkit3D/marchhare"]
 	path = GIFkit3D/marchhare
 	url = https://jwatson_utah_edu@bitbucket.org/jwatson_utah_edu/marchhare.git
+[submodule "VIN"]
+	path = VIN
+	url = https://github.com/avivt/VIN.git
+[submodule "pyCraft"]
+	path = pyCraft
+	url = https://github.com/ammaraskar/pyCraft.git

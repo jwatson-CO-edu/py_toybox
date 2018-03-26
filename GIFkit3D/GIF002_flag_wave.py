@@ -13,7 +13,8 @@ Dependencies: numpy , pyglet , imageio , marchhare
 NOTE , 2018-03-22: ERROR OCCURS WHILE RUNNING UNDER UBUNTU 16.04 , LAST THIRD OF THE ANIMATION RUNS AT A GREATLY INCREASED FRAMERATE
                    This does not currently happen under Windows 10
                    
-Process: [1] Generate & Record in Windows (Python)
+Process: [0] Move functions from previous work to "GIFtools.py"
+         [1] Generate & Record in Windows (Python)
          [2] Optimize GIF in Linux (GIFsicle)
          [3] Verify (Browser)
          [4] Post
@@ -187,7 +188,7 @@ _SAVEGRAPHICS = False # Set to True to create an animated GIF of the generated g
 # ~ Generation Settings ~
 camOrbit    = CircleOrbit( [ 0 , 0 ,0 ] , 3.5 ) # Camera will circle the given point in the X-Y plane at the given radius
 dTheta      = pi / 90.0 # ----------------------- Radians to advance per frame
-totalFames  = int( ( 2 * pi ) / dTheta  ) # ----- Number of frames that will bring the animation to its initial configuration ( GIF loop )
+totalFrames = int( ( 2 * pi ) / dTheta  ) # ----- Number of frames that will bring the animation to its initial configuration ( GIF loop )
 
 # ~ File Settings ~
 prefix      = "frame_" # Prefix for source frames
@@ -237,7 +238,7 @@ if __name__ == "__main__":
 
         if _SAVEGRAPHICS:
             # Save one complete rotation
-            if frmCount <= totalFames:
+            if frmCount <= totalFrames:
                 frmCount += 1
                 if frmCount > 1: # For some reason the first saved frame is always empty ( 2018-03-22 , Windows 10 )
                     fName = os.path.join( subDirName , prefix + str( frmCount ).zfill( 4 ) + postfix )
