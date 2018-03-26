@@ -1,4 +1,8 @@
 *.py~
+*.pyc
+*/*.pyc
+*/*/*.pyc
+*/*/*/*.pyc
 *.pdf
 *.jpg
 */*.jpg

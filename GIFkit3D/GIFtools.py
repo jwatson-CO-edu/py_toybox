@@ -11,6 +11,13 @@ James Watson, 2018 March
 Tools and utilities for generative art with Pyglet
 """
 
+# ~~ Imports ~~
+# ~ Standard ~
+# ~ Special ~
+import numpy as np
+# ~ Local ~
+from marchhare.VectorMath.SpatialVectorRobot import z_rot
+
 # == class CircleOrbit ==
 
 class CircleOrbit:

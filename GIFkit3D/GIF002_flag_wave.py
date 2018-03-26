@@ -37,11 +37,13 @@ from math import cos , sin , acos , asin , tan , atan2 , radians , degrees , hyp
 import numpy as np
 import pyglet
 import imageio
+from pyglet.gl import ( GL_LINES , glColor3ub , GL_TRIANGLES , glTranslated , glRotated , glMatrixMode )
 # ~ Local ~
-from marchhare.marchhare import flatten_nested_sequence
+from marchhare.marchhare import flatten_nested_sequence , ensure_dir
 from marchhare.Vector import vec_random_range , vec_unit
 from marchhare.VectorMath.SpatialVectorRobot import rot_matx_ang_axs , z_rot
 from marchhare.OGLshapes import Vector_OGL , OGL_App , Icosahedron_Reg , OGLDrawable
+from GIFtools import CircleOrbit 
 
 # ~~ Aliases & Shortcuts ~~
 endl    = os.linesep # - Line separator
@@ -77,11 +79,14 @@ class WavyFlag( OGLDrawable ):
             # The alternate mode is to specify nonrigid 'vertices' that can be further transformed to the overall flag pose in the lab frame
             OGLDrawable.__init__( self , topEdgePoints[0] ) # -- Parent class init , Center will be used for OGL rendering transform
         self.numPts = len( topEdgePoints ) # Both lists must be the same length , Drawing stops before this index
+        self.numTri = 2 * ( self.numPts - 1 )
+        self.numSeg = 2 * self.numPts
         self.set_edge_points( topEdgePoints , btmEdgePoints )
         self.separation = sepDist * 1.0 # Ensure it is float
         self.colors = [ [ 255 , 255 , 255 ] , # Border
                         [ 255 ,   0 ,   0 ] , # Side 1
                         [   0 ,   0 , 255 ] ] # Side 2
+        self.calc_render_geo( topEdgePoints , btmEdgePoints )
         
     def set_edge_points( self , topEdgePoints , btmEdgePoints ):
         """ Store the edge points , enforce equal length """
@@ -146,36 +151,67 @@ class WavyFlag( OGLDrawable ):
         # 7. Get edge indices for the flag border
         self.linDices = flatten_nested_sequence( [ range( self.numPts )  , range( 2 * self.numPts - 1 , self.numPts - 1 , -1 ) , 0 ] )
         
+        # ~ DEBUG OUTPUT ~
+        print "DEBUG , Side 1 has" , len( self.vertX1 ) , "vertices"
+        print "DEBUG , Side 2 has" , len( self.vertX2 ) , "vertices"
+        print "DEBUG , Border has" , len( self.borderVerts ) , "vertices"
+        
     def draw( self ):
         """ Render both sides of the flag as well as the border """
         # ~~ Implementation Template ~~
         # [1]. If OGL transforms enabled , Translate and rotate the OGL state machine to desired rendering frame
         self.state_transform()
         
-        # FIXME: START HERE
-        
         # [2]. Render
         # 2.A. Set  Side 1 Color
+        glColor3ub( *self.colors[1] )
         # 2.B. Draw Side 1 Tris
+        pyglet.graphics.draw_indexed( 
+            self.numTri , # --------------------- Number of seqential triplet in vertex list
+            GL_TRIANGLES , # -------------- Draw quadrilaterals
+            self.F , # ---------- Indices where the coordinates are stored
+            ( 'v3f' , self.vertX1 ) # vertex list , OpenGL offers an optimized vertex list object , but this is not it
+        ) 
         # 2.C. Set  Side 2 Color
+        glColor3ub( *self.colors[2] )
         # 2.D. Draw Side 2 Tris
+        pyglet.graphics.draw_indexed( 
+            self.numTri , # --------------------- Number of seqential triplet in vertex list
+            GL_TRIANGLES , # -------------- Draw quadrilaterals
+            self.F , # ---------- Indices where the coordinates are stored
+            ( 'v3f' , self.vertX2 ) # vertex list , OpenGL offers an optimized vertex list object , but this is not it
+        ) 
         # 2.E. Set  Border Color
+        glColor3ub( *self.colors[0] )
         # 2.F. Draw Border Tris
-        
-        
-        # [2]. Set color , size , and shape-specific parameters
-        # glColor3ub( *self.colors[0] ) 
+        pyglet.gl.glLineWidth( 3 )
         # [3]. Render! 
-        # pyglet.graphics.draw_indexed( 
-        #     10 , # ----------------- Number of seqential triplet in vertex list
-        #     GL_LINES , # ----------- Draw quadrilaterals
-        #     self.vectors[i] , # ---- Indices where the coordinates are stored
-        #     ( 'v3f' , self.vertX ) # vertex list , OpenGL offers an optimized vertex list object , but this is not it
-        # )
+        pyglet.graphics.draw_indexed( 
+            self.numSeg , # --------------------- Number of seqential triplet in vertex list
+            GL_LINES , # -------------- Draw quadrilaterals
+            self.linDices , # ---------- Indices where the coordinates are stored
+            ( 'v3f' , self.borderVerts ) # vertex list , OpenGL offers an optimized vertex list object , but this is not it
+        )        
         # [4]. If OGL transforms enabled , Return the OGL state machine to previous rendering frame
         self.state_untransform()
 
 # __ End WavyFlag __
+
+def linspace_endpoints( bgnPnt , endPnt , numPnts ):
+    """ Create a list of 'numPnts' points between 'bgnPnt' and 'endPnt' , inclusive """
+    # NOTE: This function assumes that 'bgnPnt' and 'endPnt' have the same dimensionality
+    # NOTE: This is a re-implementation of 'Vector.vec_linspace'
+    coordsList = []
+    rtnList = []
+    for i in xrange( len( bgnPnt ) ):
+        coordsList.append( np.linspace( bgnPnt[i] , endPnt[i] , numPnts ) )
+    for i in xrange( numPnts ):
+        temp = []
+        for j in xrange( len( bgnPnt ) ):
+            temp.append( coordsList[j][i] )
+        rtnList.append( temp )
+    return rtnList
+    
 
 # === Main =================================================================================================================================
 
@@ -214,11 +250,13 @@ if __name__ == "__main__":
 
     # === GRAPHICS CREATION ================================================================================================================
 
-    # 1. Create an icosahedron
-    icos = Icosahedron_Reg( 2 , pos = [ 0 , 0 , 0 ] )
+    # 1. Create the flag
+    topPts = linspace_endpoints( [0,0,0] ,  [1,0,0] , 20 )
+    btmPts = linspace_endpoints( [0,0,-1] ,  [1,0,-1] , 20 )
+    flag = WavyFlag( topPts , btmPts )
 
     # 2. Create an OGL window
-    window = OGL_App( [ icos ] , caption = "ICOSHEARYOU" )
+    window = OGL_App( [ flag ] , caption = "BILLOW FLAGGINS" )
 
     # 3. Set the camera to look at the collection
     window.set_camera( [ 2 , 2 , 2 ] , [ 0 , 0 , 0 ] , [ 0 , 0 , 1 ] )
