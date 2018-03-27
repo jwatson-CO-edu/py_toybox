@@ -39,7 +39,7 @@ import pyglet
 import imageio
 from pyglet.gl import ( GL_LINES , glColor3ub , GL_TRIANGLES , glTranslated , glRotated , glMatrixMode )
 # ~ Local ~
-from marchhare.marchhare import flatten_nested_sequence , ensure_dir
+from marchhare.marchhare import flatten_nested_sequence , ensure_dir , build_sublists_by_cadence
 from marchhare.Vector import vec_random_range , vec_unit
 from marchhare.VectorMath.SpatialVectorRobot import rot_matx_ang_axs , z_rot
 from marchhare.OGLshapes import Vector_OGL , OGL_App , Icosahedron_Reg , OGLDrawable
@@ -57,6 +57,30 @@ def tri_normal( p0 , p1 , p2 ):
     vec1 = np.subtract( p1 , p0 )
     vec2 = np.subtract( p2 , p0 )
     return vec_unit( np.cross( vec1 , vec2 ) )
+
+def double_all_elem_except( inList , exceptedIndices = [] ):
+    """ Double all elements of a list except those indicated by 'exceptedIndices' """
+    rtnList = []
+    for i , elem in enumerate( inList ):
+        if i in exceptedIndices:
+            rtnList.append( elem )
+        else:
+            rtnList.extend( [ elem , elem ] )
+    return rtnList
+
+def double_all_middle_vertices( inList , cadence = 3 ):
+    """ Double all elements of a vertex list except the first and last """
+    # NOTE: This is only necessary for the indices, not the vertices themselves
+    coordList = build_sublists_by_cadence( inList , cadence )
+    rtnList = []
+    lastDex = len( coordList ) - 1 
+    for i , elem in enumerate( coordList ):
+        if i == 0 or i == lastDex:
+            rtnList.append( elem )
+        else:
+            rtnList.extend( [ elem , elem ] )
+    return flatten_nested_sequence( rtnList )
+        
 
 # == class WavyFlag ==    
 
@@ -149,12 +173,15 @@ class WavyFlag( OGLDrawable ):
         # 6. Load the original points into a flat structure
         self.borderVerts = flatten_nested_sequence( [ topEdgePoints , btmEdgePoints ] )
         # 7. Get edge indices for the flag border
-        self.linDices = flatten_nested_sequence( [ range( self.numPts )  , range( 2 * self.numPts - 1 , self.numPts - 1 , -1 ) , 0 ] )
+        self.linDices = flatten_nested_sequence( [ double_all_elem_except( range( self.numPts ) , [ 0 ] )  , 
+                                                   double_all_elem_except( range( 2 * self.numPts - 1 , self.numPts - 1 , -1 ) ) ,
+                                                   0 ] )
         
         # ~ DEBUG OUTPUT ~
-        print "DEBUG , Side 1 has" , len( self.vertX1 ) , "vertices , Elem 0:" , self.vertX1[0]
-        print "DEBUG , Side 2 has" , len( self.vertX2 ) , "vertices"
-        print "DEBUG , Border has" , len( self.borderVerts ) , "vertices"
+        print "DEBUG , Side 1 has" , len( self.vertX1 ) , "vertex elements , Elem 0:" , self.vertX1[0]
+        print "DEBUG , Side 2 has" , len( self.vertX2 ) , "vertex elements"
+        print "DEBUG , Border has" , len( self.borderVerts ) , "vertex elements"
+        print "DEBUG , Border has" , len( self.linDices ) , "segment endpoint indices"
         print "DUBUG , Therea are" , self.numTri , "triangles"
         print "DUBUG , Therea are" , len( self.F ) , "triangle vertex indices"
         
@@ -186,11 +213,11 @@ class WavyFlag( OGLDrawable ):
         # 2.E. Set  Border Color
         glColor3ub( *self.colors[0] )
         # 2.F. Draw Border Tris
-        pyglet.gl.glLineWidth( 3 )
+        pyglet.gl.glLineWidth( 6 )
         # [3]. Render! 
         pyglet.graphics.draw_indexed( 
             self.numPts * 2, # --------------------- Number of seqential triplet in vertex list
-            GL_LINES , # -------------- Draw quadrilaterals
+            GL_LINES , # -------------- Draw lines
             self.linDices , # ---------- Indices where the coordinates are stored
             ( 'v3f' , self.borderVerts ) # vertex list , OpenGL offers an optimized vertex list object , but this is not it
         )        
@@ -214,6 +241,7 @@ def linspace_endpoints( bgnPnt , endPnt , numPnts ):
         rtnList.append( temp )
     return rtnList
     
+
 
 # === Main =================================================================================================================================
 
@@ -255,7 +283,7 @@ if __name__ == "__main__":
     # 1. Create the flag
     topPts = linspace_endpoints( [0,0,0] ,  [1,0,0] , 20 )
     btmPts = linspace_endpoints( [0,0,-1] ,  [1,0,-1] , 20 )
-    flag = WavyFlag( topPts , btmPts )
+    flag = WavyFlag( topPts , btmPts , sepDist = 0.05 )
 
     # 2. Create an OGL window
     window = OGL_App( [ flag ] , caption = "BILLOW FLAGGINS" )
