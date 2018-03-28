@@ -40,7 +40,7 @@ import imageio
 from pyglet.gl import ( GL_LINES , glColor3ub , GL_TRIANGLES , glTranslated , glRotated , glMatrixMode )
 # ~ Local ~
 from marchhare.marchhare import flatten_nested_sequence , ensure_dir , build_sublists_by_cadence
-from marchhare.Vector import vec_random_range , vec_unit
+from marchhare.Vector import vec_random_range , vec_unit , vec_mag
 from marchhare.VectorMath.SpatialVectorRobot import rot_matx_ang_axs , z_rot
 from marchhare.OGLshapes import Vector_OGL , OGL_App , Icosahedron_Reg , OGLDrawable
 from GIFtools import CircleOrbit 
@@ -178,12 +178,12 @@ class WavyFlag( OGLDrawable ):
                                                    0 ] )
         
         # ~ DEBUG OUTPUT ~
-        print "DEBUG , Side 1 has" , len( self.vertX1 ) , "vertex elements , Elem 0:" , self.vertX1[0]
-        print "DEBUG , Side 2 has" , len( self.vertX2 ) , "vertex elements"
-        print "DEBUG , Border has" , len( self.borderVerts ) , "vertex elements"
-        print "DEBUG , Border has" , len( self.linDices ) , "segment endpoint indices"
-        print "DUBUG , Therea are" , self.numTri , "triangles"
-        print "DUBUG , Therea are" , len( self.F ) , "triangle vertex indices"
+        #print "DEBUG , Side 1 has" , len( self.vertX1 ) , "vertex elements , Elem 0:" , self.vertX1[0]
+        #print "DEBUG , Side 2 has" , len( self.vertX2 ) , "vertex elements"
+        #print "DEBUG , Border has" , len( self.borderVerts ) , "vertex elements"
+        #print "DEBUG , Border has" , len( self.linDices ) , "segment endpoint indices"
+        #print "DEBUG , Therea are" , self.numTri , "triangles"
+        #print "DEBUG , Therea are" , len( self.F ) , "triangle vertex indices"
         
     def draw( self ):
         """ Render both sides of the flag as well as the border """
@@ -241,7 +241,19 @@ def linspace_endpoints( bgnPnt , endPnt , numPnts ):
         rtnList.append( temp )
     return rtnList
     
-
+def wave_in_plane_cos( pnt1 , pnt2 , transVec , numPts , period , t ):
+    """ Return a list of points that define a cosine wave from 'pnt1' to 'pnt2' with transverse in 'transVec' and 'period' at time 't' """
+    # NOTE: 'transVec' defines both the direction and magnitude of the transverse wave 
+    baseLin   = linspace_endpoints( pnt1 , pnt2 , numPts )
+    tTotal    = vec_mag( np.subtract( pnt1 , pnt2 ) )
+    timeStep  = tTotal * 1.0 / ( numPts - 1 )
+    amplitude = vec_mag( transVec )
+    transDir  = vec_unit( transVec )
+    rtnPnts = []
+    for i in xrange( numPts ):
+        y = amplitude * cos( ( t + i * timeStep ) / period * 2 * pi )
+        rtnPnts.append( np.add( baseLin[i] , np.multiply( transDir , y ) ) )
+    return rtnPnts
 
 # === Main =================================================================================================================================
 
@@ -280,10 +292,12 @@ if __name__ == "__main__":
 
     # === GRAPHICS CREATION ================================================================================================================
 
+    numPts = 40
+
     # 1. Create the flag
-    topPts = linspace_endpoints( [0,0,0] ,  [1,0,0] , 20 )
-    btmPts = linspace_endpoints( [0,0,-1] ,  [1,0,-1] , 20 )
-    flag = WavyFlag( topPts , btmPts , sepDist = 0.05 )
+    topPts = linspace_endpoints( [0,0,0] ,  [1,0,0] , numPts )
+    btmPts = linspace_endpoints( [0,0,-1] ,  [1,0,-1] , numPts )
+    flag = WavyFlag( topPts , btmPts , sepDist = 0.075 )
 
     # 2. Create an OGL window
     window = OGL_App( [ flag ] , caption = "BILLOW FLAGGINS" )
@@ -293,9 +307,17 @@ if __name__ == "__main__":
 
     theta = 0
     ensure_dir( subDirName )
+    dt = 0.005
+    t =  0.00
 
     # 4. Draw & Display
     while not window.has_exit:
+        
+        t += dt
+        
+        flag.calc_render_geo( wave_in_plane_cos( [0,0,0] , [1,0,0] , [ 0 , 0.125 , 0 ] , numPts , 0.5 , t ) , 
+                              wave_in_plane_cos( [0,0,-1] ,  [1,0,-1] , [ 0 , 0.125 , 0 ] , numPts , 0.5 , t ))
+        
         theta += dTheta
         window.set_camera( camOrbit( theta ) , [ 0 , 0 , 0 ] , [ 0 , 0 , 1 ] )
         window.dispatch_events() # Handle window events
