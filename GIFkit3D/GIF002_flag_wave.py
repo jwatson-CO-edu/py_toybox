@@ -4,9 +4,9 @@
 from __future__ import division # MUST be run before all other expressions , including docstrings!
 
 """
-GIF001_icos_draw_test.py
+GIF002_flag_wave.py
 James Watson , 2018 March , Written on Spyder 3 / Python 2.7 , Template Version 2017-10-26
-Animate and save a spinning icosahedron
+Flag waves while the camera orbits
 
 Dependencies: numpy , pyglet , imageio , marchhare
 
