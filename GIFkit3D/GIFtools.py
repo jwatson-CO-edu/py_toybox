@@ -23,14 +23,15 @@ from marchhare.VectorMath.SpatialVectorRobot import z_rot
 class CircleOrbit:
     """ Return the Pyglet camera matrix for a camera that orbits a point while focusing on the point """
     
-    def __init__( self , center , radius ):
+    def __init__( self , center , radius , zHeight = 0.0 ):
         """ Set all the params for a circular orbit """
         self.center    = center
         self.radius    = radius
+        self.height    = zHeight
 
     def __call__( self , theta ):
         """ Return the point in R3 for angle 'theta' """
-        offset = np.dot( z_rot( theta ) , [ self.radius , 0 , 0 ] )
+        offset = np.dot( z_rot( theta ) , [ self.radius , 0 , self.height ] )
         # print "Offset:" , offset
         return np.add( self.center , offset )
     

@@ -22,9 +22,11 @@ Process: [0] Move functions from previous work to "GIFtools.py"
 
 """
 ~~~ DEV PLAN ~~~
-[ ] Finish WavyFlag
-[ ] Rotate about static flag to verify that both sides and border render
-[ ] Wavy ( cos , sin ) in planes that intersects top and bottom edges and is perpendiular to the face of an unperturbed, flat flag
+[Y] Finish WavyFlag
+[Y] Rotate about static flag to verify that both sides and border render
+[Y] Wavy ( cos , sin ) in planes that intersects top and bottom edges and is perpendiular to the face of an unperturbed, flat flag
+[ ] Adjust to colors that will be used in Mobius
+[ ] Adjust rotation period and wave period to a harmonic
 """
 
 # === Init =================================================================================================================================
@@ -178,12 +180,12 @@ class WavyFlag( OGLDrawable ):
                                                    0 ] )
         
         # ~ DEBUG OUTPUT ~
-        #print "DEBUG , Side 1 has" , len( self.vertX1 ) , "vertex elements , Elem 0:" , self.vertX1[0]
-        #print "DEBUG , Side 2 has" , len( self.vertX2 ) , "vertex elements"
-        #print "DEBUG , Border has" , len( self.borderVerts ) , "vertex elements"
-        #print "DEBUG , Border has" , len( self.linDices ) , "segment endpoint indices"
-        #print "DEBUG , Therea are" , self.numTri , "triangles"
-        #print "DEBUG , Therea are" , len( self.F ) , "triangle vertex indices"
+        print "DEBUG , Side 1 has" , len( self.vertX1 ) , "vertex elements , Elem 0:" , self.vertX1[0]
+        print "DEBUG , Side 2 has" , len( self.vertX2 ) , "vertex elements"
+        print "DEBUG , Border has" , len( self.borderVerts ) , "vertex elements"
+        print "DEBUG , Border has" , len( self.linDices ) , "segment endpoint indices"
+        print "DEBUG , Therea are" , self.numTri , "triangles"
+        print "DEBUG , Therea are" , len( self.F ) , "triangle vertex indices"
         
     def draw( self ):
         """ Render both sides of the flag as well as the border """
@@ -264,7 +266,8 @@ _SAVEGRAPHICS = False # Set to True to create an animated GIF of the generated g
 #                       Be patient for the save process to finish after graphics window exit 'X' is clicked
 
 # ~ Generation Settings ~
-camOrbit    = CircleOrbit( [ 0 , 0 ,0 ] , 3.5 ) # Camera will circle the given point in the X-Y plane at the given radius
+scale       = 0.6
+camOrbit    = CircleOrbit( [ 0 , 0 , 0 ] , 1.5 * scale , 1 * scale ) # Camera will circle the given point in the X-Y plane at the given radius
 dTheta      = pi / 90.0 # ----------------------- Radians to advance per frame
 totalFrames = int( ( 2 * pi ) / dTheta  ) # ----- Number of frames that will bring the animation to its initial configuration ( GIF loop )
 
@@ -300,9 +303,9 @@ if __name__ == "__main__":
     # === GRAPHICS CREATION ================================================================================================================
 
     # 1. Create the flag
-    topPts = linspace_endpoints( [0,0,0] ,  [1,0,0] , numPts )
-    btmPts = linspace_endpoints( [0,0,-1] ,  [1,0,-1] , numPts )
-    flag = WavyFlag( topPts , btmPts , sepDist = 0.075 )
+    topPts = linspace_endpoints( [ -0.5 ,  0.0 ,  0.5 ] ,  [ 0.5 ,  0.0 ,  0.5 ] , numPts )
+    btmPts = linspace_endpoints( [ -0.5 ,  0.0 , -0.5 ] ,  [ 0.5 ,  0.0 , -0.5 ] , numPts )
+    flag = WavyFlag( topPts , btmPts , sepDist = 0.025 )
 
     # 2. Create an OGL window
     window = OGL_App( [ flag ] , caption = "BILLOW FLAGGINS" )
@@ -317,8 +320,8 @@ if __name__ == "__main__":
         
         t += dt
         
-        flag.calc_render_geo( wave_in_plane_cos( [  0 ,  0 ,  0 ] , [  1 ,  0 ,  0 ] , [ 0 , 0.125 , 0 ] , numPts , 0.5 , t ) , 
-                              wave_in_plane_cos( [  0 ,  0 , -1 ] , [  1 ,  0 , -1 ] , [ 0 , 0.125 , 0 ] , numPts , 0.5 , t ) )
+        flag.calc_render_geo( wave_in_plane_cos( [ -0.5 ,  0.0 ,  0.5 ] ,  [ 0.5 ,  0.0 ,  0.5 ] , [ 0 , 0.125 , 0 ] , numPts , 0.5 , t ) , 
+                              wave_in_plane_cos( [ -0.5 ,  0.0 , -0.5 ] ,  [ 0.5 ,  0.0 , -0.5 ] , [ 0 , 0.125 , 0 ] , numPts , 0.5 , t ) )
         
         theta += dTheta
         window.set_camera( camOrbit( theta ) , [ 0 , 0 , 0 ] , [ 0 , 0 , 1 ] )
