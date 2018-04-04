@@ -306,9 +306,10 @@ if __name__ == "__main__":
     topPts = linspace_endpoints( [ -0.5 ,  0.0 ,  0.5 ] ,  [ 0.5 ,  0.0 ,  0.5 ] , numPts )
     btmPts = linspace_endpoints( [ -0.5 ,  0.0 , -0.5 ] ,  [ 0.5 ,  0.0 , -0.5 ] , numPts )
     flag = WavyFlag( topPts , btmPts , sepDist = 0.025 )
+    flag.set_colors( [255,255,255] , [249, 93, 84] , [89, 152, 255] )
 
     # 2. Create an OGL window
-    window = OGL_App( [ flag ] , caption = "BILLOW FLAGGINS" )
+    window = OGL_App( [ flag ] , caption = "BILLOW FLAGGINS" , clearColor = [0,0,0,1] )
 
     # 3. Set the camera to look at the collection
     window.set_camera( [ 2 , 2 , 2 ] , [ 0 , 0 , 0 ] , [ 0 , 0 , 1 ] )
