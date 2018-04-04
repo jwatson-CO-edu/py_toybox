@@ -229,7 +229,7 @@ class WavyFlag( OGLDrawable ):
 def linspace_endpoints( bgnPnt , endPnt , numPnts ):
     """ Create a list of 'numPnts' points between 'bgnPnt' and 'endPnt' , inclusive """
     # NOTE: This function assumes that 'bgnPnt' and 'endPnt' have the same dimensionality
-    # NOTE: This is a re-implementation of 'Vector.vec_linspace'
+    # NOTE: This is a re-implementation of 'Vector.vec_linspace' , but without np.ndarray
     coordsList = []
     rtnList = []
     for i in xrange( len( bgnPnt ) ):
@@ -268,15 +268,22 @@ camOrbit    = CircleOrbit( [ 0 , 0 ,0 ] , 3.5 ) # Camera will circle the given p
 dTheta      = pi / 90.0 # ----------------------- Radians to advance per frame
 totalFrames = int( ( 2 * pi ) / dTheta  ) # ----- Number of frames that will bring the animation to its initial configuration ( GIF loop )
 
-# ~ File Settings ~
-prefix      = "frame_" # Prefix for source frames
-postfix     = ".png" # - File extension for source frames ( pyglet can only save as PNG without PILLOW )
-frmCount    = 0 # ------ Counting var to keep track of frames
-subDirName  = "output" # Subdir for all output files
+# ~ File Settings & Setup ~
+prefix      = "frame_" # - Prefix for source frames
+postfix     = ".png" # --- File extension for source frames ( pyglet can only save as PNG without PILLOW )
+frmCount    = 0 # -------- Counting var to keep track of frames
+subDirName  = "output" # - Subdir for all output files
+ensure_dir( subDirName ) # Ensure that the output directory exists
 
 # ~ Animation Settings ~
 FPS         = 24 # -------------- Frame Per Second
 outFileName = "icoshearyou.gif" # Name of the output file
+
+# ~ 002 Settings ~
+numPts = 40 # --- Number of points at the flag edges
+theta  =  0 # --- Current theta for camera and flag edges
+dt     =  0.005 # Length of timestep
+t     =   0.00 #- time 
 
 # __ End Vars __
 
@@ -292,8 +299,6 @@ if __name__ == "__main__":
 
     # === GRAPHICS CREATION ================================================================================================================
 
-    numPts = 40
-
     # 1. Create the flag
     topPts = linspace_endpoints( [0,0,0] ,  [1,0,0] , numPts )
     btmPts = linspace_endpoints( [0,0,-1] ,  [1,0,-1] , numPts )
@@ -305,18 +310,15 @@ if __name__ == "__main__":
     # 3. Set the camera to look at the collection
     window.set_camera( [ 2 , 2 , 2 ] , [ 0 , 0 , 0 ] , [ 0 , 0 , 1 ] )
 
-    theta = 0
-    ensure_dir( subDirName )
-    dt = 0.005
-    t =  0.00
+    
 
     # 4. Draw & Display
     while not window.has_exit:
         
         t += dt
         
-        flag.calc_render_geo( wave_in_plane_cos( [0,0,0] , [1,0,0] , [ 0 , 0.125 , 0 ] , numPts , 0.5 , t ) , 
-                              wave_in_plane_cos( [0,0,-1] ,  [1,0,-1] , [ 0 , 0.125 , 0 ] , numPts , 0.5 , t ))
+        flag.calc_render_geo( wave_in_plane_cos( [  0 ,  0 ,  0 ] , [  1 ,  0 ,  0 ] , [ 0 , 0.125 , 0 ] , numPts , 0.5 , t ) , 
+                              wave_in_plane_cos( [  0 ,  0 , -1 ] , [  1 ,  0 , -1 ] , [ 0 , 0.125 , 0 ] , numPts , 0.5 , t ) )
         
         theta += dTheta
         window.set_camera( camOrbit( theta ) , [ 0 , 0 , 0 ] , [ 0 , 0 , 1 ] )
