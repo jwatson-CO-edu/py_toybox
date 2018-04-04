@@ -35,5 +35,5 @@ class CircleOrbit:
         # print "Offset:" , offset
         return np.add( self.center , offset )
     
-# __ class CircleOrbit __
+# __ End CircleOrbit __
 

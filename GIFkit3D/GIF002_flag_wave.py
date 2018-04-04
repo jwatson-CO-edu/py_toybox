@@ -13,11 +13,12 @@ Dependencies: numpy , pyglet , imageio , marchhare
 NOTE , 2018-03-22: ERROR OCCURS WHILE RUNNING UNDER UBUNTU 16.04 , LAST THIRD OF THE ANIMATION RUNS AT A GREATLY INCREASED FRAMERATE
                    This does not currently happen under Windows 10
                    
-Process: [0] Move functions from previous work to "GIFtools.py"
-         [1] Generate & Record in Windows (Python)
-         [2] Optimize GIF in Linux (GIFsicle)
-         [3] Verify (Browser)
-         [4] Post
+Process: [Y] 0. Move previous optimized output to "Gallery" directory
+         [Y] 1. Move functions from previous work to "GIFtools.py"
+         [Y] 2. Generate & Record in Windows (Python)
+         [ ] 3. Optimize GIF in Linux (GIFsicle)
+         [ ] 4. Verify (Browser)
+         [ ] 5. Post
 """
 
 """
@@ -25,7 +26,7 @@ Process: [0] Move functions from previous work to "GIFtools.py"
 [Y] Finish WavyFlag
 [Y] Rotate about static flag to verify that both sides and border render
 [Y] Wavy ( cos , sin ) in planes that intersects top and bottom edges and is perpendiular to the face of an unperturbed, flat flag
-[ ] Adjust to colors that will be used in Mobius
+[Y] Adjust to colors that will be used in Mobius
 [ ] Adjust rotation period and wave period to a harmonic
 """
 
@@ -180,12 +181,12 @@ class WavyFlag( OGLDrawable ):
                                                    0 ] )
         
         # ~ DEBUG OUTPUT ~
-        print "DEBUG , Side 1 has" , len( self.vertX1 ) , "vertex elements , Elem 0:" , self.vertX1[0]
-        print "DEBUG , Side 2 has" , len( self.vertX2 ) , "vertex elements"
-        print "DEBUG , Border has" , len( self.borderVerts ) , "vertex elements"
-        print "DEBUG , Border has" , len( self.linDices ) , "segment endpoint indices"
-        print "DEBUG , Therea are" , self.numTri , "triangles"
-        print "DEBUG , Therea are" , len( self.F ) , "triangle vertex indices"
+        #print "DEBUG , Side 1 has" , len( self.vertX1 ) , "vertex elements , Elem 0:" , self.vertX1[0]
+        #print "DEBUG , Side 2 has" , len( self.vertX2 ) , "vertex elements"
+        #print "DEBUG , Border has" , len( self.borderVerts ) , "vertex elements"
+        #print "DEBUG , Border has" , len( self.linDices ) , "segment endpoint indices"
+        #print "DEBUG , Therea are" , self.numTri , "triangles"
+        #print "DEBUG , Therea are" , len( self.F ) , "triangle vertex indices"
         
     def draw( self ):
         """ Render both sides of the flag as well as the border """
@@ -262,14 +263,14 @@ def wave_in_plane_cos( pnt1 , pnt2 , transVec , numPts , period , t ):
 # == Program Vars ==
 
 # ~ FLAGS ~
-_SAVEGRAPHICS = False # Set to True to create an animated GIF of the generated graphics
+_SAVEGRAPHICS = True # Set to True to create an animated GIF of the generated graphics
 #                       Be patient for the save process to finish after graphics window exit 'X' is clicked
 
 # ~ Generation Settings ~
-scale       = 0.6
+scale       = 0.65
 camOrbit    = CircleOrbit( [ 0 , 0 , 0 ] , 1.5 * scale , 1 * scale ) # Camera will circle the given point in the X-Y plane at the given radius
-dTheta      = pi / 90.0 # ----------------------- Radians to advance per frame
-totalFrames = int( ( 2 * pi ) / dTheta  ) # ----- Number of frames that will bring the animation to its initial configuration ( GIF loop )
+dTheta      = pi / 90.0 # ------------------- Radians to advance per frame
+totalFrames = 2 * int( ( 2 * pi ) / dTheta ) # ----- Number of frames that will bring the animation to its initial configuration ( GIF loop )
 
 # ~ File Settings & Setup ~
 prefix      = "frame_" # - Prefix for source frames
@@ -279,14 +280,15 @@ subDirName  = "output" # - Subdir for all output files
 ensure_dir( subDirName ) # Ensure that the output directory exists
 
 # ~ Animation Settings ~
-FPS         = 24 # -------------- Frame Per Second
-outFileName = "icoshearyou.gif" # Name of the output file
+FPS         = 30 # -------------- Frame Per Second
+outFileName = "billowFlaggins.gif" # Name of the output file
 
 # ~ 002 Settings ~
-numPts = 40 # --- Number of points at the flag edges
 theta  =  0 # --- Current theta for camera and flag edges
 dt     =  0.005 # Length of timestep
 t     =   0.00 #- time 
+numPts = 40 # --- Number of points at the flag edges
+
 
 # __ End Vars __
 
@@ -306,10 +308,13 @@ if __name__ == "__main__":
     topPts = linspace_endpoints( [ -0.5 ,  0.0 ,  0.5 ] ,  [ 0.5 ,  0.0 ,  0.5 ] , numPts )
     btmPts = linspace_endpoints( [ -0.5 ,  0.0 , -0.5 ] ,  [ 0.5 ,  0.0 , -0.5 ] , numPts )
     flag = WavyFlag( topPts , btmPts , sepDist = 0.025 )
-    flag.set_colors( [255,255,255] , [249, 93, 84] , [89, 152, 255] )
+    flag.set_colors( [ 255 , 255 , 255 ] , # Border
+                     [ 249 ,  93 ,  84 ] , # Side 1 , Lt Red
+                     [  89 , 152 , 255 ] ) # Side 2 , Lt Blu
 
     # 2. Create an OGL window
-    window = OGL_App( [ flag ] , caption = "BILLOW FLAGGINS" , clearColor = [0,0,0,1] )
+    window = OGL_App( [ flag ] , caption = "BILLOW FLAGGINS" , 
+                      clearColor = [ 0 , 0 , 0 , 1 ] ) # BG color black
 
     # 3. Set the camera to look at the collection
     window.set_camera( [ 2 , 2 , 2 ] , [ 0 , 0 , 0 ] , [ 0 , 0 , 1 ] )
@@ -319,10 +324,10 @@ if __name__ == "__main__":
     # 4. Draw & Display
     while not window.has_exit:
         
-        t += dt
+        t += dTheta
         
-        flag.calc_render_geo( wave_in_plane_cos( [ -0.5 ,  0.0 ,  0.5 ] ,  [ 0.5 ,  0.0 ,  0.5 ] , [ 0 , 0.125 , 0 ] , numPts , 0.5 , t ) , 
-                              wave_in_plane_cos( [ -0.5 ,  0.0 , -0.5 ] ,  [ 0.5 ,  0.0 , -0.5 ] , [ 0 , 0.125 , 0 ] , numPts , 0.5 , t ) )
+        flag.calc_render_geo( wave_in_plane_cos( [ -0.5 ,  0.0 ,  0.5 ] ,  [ 0.5 ,  0.0 ,  0.5 ] , [ 0 , 0.125 , 0 ] , numPts , 2/3 , t ) , 
+                              wave_in_plane_cos( [ -0.5 ,  0.0 , -0.5 ] ,  [ 0.5 ,  0.0 , -0.5 ] , [ 0 , 0.125 , 0 ] , numPts , 2/3 , t ) )
         
         theta += dTheta
         window.set_camera( camOrbit( theta ) , [ 0 , 0 , 0 ] , [ 0 , 0 , 1 ] )
