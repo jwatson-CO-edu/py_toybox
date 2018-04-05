@@ -27,7 +27,7 @@ Process: [Y] 0. Move previous optimized output to "Gallery" directory
 [Y] Rotate about static flag to verify that both sides and border render
 [Y] Wavy ( cos , sin ) in planes that intersects top and bottom edges and is perpendiular to the face of an unperturbed, flat flag
 [Y] Adjust to colors that will be used in Mobius
-[ ] Adjust rotation period and wave period to a harmonic
+[Y] Adjust rotation period and wave period to a harmonic - There appears to be a small jump.  Experiment with onsies twosies frame adjustment
 """
 
 # === Init =================================================================================================================================

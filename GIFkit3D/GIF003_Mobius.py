@@ -13,7 +13,7 @@ Dependencies: numpy , pyglet , imageio , marchhare , GIFtools
 NOTE , 2018-03-22: ERROR OCCURS WHILE RUNNING UNDER UBUNTU 16.04 , LAST THIRD OF THE ANIMATION RUNS AT A GREATLY INCREASED FRAMERATE
                    This does not currently happen under Windows 10
                    
-Process: [ ] 0. Move previous optimized output to "Gallery" directory
+Process: [Y] 0. Move previous optimized output to "Gallery" directory
          [Y] 1. Move functions from previous work to "GIFtools.py" , or appropriate MARCHHARE modules
          [ ] 2. Generate & Record in Windows (Python)
          [ ] 3. Optimize GIF in Linux (GIFsicle)
@@ -23,11 +23,8 @@ Process: [ ] 0. Move previous optimized output to "Gallery" directory
 
 """
 ~~~ DEV PLAN ~~~
-[Y] Finish WavyFlag
-[Y] Rotate about static flag to verify that both sides and border render
-[Y] Wavy ( cos , sin ) in planes that intersects top and bottom edges and is perpendiular to the face of an unperturbed, flat flag
-[Y] Adjust to colors that will be used in Mobius
-[ ] Adjust rotation period and wave period to a harmonic
+[ ] Mobius Track
+[ ] Query track for vertex positions
 """
 
 # === Init =================================================================================================================================
@@ -43,7 +40,7 @@ import imageio
 from pyglet.gl import ( GL_LINES , glColor3ub , GL_TRIANGLES , glTranslated , glRotated , glMatrixMode )
 # ~ Local ~
 from marchhare.marchhare import flatten_nested_sequence , ensure_dir , build_sublists_by_cadence
-from marchhare.Vector import vec_random_range , vec_unit , vec_mag
+from marchhare.Vector import vec_random_range , vec_unit , vec_mag , linspace_endpoints
 from marchhare.VectorMath.SpatialVectorRobot import rot_matx_ang_axs , z_rot
 from marchhare.OGLshapes import Vector_OGL , OGL_App , Icosahedron_Reg , OGLDrawable
 from GIFtools import CircleOrbit 
@@ -56,15 +53,37 @@ EPSILON = 1e-8 # ------- A very small number below the precision we care about
 # ___ End Init _____________________________________________________________________________________________________________________________
 
 
+# == Helper Functions ==
 
-
-        
-
-
-
-
+def circle_arc_3D( axis , center , radius , beginMeasureVec , theta , N ):
+    """ Return points on a circular arc about 'axis' at 'radius' , beginning at 'beginMeasureVec' and turning 'theta' through 'N' points """
+    thetaList = np.linspace( 0 , theta , N )
     
+    # FIXME : START HERE
 
+# __ End Helper __
+
+
+# == class MobiusTrack ==
+
+class MobiusTrack( object ):
+    """ A loop of track consisting of "one" rail parrallel to itself such that following opposite sides traces out a Mobius strip """
+    
+    def __init__( self , origin , diameter , pointsPerUnit = 100 ):
+        """ Create a track with a certain origin point and circle diameter """
+        # Goal: Complete circuit that ends where it began, such that opposite points are across from each other as the "two" tracks
+        self.allPts = [ origin[:] ]
+        
+        # ~~ There are 16 sections ~~
+        # ~ Sections 1-3 ~ : Back Top Track
+        backLen = pi * diameter * 3 / 2
+        backDir = [ 1 , 0 , 0 ]
+        backTopEnd = np.add( origin , np.multiply( backDir , backLen ) )
+        self.allPts.extend( linspace_endpoints( origin , backTopEnd , 3 * pointsPerUnit )[1:] )
+        
+# __ End MobiusTrack __
+        
+        
 
 # === Main =================================================================================================================================
 
