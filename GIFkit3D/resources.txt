@@ -7,3 +7,9 @@ URL , Execute terminal commands with subprocess: https://stackoverflow.com/a/358
 
 ~~~ Instructions ~~~
 
+# Compress GIF with GIFsicle #
+
+gifsicle -O2  ORIGINALNAME.gif -o COMPRESSEDNAME.gif
+    -O2 , Preserve pixels repeated across frames , 10x compression
+    -03 , Extra mode?                            , 10x compression
+
