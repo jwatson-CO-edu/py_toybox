@@ -39,9 +39,10 @@ import pyglet
 import imageio
 from pyglet.gl import ( GL_LINES , glColor3ub , GL_TRIANGLES , glTranslated , glRotated , glMatrixMode )
 # ~ Local ~
-from marchhare.marchhare import flatten_nested_sequence , ensure_dir , build_sublists_by_cadence
+from marchhare.marchhare import flatten_nested_sequence , ensure_dir , build_sublists_by_cadence , double_all_elem_except
 from marchhare.Vector import vec_random_range , vec_unit , vec_mag , linspace_endpoints
 from marchhare.VectorMath.SpatialVectorRobot import rot_matx_ang_axs , z_rot
+from marchhare.VectorMath.Vector3D import vec_proj_to_plane
 from marchhare.OGLshapes import Vector_OGL , OGL_App , Icosahedron_Reg , OGLDrawable
 from GIFtools import CircleOrbit 
 
@@ -58,9 +59,27 @@ EPSILON = 1e-8 # ------- A very small number below the precision we care about
 def circle_arc_3D( axis , center , radius , beginMeasureVec , theta , N ):
     """ Return points on a circular arc about 'axis' at 'radius' , beginning at 'beginMeasureVec' and turning 'theta' through 'N' points """
     thetaList = np.linspace( 0 , theta , N )
-    
-    # FIXME : START HERE
+    k         = vec_unit( axis )
+    rtnList   = []
+    # 1. Project the theta = 0 vector onto the circle plane
+    measrVec = vec_unit( vec_proj_to_plane( axis ) )
+    # 2. For each theta
+    for theta_i in thetaList:
+        # 3. Create a rotation matrix for the rotation
+        R = rot_matx_ang_axs( theta_i , k  )
+        # 4. Apply rotation to the measure vector && 5. Scale the vector to the radius && 6. Add to the center && 7. Append to the list
+        rtnList.append( np.add( center , np.multiply( np.dot( R , measrVec ) , radius ) ) )
+    # 8. Return
+    return rtnList
 
+def paint_polyline( consecutivePoints ):
+    """ Paint a list of points [ ... [ x_i , y_i , z_i ] ... ] to the graphics context , with a segment between each consecutive pair """
+    # NOTE: This function does not support rotations or translations
+    
+    # 1. Repeat middle points
+    double_all_elem_except( consecutivePoints , [ 0 , len( consecutivePoints ) - 1 ] )
+    # 2. Flatten into vertices list
+    # 3. Paint
 # __ End Helper __
 
 
@@ -80,10 +99,14 @@ class MobiusTrack( object ):
         backDir = [ 1 , 0 , 0 ]
         backTopEnd = np.add( origin , np.multiply( backDir , backLen ) )
         self.allPts.extend( linspace_endpoints( origin , backTopEnd , 3 * pointsPerUnit )[1:] )
+        # ~ Section 4 ~ : Top-Right Turn
+        center = np.add( self.allPts[-1] , [ 0.0 , -diameter / 2.0 , 0.0 ] )
+        measVc = [ 0.0 , 1.0 , 0.0 ]
+        self.allPts.extend( circle_arc_3D( [ 0.0 , 0.0 , 1.0 ] , center , diameter / 2.0 , measVc , pi , pointsPerUnit ) )
         
 # __ End MobiusTrack __
         
-        
+
 
 # === Main =================================================================================================================================
 
