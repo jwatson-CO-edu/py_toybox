@@ -72,14 +72,27 @@ def circle_arc_3D( axis , center , radius , beginMeasureVec , theta , N ):
     # 8. Return
     return rtnList
 
-def paint_polyline( consecutivePoints ):
+def paint_polyline( consecutivePoints , color , thickness ):
     """ Paint a list of points [ ... [ x_i , y_i , z_i ] ... ] to the graphics context , with a segment between each consecutive pair """
     # NOTE: This function does not support rotations or translations
-    
-    # 1. Repeat middle points
-    double_all_elem_except( consecutivePoints , [ 0 , len( consecutivePoints ) - 1 ] )
+    pntLen = len( consecutivePoints )
+    # 1. Repeat middle indiced
+    pntDices = double_all_elem_except( range( pntLen ) , [ 0 , len( consecutivePoints ) - 1 ] )
     # 2. Flatten into vertices list
+    allCoords = flatten_nested_sequence( consecutivePoints )
     # 3. Paint
+    # A. Set color
+    glColor3ub( *color )
+    # B. Set line width
+    pyglet.gl.glLineWidth( thickness )
+    # C. Render segments
+    pyglet.graphics.draw_indexed( 
+        pntLen , # ------------ Number of seqential triplet in vertex list
+        GL_LINES , # ---------- Draw lines
+        pntDices , # ---------- Indices where the coordinates are stored
+        ( 'v3f' , allCoords ) # vertex list , OpenGL offers an optimized vertex list object , but this is not it
+    )     
+    
 # __ End Helper __
 
 
@@ -103,6 +116,10 @@ class MobiusTrack( object ):
         center = np.add( self.allPts[-1] , [ 0.0 , -diameter / 2.0 , 0.0 ] )
         measVc = [ 0.0 , 1.0 , 0.0 ]
         self.allPts.extend( circle_arc_3D( [ 0.0 , 0.0 , 1.0 ] , center , diameter / 2.0 , measVc , pi , pointsPerUnit ) )
+        
+    def get_points_list( self ):
+        """ Get a consecutive list [ ... [ x_i , y_i , z_i ] ... ] of all of the points that comprise the edges of the strip / track """
+        return self.allPts
         
 # __ End MobiusTrack __
         
@@ -131,7 +148,7 @@ ensure_dir( subDirName ) # Ensure that the output directory exists
 
 # ~ Animation Settings ~
 FPS         = 30 # -------------- Frame Per Second
-outFileName = "billowFlaggins.gif" # Name of the output file
+outFileName = "mobius.gif" # Name of the output file
 
 # ~ 002 Settings ~
 theta  =  0 # --- Current theta for camera and flag edges
@@ -154,19 +171,13 @@ if __name__ == "__main__":
 
     # === GRAPHICS CREATION ================================================================================================================
 
-    # 1. Create the flag
-    topPts = linspace_endpoints( [ -0.5 ,  0.0 ,  0.5 ] ,  [ 0.5 ,  0.0 ,  0.5 ] , numPts )
-    btmPts = linspace_endpoints( [ -0.5 ,  0.0 , -0.5 ] ,  [ 0.5 ,  0.0 , -0.5 ] , numPts )
-    flag = WavyFlag( topPts , btmPts , sepDist = 0.025 )
-    flag.set_colors( [ 255 , 255 , 255 ] , # Border
-                     [ 249 ,  93 ,  84 ] , # Side 1 , Lt Red
-                     [  89 , 152 , 255 ] ) # Side 2 , Lt Blu
+    # 1. Create the track
 
     # 2. Create an OGL window
     window = OGL_App( [ flag ] , caption = "BILLOW FLAGGINS" , 
                       clearColor = [ 0 , 0 , 0 , 1 ] ) # BG color black
 
-    # 3. Set the camera to look at the collection
+    # 3. Set the camera to look at the center of the action
     window.set_camera( [ 2 , 2 , 2 ] , [ 0 , 0 , 0 ] , [ 0 , 0 , 1 ] )
 
     
