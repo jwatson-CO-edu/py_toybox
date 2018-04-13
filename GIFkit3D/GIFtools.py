@@ -17,6 +17,7 @@ Tools and utilities for generative art with Pyglet
 import numpy as np
 # ~ Local ~
 from marchhare.VectorMath.SpatialVectorRobot import z_rot
+from marchhare.OGLshapes import Vector_OGL , OGL_App , Icosahedron_Reg , OGLDrawable
 
 # === Functions ============================================================================================================================
 

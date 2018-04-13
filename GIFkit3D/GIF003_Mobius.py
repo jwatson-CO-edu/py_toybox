@@ -62,7 +62,7 @@ def circle_arc_3D( axis , center , radius , beginMeasureVec , theta , N ):
     k         = vec_unit( axis )
     rtnList   = []
     # 1. Project the theta = 0 vector onto the circle plane
-    measrVec = vec_unit( vec_proj_to_plane( axis ) )
+    measrVec = vec_unit( vec_proj_to_plane( beginMeasureVec , axis ) )
     # 2. For each theta
     for theta_i in thetaList:
         # 3. Create a rotation matrix for the rotation
@@ -74,26 +74,41 @@ def circle_arc_3D( axis , center , radius , beginMeasureVec , theta , N ):
 
 def paint_polyline( consecutivePoints , color , thickness ):
     """ Paint a list of points [ ... [ x_i , y_i , z_i ] ... ] to the graphics context , with a segment between each consecutive pair """
-    # NOTE: This function does not support rotations or translations
-    pntLen = len( consecutivePoints )
-    # 1. Repeat middle indiced
-    pntDices = double_all_elem_except( range( pntLen ) , [ 0 , len( consecutivePoints ) - 1 ] )
-    # 2. Flatten into vertices list
-    allCoords = flatten_nested_sequence( consecutivePoints )
-    # 3. Paint
-    # A. Set color
-    glColor3ub( *color )
-    # B. Set line width
-    pyglet.gl.glLineWidth( thickness )
-    # C. Render segments
-    pyglet.graphics.draw_indexed( 
-        pntLen , # ------------ Number of seqential triplet in vertex list
-        GL_LINES , # ---------- Draw lines
-        pntDices , # ---------- Indices where the coordinates are stored
-        ( 'v3f' , allCoords ) # vertex list , OpenGL offers an optimized vertex list object , but this is not it
-    )     
+    
+    
+      
     
 # __ End Helper __
+
+class OGL_Polyline( object ):
+    """ Static polyline in 3D space """
+    # NOTE: This object does not support rotations or translations
+    
+    def __init__( self , consecutivePoints , color , thickness ):
+        """ Populate segments to render """
+        self.color  = color
+        self.thic   = thickness
+        self.pntLen = len( consecutivePoints )
+        # 1. Repeat middle indiced
+        self.pntDices = double_all_elem_except( range( self.pntLen ) , [ 0 , self.pntLen - 1 ] )
+        # 2. Flatten into vertices list
+        self.allCoords = flatten_nested_sequence( consecutivePoints )     
+        
+    def draw( self ):
+        """ Render the polyline to the graphics context """
+        # 3. Paint
+        # A. Set color
+        glColor3ub( *self.color )
+        # B. Set line width
+        pyglet.gl.glLineWidth( self.thic )
+        # C. Render segments
+        pyglet.graphics.draw_indexed( 
+            self.pntLen , # ------------ Number of seqential triplet in vertex list
+            GL_LINES , # ---------- Draw lines
+            self.pntDices , # ---------- Indices where the coordinates are stored
+            ( 'v3f' , self.allCoords ) # vertex list , OpenGL offers an optimized vertex list object , but this is not it
+        )           
+        
 
 
 # == class MobiusTrack ==
@@ -115,7 +130,9 @@ class MobiusTrack( object ):
         # ~ Section 4 ~ : Top-Right Turn
         center = np.add( self.allPts[-1] , [ 0.0 , -diameter / 2.0 , 0.0 ] )
         measVc = [ 0.0 , 1.0 , 0.0 ]
-        self.allPts.extend( circle_arc_3D( [ 0.0 , 0.0 , 1.0 ] , center , diameter / 2.0 , measVc , pi , pointsPerUnit ) )
+        self.allPts.extend( circle_arc_3D( [ 0.0 , 0.0 , 1.0 ] , center , diameter / 2.0 , measVc , -pi , pointsPerUnit ) )
+        # ~ Section 5 ~ : Top-Right 
+        # FIXME : START HERE
         
     def get_points_list( self ):
         """ Get a consecutive list [ ... [ x_i , y_i , z_i ] ... ] of all of the points that comprise the edges of the strip / track """
@@ -134,7 +151,7 @@ _SAVEGRAPHICS = False # Set to True to create an animated GIF of the generated g
 #                       Be patient for the save process to finish after graphics window exit 'X' is clicked
 
 # ~ Generation Settings ~
-scale       = 0.65
+scale       = 4
 camOrbit    = CircleOrbit( [ 0 , 0 , 0 ] , 1.5 * scale , 1 * scale ) # Camera will circle the given point in the X-Y plane at the given radius
 dTheta      = pi / 90.0 # ------------------- Radians to advance per frame
 totalFrames = 2 * int( ( 2 * pi ) / dTheta ) # ----- Number of frames that will bring the animation to its initial configuration ( GIF loop )
@@ -171,27 +188,34 @@ if __name__ == "__main__":
 
     # === GRAPHICS CREATION ================================================================================================================
 
-    # 1. Create the track
-
+    # 1. Instantiate geometry
+    track = MobiusTrack( [ 0.0 , 0.0 , 0.0 ] , 1.0 )
+    poly  = OGL_Polyline( track.get_points_list() , [ 255 , 255 , 255 ] , 3 )
+    
     # 2. Create an OGL window
-    window = OGL_App( [ flag ] , caption = "BILLOW FLAGGINS" , 
+    window = OGL_App( [ poly ] , # List of objects to render
+                      caption = "MOBIUS"  , # ---------- Window caption
                       clearColor = [ 0 , 0 , 0 , 1 ] ) # BG color black
 
     # 3. Set the camera to look at the center of the action
-    window.set_camera( [ 2 , 2 , 2 ] , [ 0 , 0 , 0 ] , [ 0 , 0 , 1 ] )
+    window.set_camera( [ 2 , 2 , 2 ] , # Camera position
+                       [ 0 , 0 , 0 ] , # Focal point of camera
+                       [ 0 , 0 , 1 ] ) # Direction of up
 
     
 
     # 4. Draw & Display
     while not window.has_exit:
+        # A. Update the timestep
+        theta += dt
         
-        t += dTheta
+        # B. Update animation
         
-        flag.calc_render_geo( wave_in_plane_cos( [ -0.5 ,  0.0 ,  0.5 ] ,  [ 0.5 ,  0.0 ,  0.5 ] , [ 0 , 0.125 , 0 ] , numPts , 2/3 , t ) , 
-                              wave_in_plane_cos( [ -0.5 ,  0.0 , -0.5 ] ,  [ 0.5 ,  0.0 , -0.5 ] , [ 0 , 0.125 , 0 ] , numPts , 2/3 , t ) )
+        # C. Move camera
         
-        theta += dTheta
         window.set_camera( camOrbit( theta ) , [ 0 , 0 , 0 ] , [ 0 , 0 , 1 ] )
+        
+        # D. Redraw
         window.dispatch_events() # Handle window events
         window.on_draw() # Redraw the scene
         window.flip()
