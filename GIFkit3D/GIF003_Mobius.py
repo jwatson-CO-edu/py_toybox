@@ -126,13 +126,28 @@ class MobiusTrack( object ):
         backLen = pi * diameter * 3 / 2
         backDir = [ 1 , 0 , 0 ]
         backTopEnd = np.add( origin , np.multiply( backDir , backLen ) )
-        self.allPts.extend( linspace_endpoints( origin , backTopEnd , 3 * pointsPerUnit )[1:] )
+        self.allPts.extend( linspace_endpoints( origin , backTopEnd , 3 * pointsPerUnit + 1 )[1:] )
         # ~ Section 4 ~ : Top-Right Turn
         center = np.add( self.allPts[-1] , [ 0.0 , -diameter / 2.0 , 0.0 ] )
         measVc = [ 0.0 , 1.0 , 0.0 ]
         self.allPts.extend( circle_arc_3D( [ 0.0 , 0.0 , 1.0 ] , center , diameter / 2.0 , measVc , -pi , pointsPerUnit ) )
         # ~ Section 5 ~ : Top-Right 
-        # FIXME : START HERE
+        frntLen = pi * diameter * 1 / 2
+        frntDir = [ -1 , 0 , 0 ]
+        frntTopEnd = np.add( self.allPts[-1] , np.multiply( frntDir , frntLen ) )
+        self.allPts.extend( linspace_endpoints( self.allPts[-1] , frntTopEnd , pointsPerUnit + 1 )[1:] )
+        # ~ Section 6 ~ : Twist from Top
+        # A. Generate an arc that rotates about [ -1 , 0 , 0 ]
+        circList = circle_arc_3D( [ -1 , 0 , 0 ] , 
+                                  np.add( self.allPts[-1] , [ 0 , 0 , -diameter / 2.0 ] ) , 
+                                  diameter / 2.0 , [ 0 , 0 , 1 ] , -pi , pointsPerUnit + 1 )
+        # B. Generate offsets in the direction of [ -1 , 0 , 0 ] such that the travel in x is as expected
+        
+        
+        # FIXME : THIS IS WRONG , START HERE
+        offsets = linspace_endpoints( self.allPts[-1] , frntTopEnd , pointsPerUnit + 1 ) 
+        
+        
         
     def get_points_list( self ):
         """ Get a consecutive list [ ... [ x_i , y_i , z_i ] ... ] of all of the points that comprise the edges of the strip / track """
@@ -151,7 +166,7 @@ _SAVEGRAPHICS = False # Set to True to create an animated GIF of the generated g
 #                       Be patient for the save process to finish after graphics window exit 'X' is clicked
 
 # ~ Generation Settings ~
-scale       = 4
+scale       = 5
 camOrbit    = CircleOrbit( [ 0 , 0 , 0 ] , 1.5 * scale , 1 * scale ) # Camera will circle the given point in the X-Y plane at the given radius
 dTheta      = pi / 90.0 # ------------------- Radians to advance per frame
 totalFrames = 2 * int( ( 2 * pi ) / dTheta ) # ----- Number of frames that will bring the animation to its initial configuration ( GIF loop )
