@@ -23,8 +23,16 @@ Process: [Y] 0. Move previous optimized output to "Gallery" directory
 
 """
 ~~~ DEV PLAN ~~~
-[ ] Mobius Track
-[ ] Query track for vertex positions
+[Y] Mobius Track , COMPLETE - 2018-04-16 , 1600 vertices
+[Y] Query track for vertex positions , COMPLETE - 2018-04-16
+[Y] Show opposite indices tracking a vertical position on the track , COMPLETE - 2018-04-16
+[Y] Animate one flag on the track , COMPLETE - 2018-04-16 , There is a very pronounced stretching effect on the turn portion of the track
+                                    This is due to the fact that the X step is unchanged with the addition of a circle orbit , Some
+                                    trigonometry is required to fix
+[ ] Calculate flag spacing along the entire track
+    [ ] Remove track outline
+    [ ] Fixed camera , Pick a good angle
+[ ] Animate a track full of flags
 """
 
 # === Init =================================================================================================================================
@@ -39,12 +47,12 @@ import pyglet
 import imageio
 from pyglet.gl import ( GL_LINES , glColor3ub , GL_TRIANGLES , glTranslated , glRotated , glMatrixMode )
 # ~ Local ~
-from marchhare.marchhare import flatten_nested_sequence , ensure_dir , build_sublists_by_cadence , double_all_elem_except
+from marchhare.marchhare import flatten_nested_sequence , ensure_dir , build_sublists_by_cadence , double_all_elem_except , indexw
 from marchhare.Vector import vec_random_range , vec_unit , vec_mag , linspace_endpoints
 from marchhare.VectorMath.SpatialVectorRobot import rot_matx_ang_axs , z_rot
 from marchhare.VectorMath.Vector3D import vec_proj_to_plane
-from marchhare.OGLshapes import Vector_OGL , OGL_App , Icosahedron_Reg , OGLDrawable
-from GIFtools import CircleOrbit 
+from marchhare.OGLshapes import Vector_OGL , OGL_App , Icosahedron_Reg , OGLDrawable , Point_OGL
+from GIFtools import CircleOrbit , WavyFlag
 
 # ~~ Aliases & Shortcuts ~~
 endl    = os.linesep # - Line separator
@@ -71,12 +79,6 @@ def circle_arc_3D( axis , center , radius , beginMeasureVec , theta , N ):
         rtnList.append( np.add( center , np.multiply( np.dot( R , measrVec ) , radius ) ) )
     # 8. Return
     return rtnList
-
-def paint_polyline( consecutivePoints , color , thickness ):
-    """ Paint a list of points [ ... [ x_i , y_i , z_i ] ... ] to the graphics context , with a segment between each consecutive pair """
-    
-    
-      
     
 # __ End Helper __
 
@@ -149,18 +151,65 @@ class MobiusTrack( object ):
         # offsets = linspace_endpoints( self.allPts[-1] , [ -frntLen , 0 , 0 ] , pointsPerUnit + 1 ) 
         offsets = linspace_endpoints( [ 0 , 0 , 0 ] , [ -frntLen*4.0 , 0 , 0 ] , pointsPerUnit + 1 ) 
         circCoords = []
-        
         for pDex , pnt in enumerate( circList ):
             circCoords.append( np.add( pnt , offsets[pDex] ) )
-        print "There are" , len( circList ) , "points in the circle"
-        print "There are" , len( circCoords ) , "offset circle points"
+        # print "There are" , len( circList ) , "points in the circle"
+        # print "There are" , len( circCoords ) , "offset circle points"
         self.allPts.extend( circCoords[1:] )
-        
-        
+        # ~ Section 7 ~ : Bottom-Left
+        frntLen = pi * diameter * 1.0 / 4.0
+        frntTopEnd = np.add( self.allPts[-1] , np.multiply( frntDir , frntLen ) )
+        self.allPts.extend( linspace_endpoints( self.allPts[-1] , frntTopEnd , pointsPerUnit + 1 )[1:] )        
+        # ~ Section 8 ~ : Top-Right Turn
+        center = np.add( self.allPts[-1] , [ 0.0 , diameter / 2.0 , 0.0 ] )
+        measVc = [ 0.0 , -1.0 , 0.0 ]
+        self.allPts.extend( circle_arc_3D( [ 0.0 , 0.0 , 1.0 ] , center , diameter / 2.0 , measVc , -pi , pointsPerUnit ) ) 
+        # ~ Sections 9-11 ~ : Back Bottom Track
+        backTopEnd = np.add( self.allPts[-1] , np.multiply( backDir , backLen ) )
+        self.allPts.extend( linspace_endpoints( self.allPts[-1] , backTopEnd , 3 * pointsPerUnit + 1 )[1:] )   
+        # ~ Section 12 ~ : Bottom-Right Turn
+        center = np.add( self.allPts[-1] , [ 0.0 , -diameter / 2.0 , 0.0 ] )
+        measVc = [ 0.0 , 1.0 , 0.0 ]
+        self.allPts.extend( circle_arc_3D( [ 0.0 , 0.0 , 1.0 ] , center , diameter / 2.0 , measVc , -pi , pointsPerUnit ) )  
+        # ~ Section 13 ~ : Bottom-Left
+        frntTopEnd = np.add( self.allPts[-1] , np.multiply( frntDir , frntLen ) )
+        self.allPts.extend( linspace_endpoints( self.allPts[-1] , frntTopEnd , pointsPerUnit + 1 )[1:] )   
+        # ~ Section 14 ~ : Twist from Bottom
+        # A. Generate an arc that rotates about [ -1 , 0 , 0 ]
+        circList = circle_arc_3D( [ -1 , 0 , 0 ] , 
+                                      np.add( self.allPts[-1] , [ 0 , 0 , diameter / 2.0 ] ) , 
+                                      diameter / 2.0 , [ 0 , 0 , -1 ] , -pi , pointsPerUnit + 1 )
+        # B. Generate offsets in the direction of [ -1 , 0 , 0 ] such that the travel in x is as expected
+        # offsets = linspace_endpoints( self.allPts[-1] , [ -frntLen , 0 , 0 ] , pointsPerUnit + 1 ) 
+        offsets = linspace_endpoints( [ 0 , 0 , 0 ] , [ -frntLen*4.0 , 0 , 0 ] , pointsPerUnit + 1 ) 
+        circCoords = []
+        for pDex , pnt in enumerate( circList ):
+            circCoords.append( np.add( pnt , offsets[pDex] ) )
+        # print "There are" , len( circList ) , "points in the circle"
+        # print "There are" , len( circCoords ) , "offset circle points"
+        self.allPts.extend( circCoords[1:] )       
+        # ~ Section 15 ~ : Top-Right
+        frntTopEnd = np.add( self.allPts[-1] , np.multiply( frntDir , frntLen ) )
+        self.allPts.extend( linspace_endpoints( self.allPts[-1] , frntTopEnd , pointsPerUnit + 1 )[1:] )          
+        # ~ Section 16 ~ : Top-Left Turn
+        center = np.add( self.allPts[-1] , [ 0.0 , diameter / 2.0 , 0.0 ] )
+        measVc = [ 0.0 , -1.0 , 0.0 ]
+        self.allPts.extend( circle_arc_3D( [ 0.0 , 0.0 , 1.0 ] , center , diameter / 2.0 , measVc , -pi , pointsPerUnit )[1:] )         
         
     def get_points_list( self ):
         """ Get a consecutive list [ ... [ x_i , y_i , z_i ] ... ] of all of the points that comprise the edges of the strip / track """
         return self.allPts
+    
+    def get_point_series( self , bgnDex , endDex ):
+        """ Return a list of points from 'bgnDex' to 'endDex' """
+        if bgnDex < endDex:
+            indices = [ indexw( self.allPts , i ) for i in range( bgnDex , endDex + 1 ) ]
+        else:
+            indices = [ indexw( self.allPts , i ) for i in range( bgnDex , endDex - 1 , 1 ) ]
+        rtnPnts = []
+        for index in indices:
+            rtnPnts.append( self.allPts[ index ][:] )
+        return rtnPnts
         
 # __ End MobiusTrack __
         
@@ -179,6 +228,7 @@ scale       = 5
 camOrbit    = CircleOrbit( [ 0 , 0 , 0 ] , 1.5 * scale , 1 * scale ) # Camera will circle the given point in the X-Y plane at the given radius
 dTheta      = pi / 90.0 # ------------------- Radians to advance per frame
 totalFrames = 2 * int( ( 2 * pi ) / dTheta ) # ----- Number of frames that will bring the animation to its initial configuration ( GIF loop )
+counter     = 0
 
 # ~ File Settings & Setup ~
 prefix      = "frame_" # - Prefix for source frames
@@ -216,9 +266,21 @@ if __name__ == "__main__":
     track = MobiusTrack( [ 0.0 , 0.0 , 0.0 ] , 1.0 )
     print "MobiusTrack returned" , len( track.get_points_list() ) , "points"
     poly  = OGL_Polyline( track.get_points_list() , [ 255 , 255 , 255 ] , 3 )
+    # Tracking Points
+    trackPnt1 = Point_OGL( color = [ 255 , 0 , 0 ] )
+    trackPnt2 = Point_OGL( color = [ 0 , 0 , 255 ] )
+    trkPositions = track.get_points_list()
+    flagWidth = 40
+    # Create the flag
+    topPts = track.get_point_series( counter , counter + flagWidth )
+    btmPts = track.get_point_series( counter + 800  , counter + 800 + flagWidth )
+    flag = WavyFlag( topPts , btmPts , sepDist = 0.025 )
+    flag.set_colors( [ 255 , 255 , 255 ] , # Border
+                     [ 249 ,  93 ,  84 ] , # Side 1 , Lt Red
+                     [  89 , 152 , 255 ] ) # Side 2 , Lt Blu    
     
     # 2. Create an OGL window
-    window = OGL_App( [ poly ] , # List of objects to render
+    window = OGL_App( [ poly , trackPnt1 , trackPnt2 , flag ] , # List of objects to render
                       caption = "MOBIUS"  , # ---------- Window caption
                       clearColor = [ 0 , 0 , 0 , 1 ] ) # BG color black
 
@@ -235,6 +297,12 @@ if __name__ == "__main__":
         theta += dt
         
         # B. Update animation
+        counter += 1
+        print trkPositions[ indexw( trkPositions , counter       ) ] , trkPositions[ indexw( trkPositions , counter + 800 ) ]
+        trackPnt1.set_pos( trkPositions[ indexw( trkPositions , counter       ) ] )
+        trackPnt2.set_pos( trkPositions[ indexw( trkPositions , counter + 800 ) ] )
+        flag.calc_render_geo( track.get_point_series( counter , counter + flagWidth ) , 
+                              track.get_point_series( counter + 800 , counter + 800 + flagWidth ) )        
         
         # C. Move camera
         

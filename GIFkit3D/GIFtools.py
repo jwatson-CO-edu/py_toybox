@@ -15,8 +15,12 @@ Tools and utilities for generative art with Pyglet
 # ~ Standard ~
 # ~ Special ~
 import numpy as np
+import pyglet
+from pyglet.gl import ( GL_LINES , glColor3ub , GL_TRIANGLES , glTranslated , glRotated , glMatrixMode )
 # ~ Local ~
+from marchhare.marchhare import flatten_nested_sequence , double_all_elem_except
 from marchhare.VectorMath.SpatialVectorRobot import z_rot
+from marchhare.MeshVFN import tri_normal
 from marchhare.OGLshapes import Vector_OGL , OGL_App , Icosahedron_Reg , OGLDrawable
 
 # === Functions ============================================================================================================================
