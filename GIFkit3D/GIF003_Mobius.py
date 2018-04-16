@@ -92,7 +92,11 @@ class OGL_Polyline( object ):
         # 1. Repeat middle indiced
         self.pntDices = double_all_elem_except( range( self.pntLen ) , [ 0 , self.pntLen - 1 ] )
         # 2. Flatten into vertices list
-        self.allCoords = flatten_nested_sequence( consecutivePoints )     
+        self.allCoords = flatten_nested_sequence( consecutivePoints )  
+        
+        print "There are" , self.pntLen , "points"
+        print "There are" , len( self.pntDices ) , "indices"
+        print "There are" , len( self.allCoords ) , "coordinates"
         
     def draw( self ):
         """ Render the polyline to the graphics context """
@@ -132,7 +136,7 @@ class MobiusTrack( object ):
         measVc = [ 0.0 , 1.0 , 0.0 ]
         self.allPts.extend( circle_arc_3D( [ 0.0 , 0.0 , 1.0 ] , center , diameter / 2.0 , measVc , -pi , pointsPerUnit ) )
         # ~ Section 5 ~ : Top-Right 
-        frntLen = pi * diameter * 1 / 2
+        frntLen = pi * diameter * 1.0 / 4.0
         frntDir = [ -1 , 0 , 0 ]
         frntTopEnd = np.add( self.allPts[-1] , np.multiply( frntDir , frntLen ) )
         self.allPts.extend( linspace_endpoints( self.allPts[-1] , frntTopEnd , pointsPerUnit + 1 )[1:] )
@@ -142,10 +146,15 @@ class MobiusTrack( object ):
                                   np.add( self.allPts[-1] , [ 0 , 0 , -diameter / 2.0 ] ) , 
                                   diameter / 2.0 , [ 0 , 0 , 1 ] , -pi , pointsPerUnit + 1 )
         # B. Generate offsets in the direction of [ -1 , 0 , 0 ] such that the travel in x is as expected
+        # offsets = linspace_endpoints( self.allPts[-1] , [ -frntLen , 0 , 0 ] , pointsPerUnit + 1 ) 
+        offsets = linspace_endpoints( [ 0 , 0 , 0 ] , [ -frntLen*4.0 , 0 , 0 ] , pointsPerUnit + 1 ) 
+        circCoords = []
         
-        
-        # FIXME : THIS IS WRONG , START HERE
-        offsets = linspace_endpoints( self.allPts[-1] , frntTopEnd , pointsPerUnit + 1 ) 
+        for pDex , pnt in enumerate( circList ):
+            circCoords.append( np.add( pnt , offsets[pDex] ) )
+        print "There are" , len( circList ) , "points in the circle"
+        print "There are" , len( circCoords ) , "offset circle points"
+        self.allPts.extend( circCoords[1:] )
         
         
         
@@ -205,6 +214,7 @@ if __name__ == "__main__":
 
     # 1. Instantiate geometry
     track = MobiusTrack( [ 0.0 , 0.0 , 0.0 ] , 1.0 )
+    print "MobiusTrack returned" , len( track.get_points_list() ) , "points"
     poly  = OGL_Polyline( track.get_points_list() , [ 255 , 255 , 255 ] , 3 )
     
     # 2. Create an OGL window
