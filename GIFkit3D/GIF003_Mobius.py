@@ -29,6 +29,10 @@ Process: [Y] 0. Move previous optimized output to "Gallery" directory
 [Y] Animate one flag on the track , COMPLETE - 2018-04-16 , There is a very pronounced stretching effect on the turn portion of the track
                                     This is due to the fact that the X step is unchanged with the addition of a circle orbit , Some
                                     trigonometry is required to fix
+[ ] Regularize distance between points
+    [ ] 1. Decide on the standard distance between points
+    [ ] 2. Find the number of points that approximates this spacing on a circular arc
+    [ ] 3. Find the number of points that approximates this spacing on a circular helix arc ( translation perpendicular to orbit )
 [ ] Calculate flag spacing along the entire track
     [ ] Remove track outline
     [ ] Fixed camera , Pick a good angle
@@ -40,7 +44,7 @@ Process: [Y] 0. Move previous optimized output to "Gallery" directory
 # ~~ Imports ~~
 # ~ Standard ~
 import time , os
-from math import cos , sin , acos , asin , tan , atan2 , radians , degrees , hypot , pi
+from math import cos , sin , acos , asin , tan , atan2 , radians , degrees , hypot , pi , sqrt
 # ~ Special ~
 import numpy as np
 import pyglet
@@ -79,7 +83,19 @@ def circle_arc_3D( axis , center , radius , beginMeasureVec , theta , N ):
         rtnList.append( np.add( center , np.multiply( np.dot( R , measrVec ) , radius ) ) )
     # 8. Return
     return rtnList
-    
+
+def round_to_int( num ):
+    """ Round 'num' to the nearest integer """
+    return int( round( num ) )
+
+def divisions_for_circular_arc( radius , theta , xLen ):
+    """ Return the number of integer divisions that will get you a segment length closest to 'xLen' """
+    return round_to_int( ( radius * theta ) / xLen )
+
+def divisions_for_circular_helix( radius , theta , rise , xLen ):
+    """ Return the number of integer divisions that will get you a segment length closest to 'xLen' """
+    return round_to_int( sqrt( ( radius * theta )**2 + rise**2 ) / xLen )
+
 # __ End Helper __
 
 class OGL_Polyline( object ):
@@ -133,16 +149,24 @@ class MobiusTrack( object ):
         backDir = [ 1 , 0 , 0 ]
         backTopEnd = np.add( origin , np.multiply( backDir , backLen ) )
         self.allPts.extend( linspace_endpoints( origin , backTopEnd , 3 * pointsPerUnit + 1 )[1:] )
+        
+        xLen = backLen / ( 3 * pointsPerUnit )
+        
         # ~ Section 4 ~ : Top-Right Turn
+        pointsPerHalfArc = divisions_for_circular_arc( diameter / 2.0 , pi , xLen )
+        
         center = np.add( self.allPts[-1] , [ 0.0 , -diameter / 2.0 , 0.0 ] )
         measVc = [ 0.0 , 1.0 , 0.0 ]
-        self.allPts.extend( circle_arc_3D( [ 0.0 , 0.0 , 1.0 ] , center , diameter / 2.0 , measVc , -pi , pointsPerUnit ) )
+        self.allPts.extend( circle_arc_3D( [ 0.0 , 0.0 , 1.0 ] , center , diameter / 2.0 , measVc , -pi , pointsPerHalfArc + 1 )[1:] )
         # ~ Section 5 ~ : Top-Right 
         frntLen = pi * diameter * 1.0 / 4.0
         frntDir = [ -1 , 0 , 0 ]
         frntTopEnd = np.add( self.allPts[-1] , np.multiply( frntDir , frntLen ) )
         self.allPts.extend( linspace_endpoints( self.allPts[-1] , frntTopEnd , pointsPerUnit + 1 )[1:] )
         # ~ Section 6 ~ : Twist from Top
+        
+        # FIXME : START HERE!
+        
         # A. Generate an arc that rotates about [ -1 , 0 , 0 ]
         circList = circle_arc_3D( [ -1 , 0 , 0 ] , 
                                   np.add( self.allPts[-1] , [ 0 , 0 , -diameter / 2.0 ] ) , 
