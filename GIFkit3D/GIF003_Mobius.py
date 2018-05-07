@@ -30,12 +30,17 @@ Process: [Y] 0. Move previous optimized output to "Gallery" directory
                                     This is due to the fact that the X step is unchanged with the addition of a circle orbit , Some
                                     trigonometry is required to fix
 [ ] Regularize distance between points
-    [ ] 1. Decide on the standard distance between points
-    [ ] 2. Find the number of points that approximates this spacing on a circular arc
-    [ ] 3. Find the number of points that approximates this spacing on a circular helix arc ( translation perpendicular to orbit )
+    [Y] 1. Decide on the standard distance between points
+    [Y] 2. Find the number of points that approximates this spacing on a circular arc
+    [Y] 3. Find the number of points that approximates this spacing on a circular helix arc ( translation perpendicular to orbit )
+    [Y] 4. Fixed camera , Pick a good angle
+    [Y] 5. Check that flag remains a fixed width with a fixed camera view , COMPLETE - 2018-05-07 , Perspective makes back look small otherwise OK
+        [Y] Create a function for fixed width in linear segments
 [ ] Calculate flag spacing along the entire track
     [ ] Remove track outline
-    [ ] Fixed camera , Pick a good angle
+    [ ] Refine good viewing angle
+        [ ] Get the bounding box of the track points and center the camera exactly
+    
 [ ] Animate a track full of flags
 """
 
@@ -96,6 +101,10 @@ def divisions_for_circular_helix( radius , theta , rise , xLen ):
     """ Return the number of integer divisions that will get you a segment length closest to 'xLen' """
     return round_to_int( sqrt( ( radius * theta )**2 + rise**2 ) / xLen )
 
+def divisions_for_linear_segment( length , xLen ):
+    """ Return the number of integer divisions that will get you a segment length closest to 'xLen' """
+    return round_to_int( length / xLen )
+
 # __ End Helper __
 
 class OGL_Polyline( object ):
@@ -146,11 +155,15 @@ class MobiusTrack( object ):
         # ~~ There are 16 sections ~~
         # ~ Sections 1-3 ~ : Back Top Track
         backLen = pi * diameter * 3 / 2
+        xLen = backLen / ( 3 * pointsPerUnit )
+        
+        pointsPerBackTrack = divisions_for_linear_segment( backLen , xLen )
+        
         backDir = [ 1 , 0 , 0 ]
         backTopEnd = np.add( origin , np.multiply( backDir , backLen ) )
-        self.allPts.extend( linspace_endpoints( origin , backTopEnd , 3 * pointsPerUnit + 1 )[1:] )
+        self.allPts.extend( linspace_endpoints( origin , backTopEnd , pointsPerBackTrack + 1 )[1:] )
         
-        xLen = backLen / ( 3 * pointsPerUnit )
+        
         
         # ~ Section 4 ~ : Top-Right Turn
         pointsPerHalfArc = divisions_for_circular_arc( diameter / 2.0 , pi , xLen )
@@ -160,20 +173,23 @@ class MobiusTrack( object ):
         self.allPts.extend( circle_arc_3D( [ 0.0 , 0.0 , 1.0 ] , center , diameter / 2.0 , measVc , -pi , pointsPerHalfArc + 1 )[1:] )
         # ~ Section 5 ~ : Top-Right 
         frntLen = pi * diameter * 1.0 / 4.0
+        
+        pointsPerFrontTrack = divisions_for_linear_segment( frntLen , xLen )
+        
         frntDir = [ -1 , 0 , 0 ]
         frntTopEnd = np.add( self.allPts[-1] , np.multiply( frntDir , frntLen ) )
-        self.allPts.extend( linspace_endpoints( self.allPts[-1] , frntTopEnd , pointsPerUnit + 1 )[1:] )
+        self.allPts.extend( linspace_endpoints( self.allPts[-1] , frntTopEnd , pointsPerFrontTrack + 1 )[1:] )
         # ~ Section 6 ~ : Twist from Top
         
-        # FIXME : START HERE!
+        pointsPerTwist = divisions_for_circular_helix( diameter / 2.0 , pi , frntLen*4.0 , xLen )
         
         # A. Generate an arc that rotates about [ -1 , 0 , 0 ]
         circList = circle_arc_3D( [ -1 , 0 , 0 ] , 
                                   np.add( self.allPts[-1] , [ 0 , 0 , -diameter / 2.0 ] ) , 
-                                  diameter / 2.0 , [ 0 , 0 , 1 ] , -pi , pointsPerUnit + 1 )
+                                  diameter / 2.0 , [ 0 , 0 , 1 ] , -pi , pointsPerTwist + 1 )
         # B. Generate offsets in the direction of [ -1 , 0 , 0 ] such that the travel in x is as expected
         # offsets = linspace_endpoints( self.allPts[-1] , [ -frntLen , 0 , 0 ] , pointsPerUnit + 1 ) 
-        offsets = linspace_endpoints( [ 0 , 0 , 0 ] , [ -frntLen*4.0 , 0 , 0 ] , pointsPerUnit + 1 ) 
+        offsets = linspace_endpoints( [ 0 , 0 , 0 ] , [ -frntLen*4.0 , 0 , 0 ] , pointsPerTwist + 1 ) 
         circCoords = []
         for pDex , pnt in enumerate( circList ):
             circCoords.append( np.add( pnt , offsets[pDex] ) )
@@ -183,29 +199,29 @@ class MobiusTrack( object ):
         # ~ Section 7 ~ : Bottom-Left
         frntLen = pi * diameter * 1.0 / 4.0
         frntTopEnd = np.add( self.allPts[-1] , np.multiply( frntDir , frntLen ) )
-        self.allPts.extend( linspace_endpoints( self.allPts[-1] , frntTopEnd , pointsPerUnit + 1 )[1:] )        
+        self.allPts.extend( linspace_endpoints( self.allPts[-1] , frntTopEnd , pointsPerFrontTrack + 1 )[1:] )        
         # ~ Section 8 ~ : Top-Right Turn
         center = np.add( self.allPts[-1] , [ 0.0 , diameter / 2.0 , 0.0 ] )
         measVc = [ 0.0 , -1.0 , 0.0 ]
-        self.allPts.extend( circle_arc_3D( [ 0.0 , 0.0 , 1.0 ] , center , diameter / 2.0 , measVc , -pi , pointsPerUnit ) ) 
+        self.allPts.extend( circle_arc_3D( [ 0.0 , 0.0 , 1.0 ] , center , diameter / 2.0 , measVc , -pi , pointsPerHalfArc + 1 ) ) 
         # ~ Sections 9-11 ~ : Back Bottom Track
         backTopEnd = np.add( self.allPts[-1] , np.multiply( backDir , backLen ) )
-        self.allPts.extend( linspace_endpoints( self.allPts[-1] , backTopEnd , 3 * pointsPerUnit + 1 )[1:] )   
+        self.allPts.extend( linspace_endpoints( self.allPts[-1] , backTopEnd , pointsPerBackTrack + 1 )[1:] )   
         # ~ Section 12 ~ : Bottom-Right Turn
         center = np.add( self.allPts[-1] , [ 0.0 , -diameter / 2.0 , 0.0 ] )
         measVc = [ 0.0 , 1.0 , 0.0 ]
-        self.allPts.extend( circle_arc_3D( [ 0.0 , 0.0 , 1.0 ] , center , diameter / 2.0 , measVc , -pi , pointsPerUnit ) )  
+        self.allPts.extend( circle_arc_3D( [ 0.0 , 0.0 , 1.0 ] , center , diameter / 2.0 , measVc , -pi , pointsPerHalfArc + 1 ) )  
         # ~ Section 13 ~ : Bottom-Left
         frntTopEnd = np.add( self.allPts[-1] , np.multiply( frntDir , frntLen ) )
-        self.allPts.extend( linspace_endpoints( self.allPts[-1] , frntTopEnd , pointsPerUnit + 1 )[1:] )   
+        self.allPts.extend( linspace_endpoints( self.allPts[-1] , frntTopEnd , pointsPerFrontTrack + 1 )[1:] )   
         # ~ Section 14 ~ : Twist from Bottom
         # A. Generate an arc that rotates about [ -1 , 0 , 0 ]
         circList = circle_arc_3D( [ -1 , 0 , 0 ] , 
                                       np.add( self.allPts[-1] , [ 0 , 0 , diameter / 2.0 ] ) , 
-                                      diameter / 2.0 , [ 0 , 0 , -1 ] , -pi , pointsPerUnit + 1 )
+                                      diameter / 2.0 , [ 0 , 0 , -1 ] , -pi , pointsPerTwist + 1 )
         # B. Generate offsets in the direction of [ -1 , 0 , 0 ] such that the travel in x is as expected
         # offsets = linspace_endpoints( self.allPts[-1] , [ -frntLen , 0 , 0 ] , pointsPerUnit + 1 ) 
-        offsets = linspace_endpoints( [ 0 , 0 , 0 ] , [ -frntLen*4.0 , 0 , 0 ] , pointsPerUnit + 1 ) 
+        offsets = linspace_endpoints( [ 0 , 0 , 0 ] , [ -frntLen*4.0 , 0 , 0 ] , pointsPerTwist + 1 ) 
         circCoords = []
         for pDex , pnt in enumerate( circList ):
             circCoords.append( np.add( pnt , offsets[pDex] ) )
@@ -214,11 +230,11 @@ class MobiusTrack( object ):
         self.allPts.extend( circCoords[1:] )       
         # ~ Section 15 ~ : Top-Right
         frntTopEnd = np.add( self.allPts[-1] , np.multiply( frntDir , frntLen ) )
-        self.allPts.extend( linspace_endpoints( self.allPts[-1] , frntTopEnd , pointsPerUnit + 1 )[1:] )          
+        self.allPts.extend( linspace_endpoints( self.allPts[-1] , frntTopEnd , pointsPerFrontTrack + 1 )[1:] )          
         # ~ Section 16 ~ : Top-Left Turn
         center = np.add( self.allPts[-1] , [ 0.0 , diameter / 2.0 , 0.0 ] )
         measVc = [ 0.0 , -1.0 , 0.0 ]
-        self.allPts.extend( circle_arc_3D( [ 0.0 , 0.0 , 1.0 ] , center , diameter / 2.0 , measVc , -pi , pointsPerUnit )[1:] )         
+        self.allPts.extend( circle_arc_3D( [ 0.0 , 0.0 , 1.0 ] , center , diameter / 2.0 , measVc , -pi , pointsPerHalfArc + 1 )[1:] )         
         
     def get_points_list( self ):
         """ Get a consecutive list [ ... [ x_i , y_i , z_i ] ... ] of all of the points that comprise the edges of the strip / track """
@@ -249,7 +265,7 @@ _SAVEGRAPHICS = False # Set to True to create an animated GIF of the generated g
 
 # ~ Generation Settings ~
 scale       = 5
-camOrbit    = CircleOrbit( [ 0 , 0 , 0 ] , 1.5 * scale , 1 * scale ) # Camera will circle the given point in the X-Y plane at the given radius
+#camOrbit    = CircleOrbit( [ 0 , 0 , 0 ] , 1.5 * scale , 1 * scale ) # Camera will circle the given point in the X-Y plane at the given radius
 dTheta      = pi / 90.0 # ------------------- Radians to advance per frame
 totalFrames = 2 * int( ( 2 * pi ) / dTheta ) # ----- Number of frames that will bring the animation to its initial configuration ( GIF loop )
 counter     = 0
@@ -294,10 +310,11 @@ if __name__ == "__main__":
     trackPnt1 = Point_OGL( color = [ 255 , 0 , 0 ] )
     trackPnt2 = Point_OGL( color = [ 0 , 0 , 255 ] )
     trkPositions = track.get_points_list()
+    halfOffset   = round_to_int( len( trkPositions ) / 2 )
     flagWidth = 40
     # Create the flag
     topPts = track.get_point_series( counter , counter + flagWidth )
-    btmPts = track.get_point_series( counter + 800  , counter + 800 + flagWidth )
+    btmPts = track.get_point_series( counter + halfOffset  , counter + halfOffset + flagWidth )
     flag = WavyFlag( topPts , btmPts , sepDist = 0.025 )
     flag.set_colors( [ 255 , 255 , 255 ] , # Border
                      [ 249 ,  93 ,  84 ] , # Side 1 , Lt Red
@@ -309,8 +326,10 @@ if __name__ == "__main__":
                       clearColor = [ 0 , 0 , 0 , 1 ] ) # BG color black
 
     # 3. Set the camera to look at the center of the action
-    window.set_camera( [ 2 , 2 , 2 ] , # Camera position
-                       [ 0 , 0 , 0 ] , # Focal point of camera
+    viewScale = 3
+    xCenter   = 2.5
+    window.set_camera( [ xCenter , -viewScale , 0.50 * viewScale ] , # Camera position
+                       [ xCenter , 0 , 0 ] , # Focal point of camera
                        [ 0 , 0 , 1 ] ) # Direction of up
 
     
@@ -322,15 +341,15 @@ if __name__ == "__main__":
         
         # B. Update animation
         counter += 1
-        print trkPositions[ indexw( trkPositions , counter       ) ] , trkPositions[ indexw( trkPositions , counter + 800 ) ]
+        print trkPositions[ indexw( trkPositions , counter       ) ] , trkPositions[ indexw( trkPositions , counter + halfOffset ) ]
         trackPnt1.set_pos( trkPositions[ indexw( trkPositions , counter       ) ] )
-        trackPnt2.set_pos( trkPositions[ indexw( trkPositions , counter + 800 ) ] )
+        trackPnt2.set_pos( trkPositions[ indexw( trkPositions , counter + halfOffset ) ] )
         flag.calc_render_geo( track.get_point_series( counter , counter + flagWidth ) , 
-                              track.get_point_series( counter + 800 , counter + 800 + flagWidth ) )        
+                              track.get_point_series( counter + halfOffset , counter + halfOffset + flagWidth ) )        
         
         # C. Move camera
         
-        window.set_camera( camOrbit( theta ) , [ 0 , 0 , 0 ] , [ 0 , 0 , 1 ] )
+#        window.set_camera( camOrbit( theta ) , [ 0 , 0 , 0 ] , [ 0 , 0 , 1 ] )
         
         # D. Redraw
         window.dispatch_events() # Handle window events
