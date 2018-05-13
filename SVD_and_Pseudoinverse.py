@@ -86,6 +86,7 @@ if __name__ == "__main__":
     
     prllrppdSamples = sample_in_hyperparallelepiped( 1000 , 
                                                      [  0 ,  0 ,  0 ,  0 ] , 
+                                                     #[ [  2 ,  2 , 40 ,  0 ] , [ -2 , 20 , -2 , 0] , [ 10 , 10 , 10 , 0 ] ] )
                                                      [ [  2 ,  2 , 40 ,  0 ] , [ -2 , 20 , -2 , 0] , [ 10 , -2 , -2 , 0 ] ] )
     a = np.matrix( prllrppdSamples )
     u , s , vt = np.linalg.svd( a , full_matrices = True )
@@ -99,6 +100,7 @@ if __name__ == "__main__":
     print "Angle between Column 1 and 2" , vec_angle_between( v1 , v2 ) / pi , "pi radians"
     print "Angle between Column 2 and 3" , vec_angle_between( v2 , v3 ) / pi , "pi radians"
     print "Angle between Column 3 and 1" , vec_angle_between( v3 , v1 ) / pi , "pi radians"
+    print "Right Singular Vectors are mutually orthogonal"
 
 # ___ End Main _____________________________________________________________________________________________________________________________
 
