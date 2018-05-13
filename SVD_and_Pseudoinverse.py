@@ -17,9 +17,9 @@ __version__  = "YYYY.MM.DD"
 """  
 ~~~ Developmnent Plan ~~~
 [Y] Generate points in a parallelepiped
-[ ] Investigate SVD of points
+[Y] Investigate SVD of points
     [Y] Get SVD of sampled points
-    [ ] Test if the Right Singular Vectors are parallel to each other
+    [Y] Test if the Right Singular Vectors are parallel to each other - THEY ARE
 [ ] Investigate Pseudoinverse of points
 """
 
