@@ -94,9 +94,9 @@ if __name__ == "__main__":
     print "S = " , s , endl , "S , The influence of each Right Singular Vector in decreasing order"
     print "V = " , endl , v , endl , "V , Right Singular (column) Vectors, correspinding to the singular values S"
     # Angles between Right Singular Vectors
-    v1 = np.ravel( v[0:3,0].reshape(3,1) ) 
-    v2 = np.ravel( v[0:3,1].reshape(3,1) )
-    v3 = np.ravel( v[0:3,2].reshape(3,1) )
+    v1 = np.ravel( v[:,0].reshape(4,1) ) 
+    v2 = np.ravel( v[:,1].reshape(4,1) )
+    v3 = np.ravel( v[:,2].reshape(4,1) )
     print "Angle between Column 1 and 2" , vec_angle_between( v1 , v2 ) / pi , "pi radians"
     print "Angle between Column 2 and 3" , vec_angle_between( v2 , v3 ) / pi , "pi radians"
     print "Angle between Column 3 and 1" , vec_angle_between( v3 , v1 ) / pi , "pi radians"
