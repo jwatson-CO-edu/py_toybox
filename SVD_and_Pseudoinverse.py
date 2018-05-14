@@ -12,14 +12,14 @@ URL: https://www.johndcook.com/blog/2018/05/05/svd/
 
 Dependencies: numpy
 """
-__progname__ = "Singular Value Decomposition"
+__progname__ = "Singular Value Decomposition & Pseudoinverse"
 __version__  = "YYYY.MM.DD"
 """  
 ~~~ Developmnent Plan ~~~
 [Y] Generate points in a parallelepiped
 [Y] Investigate SVD of points
     [Y] Get SVD of sampled points
-    [Y] Test if the Right Singular Vectors are parallel to each other - THEY ARE
+    [Y] Test if the Right Singular Vectors are perpendicular to each other - THEY ARE
 [ ] Investigate Pseudoinverse of points
 """
 
@@ -34,6 +34,7 @@ from random import random
 # ~~ Special ~~
 import numpy as np
 # ~~ Local ~~
+from marchhare.marchhare import sep
 from marchhare.Vector import vec_unit , vec_mag , vec_angle_between
 
 # ~~ Constants , Shortcuts , Aliases ~~
@@ -89,7 +90,13 @@ if __name__ == "__main__":
                                                      #[ [  2 ,  2 , 40 ,  0 ] , [ -2 , 20 , -2 , 0] , [ 10 , 10 , 10 , 0 ] ] )
                                                      [ [  2 ,  2 , 40 ,  0 ] , [ -2 , 20 , -2 , 0] , [ 10 , -2 , -2 , 0 ] ] )
     a = np.matrix( prllrppdSamples )
+    
+    sep( "SVD" )
+    
     u , s , vt = np.linalg.svd( a , full_matrices = True )
+    print "Size of 'u': " , u.shape
+    print "Size of 's': " , s.shape
+    print "Size of 'vt':" , vt.shape
     v = np.transpose( vt )
     print "S = " , s , endl , "S , The influence of each Right Singular Vector in decreasing order"
     print "V = " , endl , v , endl , "V , Right Singular (column) Vectors, correspinding to the singular values S"
@@ -97,10 +104,16 @@ if __name__ == "__main__":
     v1 = np.ravel( v[:,0].reshape(4,1) ) 
     v2 = np.ravel( v[:,1].reshape(4,1) )
     v3 = np.ravel( v[:,2].reshape(4,1) )
-    print "Angle between Column 1 and 2" , vec_angle_between( v1 , v2 ) / pi , "pi radians"
-    print "Angle between Column 2 and 3" , vec_angle_between( v2 , v3 ) / pi , "pi radians"
-    print "Angle between Column 3 and 1" , vec_angle_between( v3 , v1 ) / pi , "pi radians"
+    v4 = np.ravel( v[:,3].reshape(4,1) )
+    print "Angle between Column 1 and 2:" , vec_angle_between( v1 , v2 ) / pi , "pi radians"
+    print "Angle between Column 2 and 3:" , vec_angle_between( v2 , v3 ) / pi , "pi radians"
+    print "Angle between Column 3 and 1:" , vec_angle_between( v3 , v1 ) / pi , "pi radians"
+    print "Angle between Column 1 and 4:" , vec_angle_between( v1 , v4 ) / pi , "pi radians"
     print "Right Singular Vectors are mutually orthogonal"
+    sep( "Pseudoinverse" )
+    pinvA = np.linalg.pinv( a )
+    print "Size of the pseudoinverse:" , pinvA.shape
+    
 
 # ___ End Main _____________________________________________________________________________________________________________________________
 
