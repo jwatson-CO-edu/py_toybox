@@ -17,6 +17,8 @@ __version__  = "2018.05"
 ~~~ Developmnent Plan ~~~
 [Y] Generate a sequence of states and observations - COMPLETE , Simple problem with 2 states and 2 observations
 [ ] Use Viterbi to recover sequence
+    [ ] Forward Algorithm
+    [ ] Forward-Backward Algorithm
 [ ] Use Particle filter to recover sequence
 """
 
@@ -67,6 +69,9 @@ T = { True:  0.7 , # The probability it rains today given that it rained yesterd
 Z = { True:  0.9 , # The probability an umbrella is seen today given rain today
       False: 0.2 } # The probability an umbrella is seen today given no rain today
 
+ALLSTATES = [ True , False ]; # Possible States: { Raining , Not Raining }
+ALLOBSERV = [ True , False ]; # Possible Observations: { Umbrella , No Umbrella }
+
 # _ End Vars _
 
 # = Program Functions =
@@ -86,6 +91,29 @@ def generate_observ_sequence( stateSeq , Z ):
     for state in stateSeq:
         rtnSeq.append( flip_weighted( Z[ state ] ) )
     return rtnSeq
+
+# CS 6300 HW#08 Problem 2 is very helpful for forward algo
+def Forward_Algorithm( Zseq ):
+    """ Recover the state sequence from the observation sequence using the Forward Algorithm """
+    rainDist = { True: 0.5 , False: 0.5 } # Begin with an even distribution of rainy and nonrainy days
+    for i in xrange( Zseq ):
+        # 1. Determine the overall probability of Rain , P(r)
+        """ The probability of rain_1 = T at Time 1 is the sum of the (transition probabilities from all possible Time 0 states to rain_1 = T) 
+        times (the associated probabilities of the states at Time 0). At Time 0 the probability of states has some initial distribution. """        
+        rainProbTot = 0
+        for prevState in ALLSTATES:
+            rainProbTot += T[ prevState ] * rainDist[ prevState ] # Matches the initial distribution at time 1
+        # 2. Determine the probability of rain_1 = T at Time 1 given the evidence of an observation 1 at Time 1
+        """ In order to do this, we need to build expressions for the probability of Rain given evidence and probability of Not Rain given
+        evidence, solve for \alpha, and evaluate the expression """
+        
+        # FIXME : START HERE
+        
+        # A. The probability of observation, given Rain
+        # FIXME : DOCUMENT EXPRESSION
+        # B. The Probability of observation, given Not-Rain
+        # FIXME : DOCUMENT EXPRESSION
+        
 
 # _ End Func _
 
