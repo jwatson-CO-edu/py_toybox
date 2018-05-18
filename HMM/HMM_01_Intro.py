@@ -63,11 +63,22 @@ Example:
 
 # = Program Vars =
 
+# ~~ Transition Model ~~
+
 T = { True:  0.7 , # The probability it rains today given that it rained yesterday
       False: 0.3 } # The probability it rains today given that it did not rain yesterday
 
-Z = { True:  0.9 , # The probability an umbrella is seen today given rain today
-      False: 0.2 } # The probability an umbrella is seen today given no rain today
+# ~~ Sensor Model ~~
+
+P_uT_rT = 0.9 # ------- The probability an umbrella is seen     given rain    
+P_uT_rF = 0.2 # ------- The probability an umbrella is seen     given no rain 
+P_uF_rT = 1 - P_uT_rT # The probability an umbrella is not seen given rain    
+P_uF_rF = 1 - P_uT_rF # The probability an umbrella is not seen given no rain 
+
+#       r = F   | r = T
+Z = [ [ P_uF_rF , P_uF_rT ] , # u = F
+      [ P_uT_rF , P_uT_rT ] ] # u = T
+# P( u | r ) = Z[u][r]
 
 ALLSTATES = [ True , False ]; # Possible States: { Raining , Not Raining }
 ALLOBSERV = [ True , False ]; # Possible Observations: { Umbrella , No Umbrella }
@@ -96,20 +107,32 @@ def generate_observ_sequence( stateSeq , Z ):
 def Forward_Algorithm( Zseq ):
     """ Recover the state sequence from the observation sequence using the Forward Algorithm """
     rainDist = { True: 0.5 , False: 0.5 } # Begin with an even distribution of rainy and nonrainy days
-    for i in xrange( Zseq ):
+    for i , observ_i in enumerate( Zseq ):
+        
+        # 1. Determine the probability of rain_1 = T at Time 1 given the evidence of an observation 1 at Time 1
+        """ In order to do this, we need to build expressions for the probability of Rain given evidence and probability of Not Rain given
+        evidence, solve for \alpha, and evaluate the expression """        
+        # P(  state | observ ) = ( \alpha ) * P( observ |  state ) * P(  state )
+        alphP_rT_Oi = Z[ observ_i ][ True ]  * rainDist[ True ]
+        # P( -state | observ ) = ( \alpha ) * P( observ | -state ) * P( -state )
+        alphP_rF_Oi = Z[ observ_i ][ False ] * rainDist[ False ]    
+        alpha = 1.0 / ( alphP_rT_Oi + alphP_rF_Oi )
+        
+        P_rT_Oi = alpha * alphP_rT_Oi
+        P_rF_Oi = alpha * alphP_rF_Oi
+        
         # 1. Determine the overall probability of Rain , P(r)
         """ The probability of rain_1 = T at Time 1 is the sum of the (transition probabilities from all possible Time 0 states to rain_1 = T) 
         times (the associated probabilities of the states at Time 0). At Time 0 the probability of states has some initial distribution. """        
         rainProbTot = 0
         for prevState in ALLSTATES:
             rainProbTot += T[ prevState ] * rainDist[ prevState ] # Matches the initial distribution at time 1
-        # 2. Determine the probability of rain_1 = T at Time 1 given the evidence of an observation 1 at Time 1
-        """ In order to do this, we need to build expressions for the probability of Rain given evidence and probability of Not Rain given
-        evidence, solve for \alpha, and evaluate the expression """
+        
         
         # FIXME : START HERE
         
         # A. The probability of observation, given Rain
+        
         # FIXME : DOCUMENT EXPRESSION
         # B. The Probability of observation, given Not-Rain
         # FIXME : DOCUMENT EXPRESSION
