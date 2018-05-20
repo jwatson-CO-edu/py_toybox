@@ -65,8 +65,12 @@ Example:
 
 # ~~ Transition Model ~~
 
-T = { True:  0.7 , # The probability it rains today given that it rained yesterday
-      False: 0.3 } # The probability it rains today given that it did not rain yesterday
+P_1T_0T = 0.7 # ------- The probability it rains         today given that it rained       yesterday
+P_1T_0F = 0.3 # ------- The probability it rains         today given that it did not rain yesterday
+P_1F_0T = 1 - P_1T_0T # The probability it does not rain today given that it rained       yesterday
+P_1F_0F = 1 - P_1T_0F # The probability it does not rain today given that it did not rain yesterday
+
+# FIXME : START HERE , CREATE A TABLE FOR THE TRANSITION MODEL
 
 # ~~ Sensor Model ~~
 
@@ -121,12 +125,17 @@ def Forward_Algorithm( Zseq ):
         P_rT_Oi = alpha * alphP_rT_Oi
         P_rF_Oi = alpha * alphP_rF_Oi
         
-        # 1. Determine the overall probability of Rain , P(r)
+        # 2. Determine the overall probability of Rain , P(r)
         """ The probability of rain_1 = T at Time 1 is the sum of the (transition probabilities from all possible Time 0 states to rain_1 = T) 
         times (the associated probabilities of the states at Time 0). At Time 0 the probability of states has some initial distribution. """        
-        rainProbTot = 0
-        for prevState in ALLSTATES:
-            rainProbTot += T[ prevState ] * rainDist[ prevState ] # Matches the initial distribution at time 1
+        # If there is a previous state to look at
+        rainDist = { True: 0.0 , False: 0.0 } # Reset the distribution to 0
+        for nextState in [ False , True ]:
+            for currState in [ False , True ]:
+                # P( next ) = P( next | state ) * P( state | observ )
+                rainDist[ nextState ] += # FIXME : COMPLETE THE EXPRESSION
+                
+                rainProbTot += T[ prevState ] * rainDist[ prevState ] # Matches the initial distribution at time 1
         
         
         # FIXME : START HERE
