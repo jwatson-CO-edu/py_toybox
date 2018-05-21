@@ -17,7 +17,7 @@ __version__  = "2018.05"
 ~~~ Developmnent Plan ~~~
 [Y] Generate a sequence of states and observations - COMPLETE , Simple problem with 2 states and 2 observations
 [ ] Use Viterbi to recover sequence
-    [ ] Forward Algorithm
+    [Y] Forward Algorithm - COMPLETE , Consistently > 80% accurate!
     [ ] Forward-Backward Algorithm
 [ ] Use Particle filter to recover sequence
 """
@@ -70,7 +70,11 @@ P_1T_0F = 0.3 # ------- The probability it rains         today given that it did
 P_1F_0T = 1 - P_1T_0T # The probability it does not rain today given that it rained       yesterday
 P_1F_0F = 1 - P_1T_0F # The probability it does not rain today given that it did not rain yesterday
 
-# FIXME : START HERE , CREATE A TABLE FOR THE TRANSITION MODEL
+#       r  = F  | r  = T
+T = [ [ P_1F_0F , P_1F_0T ] , # r' = F
+      [ P_1T_0F , P_1T_0T ] ] # r' = T
+
+# P( r' | r  ) = T[r'][r ]
 
 # ~~ Sensor Model ~~
 
@@ -97,19 +101,45 @@ def generate_state_sequence( T , N , initState = None ):
         initState = flip_weighted( 0.5 )
     rtnSeq = [ initState ]
     for i in xrange( N ):
-        rtnSeq.append( flip_weighted( T[ rtnSeq[-1] ] ) )
+        rtnSeq.append( flip_weighted( T[ True ][ rtnSeq[-1] ] ) )
     return rtnSeq
 
 def generate_observ_sequence( stateSeq , Z ):
     """ Generate a sequence of noisy observations given a sequence of ground-truth states """
     rtnSeq = []
     for state in stateSeq:
-        rtnSeq.append( flip_weighted( Z[ state ] ) )
+        rtnSeq.append( flip_weighted( Z[ True ][ state ] ) )
     return rtnSeq
+
+def argmax_dict( pDict ):
+    """ Return the dictionary key with the greatest value """
+    # NOTE: *Strongly* consider 'marchhare.marchhare.Counter' if it fits your use case!
+    # NOTE: This function assumes that 'pDict' has at least one key-val pair
+    # NOTE: This function assumes that all values in 'pDict' can be compared with inequalities
+    # NOTE: If there are multiple keys with the max value, this function will return the last one encountered by the iterator. 
+    #       Python does not guarantee order in dictionaries
+    maxKey = pDict.keys()[0]
+    maxVal = pDict.values()[0]
+    for key , val in pDict.iteritems():
+        if val >= maxVal:
+            maxKey = key
+            maxVal = val
+    return maxKey
+
+def seq_accuracy( nfrSeq , truSeq ):
+    """ Calculate the accuracy of state inferences """
+    # NOTE: This function assumes thate 'truSeq' and 'nfrSeq' are of equal length
+    correctCount = 0
+    seqLen = len( truSeq )
+    for i in xrange( seqLen ):
+        if truSeq[i] == nfrSeq[i]:
+            correctCount += 1
+    return correctCount / seqLen
 
 # CS 6300 HW#08 Problem 2 is very helpful for forward algo
 def Forward_Algorithm( Zseq ):
     """ Recover the state sequence from the observation sequence using the Forward Algorithm """
+    rtnSeq = []
     rainDist = { True: 0.5 , False: 0.5 } # Begin with an even distribution of rainy and nonrainy days
     for i , observ_i in enumerate( Zseq ):
         
@@ -125,6 +155,8 @@ def Forward_Algorithm( Zseq ):
         P_rT_Oi = alpha * alphP_rT_Oi
         P_rF_Oi = alpha * alphP_rF_Oi
         
+        PgivenOi = { True: P_rT_Oi , False: P_rF_Oi }
+        
         # 2. Determine the overall probability of Rain , P(r)
         """ The probability of rain_1 = T at Time 1 is the sum of the (transition probabilities from all possible Time 0 states to rain_1 = T) 
         times (the associated probabilities of the states at Time 0). At Time 0 the probability of states has some initial distribution. """        
@@ -133,18 +165,12 @@ def Forward_Algorithm( Zseq ):
         for nextState in [ False , True ]:
             for currState in [ False , True ]:
                 # P( next ) = P( next | state ) * P( state | observ )
-                rainDist[ nextState ] += # FIXME : COMPLETE THE EXPRESSION
-                
-                rainProbTot += T[ prevState ] * rainDist[ prevState ] # Matches the initial distribution at time 1
+                rainDist[ nextState ] += T[ nextState ][ currState ] * PgivenOi[ currState ]
         
+        # 3. Infer the state for this timestep
+        rtnSeq.append( ( argmax_dict( rainDist ) , ( PgivenOi[ True ] , PgivenOi[ True ] ) ) )
+    return rtnSeq
         
-        # FIXME : START HERE
-        
-        # A. The probability of observation, given Rain
-        
-        # FIXME : DOCUMENT EXPRESSION
-        # B. The Probability of observation, given Not-Rain
-        # FIXME : DOCUMENT EXPRESSION
         
 
 # _ End Func _
@@ -157,11 +183,15 @@ if __name__ == "__main__":
     
     groundTruth  = generate_state_sequence( T , 10 )
     observations = generate_observ_sequence( groundTruth , Z )
+    fwdInferencs = Forward_Algorithm( observations )
     
     Xdist = { True: 0.5 , False: 0.5 } # Begin with an even distribution of rainy and nonrainy days
     
     print "Truth:" , groundTruth
     print "Obsrv:" , observations
+    inferredStates = [ infer[0] for infer in fwdInferencs ]
+    print "Forwd:" ,  inferredStates
+    print "Accur:" , seq_accuracy( inferredStates , groundTruth )
 
 # ___ End Main _____________________________________________________________________________________________________________________________
 
