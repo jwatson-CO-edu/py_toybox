@@ -16,10 +16,13 @@ __version__  = "2018.05"
 """  
 ~~~ Developmnent Plan ~~~
 [Y] Generate a sequence of states and observations - COMPLETE , Simple problem with 2 states and 2 observations
-[ ] Use Viterbi to recover sequence
+[ ] Use Viterbi to recover sequence , Build up theory using increasingly complex algos
     [Y] Forward Algorithm - COMPLETE , Consistently > 80% accurate!
+    [ ] Backward Algorithm
     [ ] Forward-Backward Algorithm
-[ ] Use Particle filter to recover sequence
+    [ ] Viterbi Algorithm , Recover Sequence
+    
+[ ] Use Particle filter to recover sequence ( HMM_02_Intro.py )
 """
 
 # === Init Environment =====================================================================================================================
