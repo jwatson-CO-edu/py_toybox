@@ -40,7 +40,7 @@ from math import pi , sqrt
 import numpy as np
 # ~~ Local ~~
 prepend_dir_to_path( PARENTDIR ) # Add local MARCHHARE to path
-from marchhare.marchhare import sep
+from marchhare.marchhare import sep , enumerate_reverse , prepend
 from marchhare.MathKit import flip_weighted
 
 
@@ -174,7 +174,29 @@ def Forward_Algorithm( Zseq ):
         rtnSeq.append( ( argmax_dict( rainDist ) , ( PgivenOi[ True ] , PgivenOi[ True ] ) ) )
     return rtnSeq
         
-        
+# CS 6300 Lecture #20 HMM-1 very useful for this algo
+def Backward_Algorithm( Zseq ):
+    """ At each timestep, determine probability that the observation was emitted from each state """
+    rtnSeq = []
+    beta_T = 1
+    beta_t = { False: [] , # Probability that Not-Raining was responsible for the observation at t
+               True:  [] } # Probability that Raining     was responsible for the observation at t
+    
+    # 1. Build the beta_t(i) sequences, per state, per timestep
+    for t , z_t in enumerate_reverse( Zseq ):
+        for i in [ False , True ]:
+            if t == len( Zseq ) - 1:
+                prepend( beta_t[ i ] , 1 )
+            else:
+                # FIXME : INIT beta_t[ i ] summation
+                for j in [ False , True ]:
+                    # FIXME : START HERE
+                    pass
+                
+    
+    # 2. Determine the most likely state at t by comparing beta_t(i)
+    
+    # 3. Determine the likelihood of the observation at time t
 
 # _ End Func _
 
