@@ -91,8 +91,8 @@ Z = [ [ P_uF_rF , P_uF_rT ] , # u = F
       [ P_uT_rF , P_uT_rT ] ] # u = T
 # P( u | r ) = Z[u][r]
 
-ALLSTATES = [ True , False ]; # Possible States: { Raining , Not Raining }
-ALLOBSERV = [ True , False ]; # Possible Observations: { Umbrella , No Umbrella }
+ALLSTATES = [ False , True ]; # Possible States: { Not Raining , Raining }
+ALLOBSERV = [ False , True ]; # Possible Observations: { No Umbrella , Umbrella }
 
 # _ End Vars _
 
@@ -165,8 +165,8 @@ def Forward_Algorithm( Zseq ):
         times (the associated probabilities of the states at Time 0). At Time 0 the probability of states has some initial distribution. """        
         # If there is a previous state to look at
         rainDist = { True: 0.0 , False: 0.0 } # Reset the distribution to 0
-        for nextState in [ False , True ]:
-            for currState in [ False , True ]:
+        for nextState in ALLSTATES:
+            for currState in ALLSTATES:
                 # P( next ) = P( next | state ) * P( state | observ )
                 rainDist[ nextState ] += T[ nextState ][ currState ] * PgivenOi[ currState ]
         
@@ -183,17 +183,19 @@ def Backward_Algorithm( Zseq ):
                True:  [] } # Probability that Raining     was responsible for the observation at t
     
     # 1. Build the beta_t(i) sequences, per state, per timestep
+    for k in ALLSTATES:
+        prepend( beta_t[ k ] , 1 )
     for t , z_t in enumerate_reverse( Zseq ):
-        for i in [ False , True ]:
-            if t == len( Zseq ) - 1:
-                prepend( beta_t[ i ] , 1 )
-            else:
-                # FIXME : INIT beta_t[ i ] summation
-                for j in [ False , True ]:
-                    # FIXME : START HERE
-                    pass
+        for i in ALLSTATES: # For every next state
+            # 2. INIT beta_t[ i ] summation
+            beta_ti = 0
+            for j in ALLSTATES: # Sum over possible next states
+                # beta_t[ i ] = \sum_{j=1}^{N}(  beta_{t+1}[ i ] * P( x_{t+1} = i | x_{t} = j ) * P( z_t | x_t = j ) )
+                beta_ti                       += beta_t[ i ][0]  * T[ i ][ j ]                  * Z[ z_t ][ j ]
+            prepend( beta_t[ i ] , beta_ti )
+      
+    # TEST 1: ENTIRE SEQUENCE
                 
-    
     # 2. Determine the most likely state at t by comparing beta_t(i)
     
     # 3. Determine the likelihood of the observation at time t
