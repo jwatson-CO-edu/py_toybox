@@ -100,10 +100,11 @@ ALLOBSERV = [ False , True ]; # Possible Observations: { No Umbrella , Umbrella 
 
 def generate_state_sequence( T , N , initState = None ):
     """ Generate a sequence of 'N' sequential states in {True,False} according to the given transition model """
+    # NOTE: This function assumes that 'N' >= 1
     if initState == None:
         initState = flip_weighted( 0.5 )
     rtnSeq = [ initState ]
-    for i in xrange( N ):
+    for i in xrange( N - 1 ):
         rtnSeq.append( flip_weighted( T[ True ][ rtnSeq[-1] ] ) )
     return rtnSeq
 
@@ -189,14 +190,18 @@ def Backward_Algorithm( Zseq ):
         for i in ALLSTATES: # For every next state
             # 2. INIT beta_t[ i ] summation
             beta_ti = 0
+            # beta_t[ i ] = Probability of the follow-on sequence of observations { z_{t+1} ... z_{T} } given the state x_t = i at time t
             for j in ALLSTATES: # Sum over possible next states
-                # beta_t[ i ] = \sum_{j=1}^{N}(  beta_{t+1}[ i ] * P( x_{t+1} = i | x_{t} = j ) * P( z_t | x_t = j ) )
-                beta_ti                       += beta_t[ i ][0]  * T[ i ][ j ]                  * Z[ z_t ][ j ]
+                # beta_t[ i ] = \sum_{j=1}^{N}(  beta_{t+1}[ j ] * P( x_{t+1} = i | x_{t} = j ) * P( z_t | x_t = j ) )
+                beta_ti                       += beta_t[ j ][0]  * T[ i ][ j ]                  * Z[ z_t ][ j ]
             prepend( beta_t[ i ] , beta_ti )
       
-    # TEST 1: ENTIRE SEQUENCE
+    # return beta_t
+    # beta_t[ i ] = Probability of the follow-on sequence of observations { z_{t+1} ... z_{T} } given the state x_t = i at time t
                 
     # 2. Determine the most likely state at t by comparing beta_t(i)
+    
+    # FIXME : START HERE
     
     # 3. Determine the likelihood of the observation at time t
 
@@ -219,6 +224,10 @@ if __name__ == "__main__":
     inferredStates = [ infer[0] for infer in fwdInferencs ]
     print "Forwd:" ,  inferredStates
     print "Accur:" , seq_accuracy( inferredStates , groundTruth )
+    
+    beta_t = Backward_Algorithm( observations )
+    print ["{0:0.5f}".format(i) for i in beta_t[ False ]]  , len( beta_t[ False ] ) , sum( beta_t[ False ][:-1] ) 
+    print ["{0:0.5f}".format(i) for i in beta_t[ True  ]] , len( beta_t[ True  ] ) , sum( beta_t[ True  ][:-1] ) 
 
 # ___ End Main _____________________________________________________________________________________________________________________________
 
