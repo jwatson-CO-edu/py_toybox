@@ -39,3 +39,8 @@ GIFkit3D/marchhare/marchhare.jpg
 GIFkit3D/output/*.gif
 Spatial_Vector_Notes/marchhare/marchhare.jpg
 *.jpg
+
+Jupyter/.ipynb_checkpoints/*
+Jupyter/.ipynb_checkpoints/*-checkpoint.ipynb
+Jupyter/private/
+
