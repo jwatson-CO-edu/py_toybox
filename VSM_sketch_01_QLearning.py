@@ -258,7 +258,7 @@ class BugAgent( object ):
         """ Populate sensors with observations """
         for sensDex , sensor in enumerate( self.sensors ):
             sensor.observation = sensor.observe( self.state + self.sensorOffsets[ sensDex ] )
-        print [ sensor.observation for sensor in self.sensors ]
+        print( [ sensor.observation for sensor in self.sensors ] )
         self.interpret()
     
     def interpret( self ):
@@ -350,8 +350,8 @@ class SliderBugEnv( object ):
         self.t += self.ticLen 
         # 2. Update environment
         self.lightPos = self.litePosFunc( self.t )
-        print "Light position: {0:6.2f}".format( self.lightPos ) , "  ,  Light intensity at 0 pos: {0:6.2f}".format( 
-                self.liteIntFunc( 0 , self.lightPos )
+        print( "Light position: {0:6.2f}".format( self.lightPos ) , "  ,  Light intensity at 0 pos: {0:6.2f}".format( 
+                self.liteIntFunc( 0 , self.lightPos ) 
         ) , 
         # 3. Update agents , Apply transitions resulting from actions
         self.agent.tick()
@@ -461,16 +461,16 @@ if __name__ == "__main__":
 #        """ Set up the data Queue and list of callbacks """
 #        self.data = Queue()
 #        self.state = None
-#	
+#   
 #    def publish( self , msg ):
 #        """ Push message to the Queue """
 #        self.data.push( msg )
-#	
+#   
 #    def pop( self ):
 #        """ Pop message from the Queue and send to all callbacks """
 #        if not self.data.is_empty():
 #            self.state = self.data.pop()
-#	
+#   
 #    def changed( self ):
 #        """ Return true if there is data waiting in the Queue, otherwise return False """
 #        return self.data.is_empty()
