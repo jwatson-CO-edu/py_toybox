@@ -5,8 +5,8 @@
 
 import random
 
-for i in xrange(100):
+for i in range( 100 ):
     row = ""
-    for j in xrange(100):
-        row += random.choice( ['\\','/','-','|','_',' ',' '] )
-    print row
+    for j in range( 100 ):
+        row += random.choice( [ '\\' , '/' , '-' , '|' , '_' , ' ' , ' ' ] )
+    print( row )
