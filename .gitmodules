@@ -16,3 +16,6 @@
 [submodule "marchhare"]
 	path = marchhare
 	url = https://jwatson_utah_edu@bitbucket.org/jwatson_utah_edu/marchhare.git
+[submodule "Minecraft/MC_Pi/marchhare"]
+	path = Minecraft/MC_Pi/marchhare
+	url = https://jwatson_utah_edu@bitbucket.org/jwatson_utah_edu/marchhare.git
