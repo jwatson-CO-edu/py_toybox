@@ -41,6 +41,14 @@ def solid_cuboid( bbox ):
                 rtnVox.append( [ x_i , y_i , z_i ] )
     return rtnVox
 
+def bounds_from_cntr_wdth( cenInt , wdtInt ):
+    """ Given a center and a width, give the bounds """
+    # NOTE: When the width is even, there will be one more block on the lower side than the higher side
+    hlfWdt = wdtInt // 2
+    lowBnd = cenInt - hlfWdt
+    hghBnd = lowBnd + wdtInt - 1
+    return [ lowBnd , hghBnd ]
+
 # ___ END GEO ______________________________________________________________________________________________________________________________
 
 
@@ -56,33 +64,30 @@ def solid_cuboid( bbox ):
 # FIXME: WALLS WILL NOT WORK FOR CIRCULAR / SPHERICAL ROOMS , USE { VOLUMES , CONNECTION POINTS , DOOR VECTORS }
 
 _MCPI_BASICHALL = solid_cuboid( [ [ -1 , -1 , 0 ] , [  1 ,  1 , 2 ] ] )
+_MCPI_CUBOIDDIR = [ 'N' , 'S' , 'E' , 'W' , 'U' , 'D' ]
 
-def make_wall_cub( brct , outVec , hasDoor , drgn , hallProf ):
-    """ Structure and Return a cuboid wall """
-    
-    # 1. Check that the wall lies on a principal plane
-    # 2. Return wall specification
-    return {
-        "boundRect"   : brct ,
-        "outwardVec"  : outVec ,
-        "hasDoor"     : hasDoor , 
-        "doOrigin"    : drgn , 
-        "hallProfile" : doorProf 
-    }
+def cuboid_doors( doorSpec ):
+    """ Produce a door description from the specification """
+    # 1. For each of { N , S , E , W , U , D }
+        # 2. Check if the label exists
+        # 3. FIXME : DESCRIBE DOOR GENERATION
 
-def make_room_cub( structure , origin , orgn , sizeXYZ ):
+def make_room_cub( structure , origin , orgn , sizeXYZ , doorSpec ):
     """ Structure , Generate , and Return a cuboid room """
     # NOTE: Room origin is always at the bottom center
     
-    # FIXME : CUBOID SPECIFICATION
-    # 1. Size
-    # 2. Bounding box ( Inside )
-    # 3. Walls
-        # A. Bounding Rectangle
+    # 1. Internal blocks - Rooms are defined by their internal blocks, walls are applied around this region
+    xBounds = bounds_from_cntr_wdth( origin[0] , sizeXYZ[0] )
+    yBounds = bounds_from_cntr_wdth( origin[1] , sizeXYZ[1] )
+    zBounds = [ origin[2] , origin[2] + sizeXYZ[2] - 1 ]
+    # A. Bounding box ( Inside )
+    bbox    = [ [ min( xBounds ) , min( yBounds ) , min( zBounds ) ] ,
+                [ max( xBounds ) , max( yBounds ) , max( zBounds ) ] ]
+    internalSpace = solid_cuboid( bbox )
+    # 3. Doors
+        # A. Location
         # B. Outward Vector
-        # C. Doors
-            # a. Location
-            # b. Profile
+        # C. Profile
 
 # __ End Room Gen __
 
@@ -91,8 +96,9 @@ def make_room_cub( structure , origin , orgn , sizeXYZ ):
 class MCPi_Room( Node ):
     """ Structure room as a graph node """
     
-    def __init__( self , orgn , wallThic = 1 , rmTyp = "CUBOID" ):
+    def __init__( self , strctr , orgn , wallThic = 1 , rmTyp = "CUBOID" ):
         """ Create a room with generation rules """
+        self.structure     = strctr # - Structure that this room belongs to
         self.origin        = orgn # --- Origin voxel of the room
         self.wallThickness = wallThic # Wall thickness
         self.roomType      = rmTyp # -- Room Type
@@ -114,5 +120,7 @@ class MCPi_Structure( Graph ):
 if __name__ == "__main__":
     print _MCPI_BASICHALL
     print len( _MCPI_BASICHALL )
+    print bounds_from_cntr_wdth( 0 , 3 )
+    print bounds_from_cntr_wdth( 0 , 2 )
 
 # ___ End Tests ____________________________________________________________________________________________________________________________
