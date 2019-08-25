@@ -19,3 +19,6 @@
 [submodule "Minecraft/MC_Pi/marchhare"]
 	path = Minecraft/MC_Pi/marchhare
 	url = https://jwatson_utah_edu@bitbucket.org/jwatson_utah_edu/marchhare.git
+[submodule "binarytree"]
+	path = binarytree
+	url = https://github.com/joowani/binarytree.git
