@@ -1,9 +1,18 @@
 #!/usr/bin/env python3
 
-
-
+# plane_test.py
 # James Watson , 2019 August
+# Little plane
 
+"""
+~~~ DEV PLAN ~~~
+1. SF Rail Environment
+    [ ] Light source
+    [ ] Scrolling grid ground
+    [ ] kb ctrl
+    [ ] js ctrl
+    [ ] Exhaust trail
+"""
 
 import os , sys , time
 SOURCEDIR = os.path.dirname( os.path.abspath( '__file__' ) ) # URL, dir containing source file: http://stackoverflow.com/a/7783326
@@ -51,7 +60,6 @@ class StarGlider( OGLDrawable ):
             2 , 3 , 5 , # Top    Back  Left
             0 , 1 , 5 , # Bottom Front Left
             1 , 2 , 5 , # Bottom Back  Left
-            
             0 , 3 , 4 , # Top    Front Right
             3 , 2 , 4 , # Top    Back  Right
             1 , 0 , 4 , # Bottom Front Right
