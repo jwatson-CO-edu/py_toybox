@@ -25,9 +25,11 @@ from random import randrange
 from math import pi
 import numpy as np
 from marchhare.OGL_Shapes import OGL_App , Point_OGL , CartAxes , Vector_OGL , Trace_OGL , CameraOrbit , OGLDrawable
+from marchhare.VectorMath.Vector3D import tri_normal_CCW
 import pyglet
 from pyglet.window import key
-from pyglet.gl import ( glColor3ub , GL_TRIANGLES )
+from pyglet.gl import ( glColor3ub , GL_TRIANGLES , glEnable , glDisable ,
+                        glLightfv , GL_LIGHT0 , GL_POSITION , GLfloat , GL_DIFFUSE , GL_QUADRATIC_ATTENUATION , GL_LIGHTING , )
 
 
 class StarGlider( OGLDrawable ):
@@ -53,8 +55,11 @@ class StarGlider( OGLDrawable ):
         rghtWTip = [ -length+fuseHalf , -wingHalf , 0.0       ]
         leftWTip = [ -length+fuseHalf ,  wingHalf , 0.0       ]
         
-        self.set_verts( [ front , bottom , back , top , rghtWTip , leftWTip ] )
-        #                 0     , 1      , 2    , 3   , 4        , 5
+        vertSet = [ front , bottom , back , top , rghtWTip , leftWTip ]
+        #           0     , 1      , 2    , 3   , 4        , 5
+        
+        self.set_verts( vertSet )
+        
         self.triangles = (
             3 , 0 , 5 , # Top    Front Left
             2 , 3 , 5 , # Top    Back  Left
@@ -66,6 +71,8 @@ class StarGlider( OGLDrawable ):
             2 , 1 , 4 , # Bottom Back  Right
         )
         
+        # FIXME: START HERE by calculating, then setializing the normal vectors
+        
         # 2. Set color
         # FIXME
         
@@ -76,16 +83,24 @@ class StarGlider( OGLDrawable ):
         # 2. Render!
         # 2. Set color
         glColor3ub( *self.color )
+        glEnable(GL_LIGHTING)
         pyglet.graphics.draw_indexed( 
             6 , # ------------------ Number of seqential triplet in vertex list
             GL_TRIANGLES , # ------- Draw quadrilaterals
             self.triangles , # ----- Indices where the coordinates are stored
             ( 'v3f' , self.labVerts ) # vertex list , OpenGL offers an optimized vertex list object , but this is not it
         )
+        glDisable(GL_LIGHTING)
 
 _DEBUG = False
 
 if __name__ == "__main__":
+    
+    glLightfv(GL_LIGHT0, GL_POSITION, (GLfloat * 4)(0.5, 0.0, 0.5, 1))
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, (GLfloat * 3)(255.0, 255.0, 255.0))
+    #glLightfv(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, (GLfloat * 1) (.35))
+    glEnable(GL_LIGHT0)
+    
 
     objs = []
 
