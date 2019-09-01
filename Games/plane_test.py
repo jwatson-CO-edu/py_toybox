@@ -12,6 +12,7 @@
     [ ] kb ctrl
     [ ] js ctrl
     [ ] Exhaust trail
+2. VFN Expansion <-from-- Regrasp Planning (Only if multiple models are being made)
 """
 
 import os , sys , time
@@ -25,12 +26,15 @@ from random import randrange
 from math import pi
 import numpy as np
 from marchhare.OGL_Shapes import OGL_App , Point_OGL , CartAxes , Vector_OGL , Trace_OGL , CameraOrbit , OGLDrawable
-from marchhare.VectorMath.Vector3D import tri_normal_CCW
+from marchhare.Utils3 import build_sublists_by_cadence
+from marchhare.MeshVFN import VF_to_N
 import pyglet
 from pyglet.window import key
 from pyglet.gl import ( glColor3ub , GL_TRIANGLES , glEnable , glDisable ,
                         glLightfv , GL_LIGHT0 , GL_POSITION , GLfloat , GL_DIFFUSE , GL_QUADRATIC_ATTENUATION , GL_LIGHTING , )
 
+def walk_triangles():
+    pass
 
 class StarGlider( OGLDrawable ):
     """ Little Wing """
@@ -71,7 +75,10 @@ class StarGlider( OGLDrawable ):
             2 , 1 , 4 , # Bottom Back  Right
         )
         
-        # FIXME: START HERE by calculating, then setializing the normal vectors
+        # FIXME: START HERE by calculating, then serializing the normal vectors
+        F = build_sublists_by_cadence( self.triangles , 3 )
+        N = VF_to_N( vertSet , F )
+        
         
         # 2. Set color
         # FIXME
