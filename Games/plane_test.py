@@ -75,10 +75,9 @@ class StarGlider( OGLDrawable ):
             2 , 1 , 4 , # Bottom Back  Right
         )
         
-        # FIXME: START HERE by calculating, then serializing the normal vectors
         F = build_sublists_by_cadence( self.triangles , 3 )
         N = VF_to_N( vertSet , F )
-        
+        self.normals = np.array( N ).flatten()
         
         # 2. Set color
         # FIXME
@@ -91,6 +90,11 @@ class StarGlider( OGLDrawable ):
         # 2. Set color
         glColor3ub( *self.color )
         glEnable(GL_LIGHTING)
+        
+        # FIXME , START HERE :
+        # * Add normals to the draw function
+        # * Remove invocations of the transform function
+        
         pyglet.graphics.draw_indexed( 
             6 , # ------------------ Number of seqential triplet in vertex list
             GL_TRIANGLES , # ------- Draw quadrilaterals
