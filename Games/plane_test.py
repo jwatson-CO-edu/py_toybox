@@ -27,7 +27,7 @@ from math import pi
 import numpy as np
 from marchhare.OGL_Shapes import OGL_App , Point_OGL , CartAxes , Vector_OGL , Trace_OGL , CameraOrbit , OGLDrawable
 from marchhare.Utils3 import build_sublists_by_cadence
-from marchhare.MeshVFN import VF_to_N
+from marchhare.MeshVFN import VF_to_N , sparse_VF_to_dense_VF , dense_flat_N_from_dense_VF
 import pyglet
 from pyglet.window import key
 from pyglet.gl import ( glColor3ub , GL_TRIANGLES , glEnable , glDisable ,
@@ -76,8 +76,31 @@ class StarGlider( OGLDrawable ):
         )
         
         F = build_sublists_by_cadence( self.triangles , 3 )
-        N = VF_to_N( vertSet , F )
-        self.normals = np.array( N ).flatten()
+        
+        
+        
+        V_d , F_d = sparse_VF_to_dense_VF( vertSet , F )
+        N_d = dense_flat_N_from_dense_VF( V_d , F_d )
+        self.normals = np.array( N_d ).flatten()
+        
+        self.Vd = np.array( V_d ).flatten()
+        
+        # FIXME , START HERE: Vertices and normals are different lenghts! Each vertex needs a normal!
+        # WONDER: Does `pyglet.graphics.vertex_list` implement a vertex buffer?
+        
+        print( self.Vd.shape )
+        print( len( F_d ) )
+        # print( F_d )
+        print( self.normals.shape )
+        print( len( tuple( list( range( int( len( self.normals )/3 ) ) ) ) ) )
+        
+        self.model = pyglet.graphics.vertex_list(
+            24 ,
+            ( 'v3f' , self.Vd ) , 
+            ( 'v3i' , F_d ) ,
+            ( 'n3f' , self.normals ) , 
+            #( 'n3i' , tuple( list( range( int( len( self.normals )/3 ) ) ) ) )
+        )
         
         # 2. Set color
         # FIXME
@@ -95,12 +118,16 @@ class StarGlider( OGLDrawable ):
         # * Add normals to the draw function
         # * Remove invocations of the transform function
         
-        pyglet.graphics.draw_indexed( 
-            6 , # ------------------ Number of seqential triplet in vertex list
-            GL_TRIANGLES , # ------- Draw quadrilaterals
-            self.triangles , # ----- Indices where the coordinates are stored
-            ( 'v3f' , self.labVerts ) # vertex list , OpenGL offers an optimized vertex list object , but this is not it
-        )
+        
+        if 0:
+            pyglet.graphics.draw_indexed( 
+                6 , # ------------------ Number of seqential triplet in vertex list
+                GL_TRIANGLES , # ------- Draw quadrilaterals
+                self.triangles , # ----- Indices where the coordinates are stored
+                ( 'v3f' , self.labVerts ) # vertex list , OpenGL offers an optimized vertex list object , but this is not it
+            )
+        else:
+            self.model.draw( GL_TRIANGLES )
         glDisable(GL_LIGHTING)
 
 _DEBUG = False
