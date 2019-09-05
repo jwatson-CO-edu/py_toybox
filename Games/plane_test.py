@@ -97,7 +97,7 @@ class StarGlider( OGLDrawable ):
         self.model = pyglet.graphics.vertex_list(
             24 ,
             ( 'v3f' , self.Vd ) , 
-            ( 'v3i' , F_d ) ,
+            # ( 'v3i' , F_d ) ,
             ( 'n3f' , self.normals ) , 
             #( 'n3i' , tuple( list( range( int( len( self.normals )/3 ) ) ) ) )
         )
@@ -112,7 +112,10 @@ class StarGlider( OGLDrawable ):
         # 2. Render!
         # 2. Set color
         glColor3ub( *self.color )
-        glEnable(GL_LIGHTING)
+        
+        _LIGHT = 0
+        
+        if _LIGHT: glEnable(GL_LIGHTING)
         
         # FIXME , START HERE :
         # * Add normals to the draw function
@@ -127,17 +130,19 @@ class StarGlider( OGLDrawable ):
                 ( 'v3f' , self.labVerts ) # vertex list , OpenGL offers an optimized vertex list object , but this is not it
             )
         else:
+            if _LIGHT: 
+                glLightfv(GL_LIGHT0, GL_POSITION, (GLfloat * 4)(0.75, 0.0, 0.75, 1))
+                glLightfv(GL_LIGHT0, GL_DIFFUSE, (GLfloat * 3)(255.0, 255.0, 255.0))
+                glLightfv(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, (GLfloat * 1) (.35))
+                glEnable(GL_LIGHT0)
             self.model.draw( GL_TRIANGLES )
-        glDisable(GL_LIGHTING)
+        if _LIGHT: glDisable(GL_LIGHTING)
 
 _DEBUG = False
 
 if __name__ == "__main__":
     
-    glLightfv(GL_LIGHT0, GL_POSITION, (GLfloat * 4)(0.5, 0.0, 0.5, 1))
-    glLightfv(GL_LIGHT0, GL_DIFFUSE, (GLfloat * 3)(255.0, 255.0, 255.0))
-    #glLightfv(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, (GLfloat * 1) (.35))
-    glEnable(GL_LIGHT0)
+    
     
 
     objs = []
