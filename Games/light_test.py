@@ -5,12 +5,13 @@
 # ~~~ Import Libs ~~~
 # ~~ Standard Libs ~~
 import os , sys
+from math import pi
 
 # ~~ Special Libs ~~
 import numpy as np
 import pyglet
 from pyglet.gl import ( glColor3ub , GL_TRIANGLES , glEnable , glDisable , GL_QUADS , 
-                        glLightfv , GL_LIGHT0 , GL_POSITION , GLfloat , GL_DIFFUSE , GL_QUADRATIC_ATTENUATION , GL_LIGHTING , )
+                        glLightfv , GL_LIGHT0 , GL_POSITION , GLfloat , GL_DIFFUSE , GL_QUADRATIC_ATTENUATION , GL_LIGHTING , glColorMaterial )
 
 # ~~ Path Additions ~~
 SOURCEDIR = os.path.dirname( os.path.abspath( '__file__' ) ) # URL, dir containing source file: http://stackoverflow.com/a/7783326
@@ -21,17 +22,73 @@ sys.path.insert( 0 , PARENTDIR ) # Might need this to fetch a lib in a parent di
 from marchhare.MeshVFN import VF_to_N , sparse_VF_to_dense_VF , dense_flat_N_from_dense_VF
 from marchhare.OGL_Shapes import OGL_App , Point_OGL , CartAxes , Vector_OGL , Trace_OGL , CameraOrbit , OGLDrawable , CartAxes , rand_color
 from marchhare.Utils3 import HeartRate
+from marchhare.VectorMath.Vector3D import vec_sphr
 
 """
 ~~~ DEV PLAN ~~~
-[ ] Set up a custom draw function
-[ ] Draw axes
+[Y] Set up a custom draw function - 2019-09-13: Very easy, ogl app now accepts
+[Y] Draw axes - 2019-09-13: OK
 [Y] Make the orbit camera part of the `OGL_Shapes` lib - 2019-09-13: Works as intended, camera controls live here as well
-[ ] Draw a GL cube primitive
+[Y] Draw a GL cube primitive
 [ ] Recreate the light source from HW5
 ~~~ CLEANUP ~~~
 [ ] Streamline the template
 """
+
+# == Helper Function ==
+
+def glVec( *args ):
+    """ Return the OGL version of the vector """
+    return ( GLfloat * len( args ) )( *args )
+
+# __ End Helper __
+
+# == class LightSource ==
+
+class LightSource:
+    """ Create and Control Light Sources in Pyglet """
+    
+    def __init__( self ):
+        """ Set up vars """
+        self.source    = GL_LIGHT0
+        self.position  = [0,0,0]
+        self.ambient   = [0,0,0]
+        self.diffuse   = [0,0,0]
+        self.specular  = [0,0,0]
+        self._position = [0,0,0,1]
+        self._ambient  = [0,0,0,1]
+        self._diffuse  = [0,0,0,1]
+        self._specular = [0,0,0,1]
+    
+    def set_pos( self , position ):
+        """ Set the position of the light """
+        self.position  = position
+        self._position = glVec( [ self.position[0] , self.position[1] , self.ambient[2] , 1.0 ] )
+    
+    def set_params( self , **kwargs ):
+        """ Set the global lighting parameters on a scale [ 0-100 , 0-100 , 0-100 , ] """
+        if 'ambient' in kwargs:
+            self.ambient  = kwargs['ambient']
+            self._ambient = glVec( [ self.ambient[0]*0.01 , self.ambient[1]*0.01 , self.ambient[2]*0.01 , 1.0 ] )
+        if 'diffuse' in kwargs:
+            self.diffuse  = kwargs['diffuse']
+            self._diffuse = glVec( [ self.diffuse[0]*0.01 , self.diffuse[1]*0.01 , self.diffuse[2]*0.01 , 1.0 ] )
+        if 'specular' in kwargs:
+            self.specular  = kwargs['specular']
+            self._specular = glVec( [ self.specular[0]*0.01 , self.specular[1]*0.01 , self.specular[2]*0.01 , 1.0 ] )
+            
+    def init_frame_light( self ):
+        # NOTE: You have the option to run this once before any drawing if you know for a fact that lighting and also this light are always on
+        # 1. Enable light with Light-specific vars
+        glEnable( self.source )
+        glLightfv( self.source , GL_POSITION , self._position )
+        glLightfv( self.source , GL_AMBIENT  , self._ambient  )
+        glLightfv( self.source , GL_DIFFUSE  , self._diffuse  )
+        glLightfv( self.source , GL_SPECULAR , self._specular )
+        
+
+# __ End LightSource __
+
 
 # == class Cuboid ==
 
@@ -91,14 +148,22 @@ class Cuboid( OGLDrawable ):
 
 # __ End Cuboid __
 
-
-    
+ltRad = 2.0
+ltPsi = pi/8
+ltTht = 0.0
+def advance_orbit( angSpeed , dt ):
+    """ Increment the orbit """
+    global ltTht
+    ltTht += angSpeed * dt
+    print( vec_sphr( ltRad , ltTht , ltPsi ) )
+    return vec_sphr( ltRad , ltTht , ltPsi )
 
 if __name__ == "__main__":
     
     _DEBUG = False
     
     # 1. Create objects
+    ltOr  = CartAxes( 0.5 )
     orgn  = CartAxes()
     cube  = Cuboid()
     
@@ -112,12 +177,16 @@ if __name__ == "__main__":
     farClip    = 10.0
     
     # 3. Set up rendering
-    timer = HeartRate( 30 )
+    updateHz = 30
+    timer = HeartRate( updateHz )
     
     def draw_func():
         """ Draws a frame """
         cube.draw()
         orgn.draw()
+        ltCen = advance_orbit( pi/2 , 1/updateHz ) # WARNING: This tangles simulation with display!
+        ltOr.set_pos( ltCen )
+        ltOr.draw()
     
     # 2. Create window
     window = OGL_App( draw_func , # ------------------------- Rendering function
