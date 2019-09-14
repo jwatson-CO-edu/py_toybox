@@ -32,7 +32,7 @@ from marchhare.VectorMath.Vector3D import vec_sphr
 [Y] Draw a GL cube primitive
 [ ] Recreate the light source from HW5
 ~~~ CLEANUP ~~~
-[ ] Streamline the template
+[ ] Streamline the python3 template
 """
 
 # == Helper Function ==
