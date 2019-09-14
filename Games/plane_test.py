@@ -32,12 +32,15 @@ import pyglet
 from pyglet.window import key
 from pyglet.gl import ( glColor3ub , GL_TRIANGLES , glEnable , glDisable ,
                         glLightfv , GL_LIGHT0 , GL_POSITION , GLfloat , GL_DIFFUSE , GL_QUADRATIC_ATTENUATION , GL_LIGHTING , )
+from pyglet.window import key
 
 def walk_triangles():
     pass
 
 class StarGlider( OGLDrawable ):
     """ Little Wing """
+    
+    # URL , Get the model view matrix , https://stackoverflow.com/a/9850618
     
     def __init__( self , wingspan = 1.0 ):
         """ Set up as drawable """
@@ -182,18 +185,20 @@ if __name__ == "__main__":
         
     center = [0,0,0]
     offset = 0.75
-    cam.center = center 
-    cam.r      = offset
-    cam.dR     =  0.050
-    nearClip   =  0.01
-    farClip    = 10.0
+    
+    
 
 
     window = OGL_App( objs , # ------------------------- List of objects to render
-                      caption = "Tilt-In"  , # --------- Window caption
+                      caption = "Plane"  , # --------- Window caption
                       clearColor = [ 0 , 0 , 0 , 1 ] ) # BG color black
 
 
+    cam.center = [2,2,2] 
+    cam.r      =  4
+    cam.dR     =  0.050
+    nearClip   =  0.01
+    farClip    = 10.0
     window.set_camera( *cam.get_cam_vectors() )
     window.set_view_params( 75 , nearClip , farClip )
 

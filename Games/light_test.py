@@ -5,11 +5,11 @@
 # ~~~ Import Libs ~~~
 # ~~ Standard Libs ~~
 import os , sys
+
 # ~~ Special Libs ~~
 import numpy as np
 import pyglet
-from pyglet.window import key
-from pyglet.gl import ( glColor3ub , GL_TRIANGLES , glEnable , glDisable ,
+from pyglet.gl import ( glColor3ub , GL_TRIANGLES , glEnable , glDisable , GL_QUADS , 
                         glLightfv , GL_LIGHT0 , GL_POSITION , GLfloat , GL_DIFFUSE , GL_QUADRATIC_ATTENUATION , GL_LIGHTING , )
 
 # ~~ Path Additions ~~
@@ -19,12 +19,14 @@ sys.path.insert( 0 , PARENTDIR ) # Might need this to fetch a lib in a parent di
 
 # ~~ Local Libs ~~
 from marchhare.MeshVFN import VF_to_N , sparse_VF_to_dense_VF , dense_flat_N_from_dense_VF
-from marchhare.OGL_Shapes import OGL_App , Point_OGL , CartAxes , Vector_OGL , Trace_OGL , CameraOrbit , OGLDrawable
+from marchhare.OGL_Shapes import OGL_App , Point_OGL , CartAxes , Vector_OGL , Trace_OGL , CameraOrbit , OGLDrawable , CartAxes , rand_color
+from marchhare.Utils3 import HeartRate
 
 """
 ~~~ DEV PLAN ~~~
 [ ] Set up a custom draw function
-[ ] Make the orbit camera part of the `OGL_Shapes` lib
+[ ] Draw axes
+[Y] Make the orbit camera part of the `OGL_Shapes` lib - 2019-09-13: Works as intended, camera controls live here as well
 [ ] Draw a GL cube primitive
 [ ] Recreate the light source from HW5
 ~~~ CLEANUP ~~~
@@ -76,6 +78,7 @@ class Cuboid( OGLDrawable ):
         """ Create a rectangular prism with 'l' (x) , 'w' (y) , 'h' (z) """
         OGLDrawable.__init__( self ) # -- Parent class init 
         self.resize( l , w , h ) # ------ Assign the extents of the cuboid
+        self.color = rand_color()
         
     def set_len( self , l ):
         """ Set the length of the Cuboid """
@@ -83,10 +86,62 @@ class Cuboid( OGLDrawable ):
         
     def draw( self ):
         """ Render the cuboid in OGL , This function assumes that a graphics context already exists """
+        glColor3ub( *self.color ) 
         self.model.draw( GL_QUADS )
 
 # __ End Cuboid __
 
+
+    
+
 if __name__ == "__main__":
-    cube = Cuboid()
-    # print( dir( __file__ ) )
+    
+    _DEBUG = False
+    
+    # 1. Create objects
+    orgn  = CartAxes()
+    cube  = Cuboid()
+    
+    
+    # 2. Set up objects
+    cam   = CameraOrbit()
+    cam.center = [0,0,0] 
+    cam.r      =  4
+    cam.dR     =  0.050
+    nearClip   =  0.01
+    farClip    = 10.0
+    
+    # 3. Set up rendering
+    timer = HeartRate( 30 )
+    
+    def draw_func():
+        """ Draws a frame """
+        cube.draw()
+        orgn.draw()
+    
+    # 2. Create window
+    window = OGL_App( draw_func , # ------------------------- Rendering function
+                      caption = "Plane"  , # --------- Window caption
+                      clearColor = [ 0 , 0 , 0 , 1 ] ) # BG color black
+    
+    window.set_camera( *cam.get_cam_vectors() )
+    window.set_view_params( 75 , nearClip , farClip )
+    
+    cam.attach_controls( window )
+    
+    # 4. Draw & Display
+    while not window.has_exit:
+        
+        # A. Set camera
+        window.set_camera( *cam.get_cam_vectors() )
+        if _DEBUG: window.prnt_view_params()
+        
+        # B. Animate Axes
+        
+        # D. Redraw
+        window.dispatch_events() # Handle window events
+        window.on_draw() # Redraw the scene
+        window.flip()
+        
+        # E. Slow framerate
+        timer.sleep()
