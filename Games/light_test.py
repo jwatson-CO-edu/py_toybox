@@ -10,8 +10,8 @@ from math import pi
 # ~~ Special Libs ~~
 import numpy as np
 import pyglet
-from pyglet.gl import ( glColor3ub , GL_TRIANGLES , glEnable , glDisable , GL_QUADS , 
-                        glLightfv , GL_LIGHT0 , GL_POSITION , GLfloat , GL_DIFFUSE , GL_QUADRATIC_ATTENUATION , GL_LIGHTING , glColorMaterial )
+from pyglet.gl import ( glColor3ub , GL_TRIANGLES , glEnable , glDisable , GL_QUADS , glLightfv , GL_LIGHT0 , GL_POSITION ,
+                        GLfloat , GL_DIFFUSE , GL_QUADRATIC_ATTENUATION , GL_LIGHTING , glColorMaterial )
 
 # ~~ Path Additions ~~
 SOURCEDIR = os.path.dirname( os.path.abspath( '__file__' ) ) # URL, dir containing source file: http://stackoverflow.com/a/7783326
@@ -20,7 +20,8 @@ sys.path.insert( 0 , PARENTDIR ) # Might need this to fetch a lib in a parent di
 
 # ~~ Local Libs ~~
 from marchhare.MeshVFN import VF_to_N , sparse_VF_to_dense_VF , dense_flat_N_from_dense_VF
-from marchhare.OGL_Shapes import OGL_App , Point_OGL , CartAxes , Vector_OGL , Trace_OGL , CameraOrbit , OGLDrawable , CartAxes , rand_color
+from marchhare.OGL_Shapes import ( OGL_App , Point_OGL , CartAxes , Vector_OGL , Trace_OGL , CameraOrbit , OGLDrawable ,
+                                   CartAxes , rand_color )
 from marchhare.Utils3 import HeartRate
 from marchhare.VectorMath.Vector3D import vec_sphr
 
