@@ -3,10 +3,10 @@
 	url = https://jwatson_utah_edu@bitbucket.org/jwatson_utah_edu/marchhare.git
 [submodule "POMDP/marchhare"]
 	path = POMDP/marchhare
-	url = https://jwatson_utah_edu@bitbucket.org/jwatson_utah_edu/marchhare.git
+	url = https://github.com/jwatson-CO-edu/MARCHHARE.git
 [submodule "GIFkit3D/marchhare"]
 	path = GIFkit3D/marchhare
-	url = https://jwatson_utah_edu@bitbucket.org/jwatson_utah_edu/marchhare.git
+	url = https://github.com/jwatson-CO-edu/MARCHHARE.git
 [submodule "VIN"]
 	path = VIN
 	url = https://github.com/avivt/VIN.git
@@ -15,10 +15,10 @@
 	url = https://github.com/ammaraskar/pyCraft.git
 [submodule "marchhare"]
 	path = marchhare
-	url = https://jwatson_utah_edu@bitbucket.org/jwatson_utah_edu/marchhare.git
+	url = https://github.com/jwatson-CO-edu/MARCHHARE.git
 [submodule "Minecraft/MC_Pi/marchhare"]
 	path = Minecraft/MC_Pi/marchhare
-	url = https://jwatson_utah_edu@bitbucket.org/jwatson_utah_edu/marchhare.git
+	url = https://github.com/jwatson-CO-edu/MARCHHARE.git
 [submodule "binarytree"]
 	path = binarytree
 	url = https://github.com/joowani/binarytree.git
