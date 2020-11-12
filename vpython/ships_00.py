@@ -18,9 +18,10 @@ __desc__     = "A_ONE_LINE_DESCRIPTION_OF_THE_FILE"
 import sys, os.path
 SOURCEDIR = os.path.dirname( os.path.abspath( __file__ ) ) # URL, dir containing source file: http://stackoverflow.com/a/7783326
 PARENTDIR = os.path.dirname( SOURCEDIR )
-GRANDPRNT = os.path.dirname( PARENTDIR )
+#GRANDPRNT = os.path.dirname( PARENTDIR )
+sys.path.insert( 0 , SOURCEDIR ) 
 sys.path.insert( 0 , PARENTDIR ) # Might need this to fetch a lib in a parent directory
-sys.path.insert( 0 , GRANDPRNT ) # Might need this to fetch a lib in a grandparent directory
+
 
 # ~~~ Imports ~~~
 # ~~ Standard ~~
@@ -30,38 +31,47 @@ from numpy import sqrt, cos, sin, pi
 import numpy as np
 from marchhare.Vector import vec_unit
 # ~~ Local ~~
-import marchhare
-from marchhare.VectorMath.HomogXforms import *
+#import marchhare
+#import marchhare.VectorMath.HomogXforms
+
+from marchhare.VectorMath.HomogXforms import set_position , pose_from_position_bases , position_bases_from_pose
+
+
 
 ########## Helper Functions #######################################################################
+
 def vp_vec_to_np_arr( vpVec ):
+    """ Convert a vpython vector to a numpy array """
     return np.array( [ vpVec.x , vpVec.y , vpVec.z ] )
+
+def vp_vectors_to_np_arrays( *vpVecs ):
+    rtnLst = []
+    for vec in vpVecs:
+        rtnLst.append( vp_vec_to_np_arr( vec ) )
+    return rtnLst
+
+def np_arr_to_vp_vec( npArr ):
+    """ Convert a numpy array to a vpython vector """
+    return vec( npArr[0] , npArr[1] , npArr[2] )
+
+def np_arrays_to_vp_vectors( *npArrs ):
+    rtnLst = []
+    for arr in npArrs:
+        rtnLst.append( np_arr_to_vp_vec( arr ) )
+    return rtnLst
+
+def vp_bases_from_np_homog( homogPose ):
+    """ Extract 3 vpython basis vectors from numpy homogeneous coordinates """
+    [ positn , xBasis , yBasis , zBasis ] = np_arrays_to_vp_vectors( *( position_bases_from_pose( homogPose ) ) )
+    return positn , xBasis , yBasis , zBasis
 
 ########## Classes ################################################################################
 
-
-########## Main Program ###########################################################################
-
-if __name__ == "__main__":
-    print( __progname__  , 'by' , __author__ , ', Version:' , __version__ )
-    termArgs = sys.argv[1:] # Terminal arguments , if they exist
-
-
-
-
-sqrt2 = sqrt(2)
-
-# xFactors = [ +sqrt2 , -sqrt2 ]
-
-shipGreen  = vec( 0.0 , 1.0 , 0.0 ) #vector(106/255, 196/255, 124/255)
-shipBlue   = vec( 69/255, 118/255, 255/255 ) #vector(106/255, 124/255 , 196/255)
-shipOrange = vec( 1.0 , 0.0 , 0.0 ) #vector(255/255, 148/255, 54/255)
-BGcolor    = vec( 0.0 , 0.0 , 0.0 ) #vec(48/255, 8/255, 8/255)
-trailColor = vec( 1.0 , 1.0 , 0.0 ) #vector( 255/255, 244/255, 25/255 )
-
-scene.background = BGcolor
-scene.width      = 800
-scene.height     = 800
+class Origin:
+    """ Graphical representation of pose bases """
+    
+    def __init__( self , homogPose , scale ):
+        pass
 
 class Starship:
     """ Represents a star-craft in a simulation """
@@ -120,30 +130,44 @@ class Stinger( Starship ):
             ),
         ],make_trail = True, retain = 20, trail_color = trailColor )
 
-orbitRad = 60.0
-theta    =  0.0
-FPS      = 50
-angSpeed = 0.0625/4.0
+########## Main Program ###########################################################################
 
-ship = Stinger()
+### Vars ###
 
-ship.geo.rotate( angle = -pi/2.0 , axis=vector(1.0,0.0,0.0) )
+sqrt2 = sqrt(2)
 
-ship.load_geo_pose()
+shipGreen  = vec( 0.0 , 1.0 , 0.0 ) #vector(106/255, 196/255, 124/255)
+shipBlue   = vec( 69/255, 118/255, 255/255 ) #vector(106/255, 124/255 , 196/255)
+shipOrange = vec( 1.0 , 0.0 , 0.0 ) #vector(255/255, 148/255, 54/255)
+BGcolor    = vec( 0.0 , 0.0 , 0.0 ) #vec(48/255, 8/255, 8/255)
+trailColor = vec( 1.0 , 1.0 , 0.0 ) #vector( 255/255, 244/255, 25/255 )
 
-while 1:
-    rate( FPS )
-    ship.geo.rotate( angle = angSpeed , axis=vector(0.0,0.0,1.0) )
-    theta += angSpeed
-    Xs = orbitRad * cos( theta )
-    Ys = orbitRad * sin( theta )
-    ship.geo.pos = vec( Xs , Ys , 0.0 )
+if __name__ == "__main__" and 0:
+    print( __progname__  , 'by' , __author__ , ', Version:' , __version__ )
+    termArgs = sys.argv[1:] # Terminal arguments , if they exist
 
-#for xFact in xFactors:
-#    triangle(
-#        v0=vertex( pos=vec(0,0,0) , color = shipBlue ),
-#        v1=vertex( pos=vec(8,0,0) , color = shipBlue ),
-#        v2=vertex( pos=vec(-4,6*xFact,xFact) , color = shipBlue ) , 
-#        color = vector(106/255, 196/255, 124/255) 
-#    )
+    # Setup
+    
+    scene.width      = 800
+    scene.height     = 800
+    scene.background = BGcolor
+
+    orbitRad = 60.0
+    theta    =  0.0
+    FPS      = 50
+    angSpeed = 0.0625/4.0
+
+    ship = Stinger()
+    
+    ship.geo.rotate( angle = -pi/2.0 , axis=vector(1.0,0.0,0.0) )
+    
+    ship.load_geo_pose()
+    
+    while 1:
+        rate( FPS )
+        ship.geo.rotate( angle = angSpeed , axis=vector(0.0,0.0,1.0) )
+        theta += angSpeed
+        Xs = orbitRad * cos( theta )
+        Ys = orbitRad * sin( theta )
+        ship.geo.pos = vec( Xs , Ys , 0.0 )
           
