@@ -68,7 +68,8 @@ def vp_bases_from_np_homog( homogPose ):
 ########## Classes ################################################################################
 
 class VP_Kit:
-    clr_lgt_blue = vec( 69/255, 118/255, 255/255 )
+    clr_lgt_blue   = vec( 69/255, 118/255, 255/255 )
+    clr_lgt_yellow = vec( 1.0 , 1.0 , 0.0 )
 
 
 class VP_Sprite( vpython.compound ):
@@ -127,32 +128,23 @@ class Origin( VP_Sprite ):
         ]    
 
 
-class Starship:
-    """ Represents a star-craft in a simulation """
-    
-    def __init__( self , name = "Starship" ):
-        """ Init the bare minimum for a starship object """
-        self.geo  = None
-        self.name = name
-        self.pose = np.eye(4)
-        
-    def load_geo_pose( self ):
-        """ Get the geo translation/orientation vectors and convert them into a homogeneous pose """
-        # Assume that the `axis` is Z and the `up` is Y. That is, forward is +Z in the ship's own frame
-        #print( self.geo.axis , self.geo.up )
-        zBasis = vec_unit( vp_vec_to_np_arr( self.geo.axis ) )
-        yBasis = vec_unit( vp_vec_to_np_arr( self.geo.up ) )
-        xBasis = np.cross( yBasis , zBasis )
-        posn   = vp_vec_to_np_arr( self.geo.pos )
-        #print( posn , xBasis , yBasis , zBasis )
-        self.pose = pose_from_position_bases( posn , xBasis , yBasis , zBasis )
-        
-    
-class Stinger( Starship ):
+class Stinger( VP_Sprite ):
     """ Represents a small craft with high maneuverability and atmospheric capability """
-    def __init__( self , name = "Stinger" ):
-        super().__init__( name )
-        self.geo = compound( [
+    
+    def __init__( self  ):
+        super().__init__( name = "Stinger" )
+        print( "About to rotate ..." , end=" " )
+        self.rotate( angle = -pi/2.0 , axis=vector(1.0,0.0,0.0) )
+        self.rotate( angle = -pi     , axis=vector(0.0,1.0,0.0) )        
+        print( "Rotated!" )        
+        attach_trail( 
+            self ,
+            retain      = 20 ,
+            trail_color = VP_Kit.clr_lgt_yellow
+        )
+        
+    def get_geometry( self ):
+        return [
             # Front fusilage
             cone( axis = vector( 0 , 0 , 8 ) , 
                   radius = 3.0 , 
@@ -182,7 +174,7 @@ class Stinger( Starship ):
                 v2=vertex( pos=vec(+6,-6,-4) , color = shipBlue ) , 
                 color = vector(106/255, 196/255, 124/255) 
             ),
-        ],make_trail = True, retain = 20, trail_color = trailColor )
+        ]
 
 ########## Main Program ###########################################################################
 
@@ -215,18 +207,15 @@ if __name__ == "__main__" and 1:
 
     ship = Stinger()
     
-    ship.geo.rotate( angle = -pi/2.0 , axis=vector(1.0,0.0,0.0) )
-    ship.geo.rotate( angle = -pi     , axis=vector(0.0,1.0,0.0) )
-    
-    ship.load_geo_pose()
+    print( "Ship Pose:\n" , ship.get_geo_pose() )
     
     orgn = Origin( scale = 20.0 )
     
     while 1:
         rate( FPS )
-        ship.geo.rotate( angle = angSpeed , axis=vector(0.0,0.0,1.0) )
+        ship.rotate( angle = angSpeed , axis=vector(0.0,0.0,1.0) )
         theta += angSpeed
         Xs = orbitRad * cos( theta )
         Ys = orbitRad * sin( theta )
-        ship.geo.pos = vec( Xs , Ys , 0.0 )
-          
+        ship.pos = vec( Xs , Ys , 0.0 )
+        #print( ".", end="" )
