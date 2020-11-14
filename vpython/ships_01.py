@@ -10,7 +10,14 @@ __desc__     = "Display and control of 3D sprites in vpython"
 """  
 ~~~ DEV PLAN ~~~
 [Y] Adapt `Stinger` to inherit `VP_CompositeGeo`
-[ ] ITEM2
+[ ] Test Stinger simplification
+[ ] Create move actions
+[ ] Create Frigate
+[ ] Decide physics
+    * Newtonian
+    - or -
+    * Star Wars / Jello
+
 """
 
 ########## Init Environment #######################################################################
