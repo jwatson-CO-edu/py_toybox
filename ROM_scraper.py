@@ -55,7 +55,46 @@ def __prog_signature__(): return __progname__ + " , Version " + __version__ # Re
 
 # == Program Functions ==
 
+def recurse_file_page( URL , depth = 0 , ROMlst = [] ):
+    
+    _DEBUG = 0
+    
+    html_page = urllib.request.urlopen( URL )
+    soup = BeautifulSoup( html_page , 'html.parser' )
+    
+    folders = []
+    #files   = []
+    
+    for link in soup.find_all( "a" ):
+        currLink = link.get( 'href' )
+        if _DEBUG:  
+            prefix = '\t' * depth
+            print( prefix + currLink )    
+        if '..' not in currLink:
+            if '.' in currLink:
+                if _DEBUG:  print( prefix + "Found file:" , currLink )
+                ROMlst.append( currLink )
+            else:
+                if _DEBUG:  print( prefix + "Found file:" , currLink )
+                folders.append( currLink )
 
+    if _DEBUG:                
+        print( "Folders:" , folders ) 
+        print( "Files:  " , ROMlst   ) 
+            
+
+    for elem in folders:
+        subURL = URL + "/" + elem
+        recurse_file_page( subURL , depth+1 , ROMlst )
+        
+    if depth == 0:
+        if _DEBUG:  
+            print( "ALL FILES:" , ROMlst )
+        print( "Found" , len( ROMlst ) , "files!" )
+        return ROMlst
+    else:
+        print( '.' , end = '' , flush = 1 )
+        return None
 
 # __ End Func __
 
@@ -69,7 +108,6 @@ def __prog_signature__(): return __progname__ + " , Version " + __version__ # Re
 
 # == Program Vars ==
 ROMURL  = "https://yomiko.bytex64.net/media/games/NES/"
-_PARENT = "../"
 
 # __ End Vars __
 
@@ -78,10 +116,8 @@ if __name__ == "__main__":
     print( __prog_signature__() )
     termArgs = sys.argv[1:] # Terminal arguments , if they exist
         
-    html_page = urllib.request.urlopen( ROMURL )
-    soup = BeautifulSoup( html_page , 'html.parser' )
-    for link in soup.find_all("a"):
-        print( link.get('href') )
+    ROMURL  = "https://yomiko.bytex64.net/media/games/NES/"    
+    NESROMs = recurse_file_page( ROMURL , depth = 0 )
 
 # ___ End Main _____________________________________________________________________________________________________________________________
 
