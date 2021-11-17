@@ -4,6 +4,7 @@
 
 # JType = [0,1]
 
+########## Element ################################################################################
 
 class Element:
     """ Models a transfer of energy """
@@ -14,12 +15,15 @@ class Element:
         self.tail = tail
 
 
+
+########## Junction ###############################################################################
+
 class Junction:
     """ Models a connection between elements """
 
     def __init__( self, typ = -1, ports = None ):
         """ Set type and connected elements """
-        self.type  = -1
+        self.type = typ
         if ports is None:
             self.ports = []
         else:
