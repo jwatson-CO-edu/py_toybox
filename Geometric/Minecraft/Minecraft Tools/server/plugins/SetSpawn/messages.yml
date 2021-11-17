@@ -1,0 +1,6 @@
+messages:
+  spawn: Teleported to spawn
+  spawnset: Spawn set!
+  pleasewait: Please wait {1} seconds.
+  canceled: Teleportation canceled.
+  permissions: No permissions.
