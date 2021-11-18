@@ -1,4 +1,29 @@
 import numpy as np
+from scipy.special import comb
+
+def count_combos( dim ):
+    """ Count the number of combinations we can pick from dim """
+    count = []
+    for i in range( 1, dim ):
+        count.append( int( comb( dim, i ) ) )
+    count.append(1) # n choose n = 1
+    return count
+
+def accum_elems( numLst ):
+    total  = 0
+    rtnLst = []
+    for num in numLst:
+        total += num
+        rtnLst.append( total )
+    return rtnLst
+
+class Composite:
+    """ Represents a CLifford object [ e1, e2, e3, ..., e12, e13, e23, ..., e123, ... ] """
+    def __init__( self, dim = 3 ):
+        self.partLims = count_combos( dim )
+        self.parts    = [None for i in range( sum( self.partLims ) )]
+        self.partLims = accum_elems( self.partLims )
+
 
 class VectorR2:
     # FIXME: START HERE
