@@ -47,22 +47,26 @@ class Mvec:
 
     def set_by_name( self, compDict ):
         """ Set the blade values by dictionary """
-        # FIXME
-        pass
+        for k, v in compDict.items():
+            try:
+                bDex = self.bladNams.index( k )
+                self.blades[ bDex ] = v
+            except ValueError:
+                pass
 
 
     def set_value( self, value ):
         """ Set the real values of each of the blades """
         if isinstance( value, (list, np.ndarray) ):
             if len( value ) != len( self.blades ):
-                raise IndexError() # FIXME
-            # FIXME
-            pass
+                raise IndexError( f"Mvec.set_value: There must be a value for each blade! There are {len(self.blades)} blades and {len(value)} given values!" ) 
+            for i, v in enumerate( value ):
+                self.blades[i] = v
         elif isinstance( value, dict ):
-            # FIXME
-            pass
+            self.set_by_name( value )
         else:
-            raise ValueError() # FIXME
+            raise ValueError( f"Mvec.set_value: must be dict, list, or numpy array got {type(value)}" ) 
+
 
     def __repr__( self ):
         """ Print the multivector """
@@ -98,10 +102,10 @@ def add( mvc1, mvc2 ):
     return resVec
 
 
-
-
-
 def wedge( mvc1, mvc2 ):
+    """ Wedge product of two multivectors """
+    # The wedge product is always antisymmetric, associative, and anti-commutative.
+    # (u^v)_{ij} = ( (u_i)(v_j) - (u_j)(v_i) )
     # FIXME: START HERE
     # FIXME: WEDGE VECTORS
     # FIXME: WEDGE HIGHER VECTORS
