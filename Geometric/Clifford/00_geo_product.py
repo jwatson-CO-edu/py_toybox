@@ -32,6 +32,7 @@ class Mvec:
 
     def __init__( self, realDim = 3 ):
         """ Build a list to hold all the parts of a clifford composite """
+<<<<<<< HEAD
         self.e0       = None # Pure scalar part
         self.rDim     = realDim # Number of real dimensions of the space represented
         self.partLims = count_combos( realDim )
@@ -39,6 +40,15 @@ class Mvec:
         self.partLims = accum_elems( self.partLims )
         self.bladNams = self.get_blade_labels()
         self.nBlades  = len( self.bladNams )
+=======
+        self.rDim     = realDim # ------------------------------------- Number of Euclidean dimensions
+        self.partLims = count_combos( realDim ) # --------------------- Get all blades that span the space 
+        self.blades   = [None for i in range( sum( self.partLims ) )] # ------------------ Blades
+        self.bDim     = len( self.blades ) # --------------------------------------------- Number of blades
+        self.partLims = accum_elems( self.partLims ) # ----------------------------------- Get the boundary b/n vectors and multivectors
+        self.bladNams = self.get_blade_labels() # ---------------------------------------- Generate labels
+        self.bldComps = [ self.blade_name_components( bNam ) for bNam in self.bladNams ] # Blade parts, used for wedge rules
+>>>>>>> 78bd581ad79400540bb8e9eefac8a01098f7d47b
 
 
     def get_blade_labels( self ):
@@ -53,7 +63,22 @@ class Mvec:
         return rtnNam
 
 
+<<<<<<< HEAD
     def set_by_name( self, compDict, ignoreZero = 1 ):
+=======
+    @classmethod
+    def blade_name_components( cls, bladeName ):
+        """ Split multivectors into the vector names that span it, used for wedge rules """
+        return [ 'e'+c for c in bladeName.split('e') if c ]
+
+
+    def get_wedge_part( self, index ):
+        """ Return a blade with wedging information """
+        return ( self.blades[ index ], self.bldComps[ index ] )
+
+
+    def set_by_name( self, compDict ):
+>>>>>>> 78bd581ad79400540bb8e9eefac8a01098f7d47b
         """ Set the blade values by dictionary """
         for k, v in compDict.items():
             try:
@@ -105,6 +130,8 @@ class Mvec:
 
 ##### Composite Operations #####
 
+### Addition ###
+
 def add( mvc1, mvc2 ):
     """ Add two multivectors by element """
     resVec = Mvec( realDim = max( mvc1.rDim, mvc2.rDim ) )
@@ -122,6 +149,7 @@ def add( mvc1, mvc2 ):
     return resVec
 
 
+<<<<<<< HEAD
 def count_swaps_to_order( arr ):
     """ Count the number of swaps needed to put the list in order """
     # Orignal code by Osman Mamun, https://stackoverflow.com/a/56265854
@@ -156,11 +184,31 @@ def wedge_blades( nam1, val1, nam2, val2 ):
         rtnNam += str( chr )
     return rtnNam, rtnVal
     
+=======
+### Wedge Product ###
+
+def wedge_parts( prt1, prt2 ):
+    """ Manage rules for wedging of two blades, `prtX` = (number, partNames) """
+    (prt1Real, prt1Prts) = prt1
+    (prt2Real, prt2Prts) = prt2
+    part1set = set( prt1Prts )
+    part2set = set( prt2Prts )
+    overlap  = part1set.intersection( part2set )
+    vecSpan  = part1set.union( part2set )
+    if overlap:
+        realPart = 0.0
+    else:
+        realPart = prt1Real * prt2Real
+    return ( realPart, vecSpan )
+
+>>>>>>> 78bd581ad79400540bb8e9eefac8a01098f7d47b
 
 def wedge( mvc1, mvc2 ):
     """ Wedge product of two multivectors """
     # The wedge product is always antisymmetric, associative, and anti-commutative.
+    # Oriented length times oriented area equals oriented volume
     # (u^v)_{ij} = ( (u_i)(v_j) - (u_j)(v_i) )
+<<<<<<< HEAD
     mvc1dct = mvc1.get_by_name()
     mvc2dct = mvc2.get_by_name()
     setDct  = {}
@@ -178,6 +226,19 @@ def wedge( mvc1, mvc2 ):
 
     rtnMvc.set_by_name( setDct )
     return rtnMvc
+=======
+
+    # 1. Distribute
+    prodParts = []
+    for i in range( mvc1.bDim ):
+        for j in range( mvc2.bDim ):
+            prodParts.append( wedge_parts( 
+                mvc1.get_wedge_part( i ), 
+                mvc2.get_wedge_part( j )
+            ) )
+
+    # 2. FIXME
+>>>>>>> 78bd581ad79400540bb8e9eefac8a01098f7d47b
 
 
 ########## Tests ###################################################################################
