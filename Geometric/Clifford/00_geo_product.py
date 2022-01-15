@@ -32,7 +32,6 @@ class Mvec:
 
     def __init__( self, realDim = 3 ):
         """ Build a list to hold all the parts of a clifford composite """
-<<<<<<< HEAD
         self.e0       = None # Pure scalar part
         self.rDim     = realDim # Number of real dimensions of the space represented
         self.partLims = count_combos( realDim )
@@ -40,15 +39,6 @@ class Mvec:
         self.partLims = accum_elems( self.partLims )
         self.bladNams = self.get_blade_labels()
         self.nBlades  = len( self.bladNams )
-=======
-        self.rDim     = realDim # ------------------------------------- Number of Euclidean dimensions
-        self.partLims = count_combos( realDim ) # --------------------- Get all blades that span the space 
-        self.blades   = [None for i in range( sum( self.partLims ) )] # ------------------ Blades
-        self.bDim     = len( self.blades ) # --------------------------------------------- Number of blades
-        self.partLims = accum_elems( self.partLims ) # ----------------------------------- Get the boundary b/n vectors and multivectors
-        self.bladNams = self.get_blade_labels() # ---------------------------------------- Generate labels
-        self.bldComps = [ self.blade_name_components( bNam ) for bNam in self.bladNams ] # Blade parts, used for wedge rules
->>>>>>> 78bd581ad79400540bb8e9eefac8a01098f7d47b
 
 
     def get_blade_labels( self ):
@@ -63,22 +53,7 @@ class Mvec:
         return rtnNam
 
 
-<<<<<<< HEAD
     def set_by_name( self, compDict, ignoreZero = 1 ):
-=======
-    @classmethod
-    def blade_name_components( cls, bladeName ):
-        """ Split multivectors into the vector names that span it, used for wedge rules """
-        return [ 'e'+c for c in bladeName.split('e') if c ]
-
-
-    def get_wedge_part( self, index ):
-        """ Return a blade with wedging information """
-        return ( self.blades[ index ], self.bldComps[ index ] )
-
-
-    def set_by_name( self, compDict ):
->>>>>>> 78bd581ad79400540bb8e9eefac8a01098f7d47b
         """ Set the blade values by dictionary """
         for k, v in compDict.items():
             try:
