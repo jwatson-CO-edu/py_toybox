@@ -149,7 +149,6 @@ def add( mvc1, mvc2 ):
     return resVec
 
 
-<<<<<<< HEAD
 def count_swaps_to_order( arr ):
     """ Count the number of swaps needed to put the list in order """
     # Orignal code by Osman Mamun, https://stackoverflow.com/a/56265854
@@ -184,31 +183,12 @@ def wedge_blades( nam1, val1, nam2, val2 ):
         rtnNam += str( chr )
     return rtnNam, rtnVal
     
-=======
-### Wedge Product ###
-
-def wedge_parts( prt1, prt2 ):
-    """ Manage rules for wedging of two blades, `prtX` = (number, partNames) """
-    (prt1Real, prt1Prts) = prt1
-    (prt2Real, prt2Prts) = prt2
-    part1set = set( prt1Prts )
-    part2set = set( prt2Prts )
-    overlap  = part1set.intersection( part2set )
-    vecSpan  = part1set.union( part2set )
-    if overlap:
-        realPart = 0.0
-    else:
-        realPart = prt1Real * prt2Real
-    return ( realPart, vecSpan )
-
->>>>>>> 78bd581ad79400540bb8e9eefac8a01098f7d47b
 
 def wedge( mvc1, mvc2 ):
     """ Wedge product of two multivectors """
     # The wedge product is always antisymmetric, associative, and anti-commutative.
     # Oriented length times oriented area equals oriented volume
     # (u^v)_{ij} = ( (u_i)(v_j) - (u_j)(v_i) )
-<<<<<<< HEAD
     mvc1dct = mvc1.get_by_name()
     mvc2dct = mvc2.get_by_name()
     setDct  = {}
@@ -226,19 +206,6 @@ def wedge( mvc1, mvc2 ):
 
     rtnMvc.set_by_name( setDct )
     return rtnMvc
-=======
-
-    # 1. Distribute
-    prodParts = []
-    for i in range( mvc1.bDim ):
-        for j in range( mvc2.bDim ):
-            prodParts.append( wedge_parts( 
-                mvc1.get_wedge_part( i ), 
-                mvc2.get_wedge_part( j )
-            ) )
-
-    # 2. FIXME
->>>>>>> 78bd581ad79400540bb8e9eefac8a01098f7d47b
 
 
 ########## Tests ###################################################################################
