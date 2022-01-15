@@ -32,27 +32,47 @@ class Mvec:
 
     def __init__( self, realDim = 3 ):
         """ Build a list to hold all the parts of a clifford composite """
-        self.rDim     = realDim
+        self.e0       = None # Pure scalar part
+        self.rDim     = realDim # Number of real dimensions of the space represented
         self.partLims = count_combos( realDim )
         self.blades   = [None for i in range( sum( self.partLims ) )]
         self.partLims = accum_elems( self.partLims )
         self.bladNams = self.get_blade_labels()
+        self.nBlades  = len( self.bladNams )
 
 
     def get_blade_labels( self ):
         """  Create labels e1, e2, e3, ... """
+        # FIXME: THIS IS A HACK FOR R3 AND NOT GENERAL
         dimInt = [ i+1 for i in range( self.rDim ) ]
-        return [ 'e'+str( elem ) for elem in dimInt ]
+        rtnNam = [ 'e'+str( elem ) for elem in dimInt ]
+        for i in range( 0, self.rDim -1 ):
+            for j in range( i+1, self.rDim ):
+                rtnNam.append( 'e'+str( dimInt[i] )+str( dimInt[j] ) )
+        rtnNam.append( 'e123' )
+        return rtnNam
 
 
-    def set_by_name( self, compDict ):
+    def set_by_name( self, compDict, ignoreZero = 1 ):
         """ Set the blade values by dictionary """
         for k, v in compDict.items():
             try:
-                bDex = self.bladNams.index( k )
-                self.blades[ bDex ] = v
+                if ignoreZero and (v == 0.0):
+                    pass 
+                else:
+                    bDex = self.bladNams.index( k )
+                    self.blades[ bDex ] = v
             except ValueError:
                 pass
+
+
+    def get_by_name( self ):
+        """ Get a dictionary of populated blades and their values """
+        rtnDct = {}
+        for i, b in enumerate( self.blades ):
+            if b is not None:
+                rtnDct[ self.bladNams[i] ] = b
+        return rtnDct
 
 
     def set_value( self, value ):
@@ -71,13 +91,13 @@ class Mvec:
     def __repr__( self ):
         """ Print the multivector """
         rtnStr = '[ '
-        for i in range( self.rDim ):
+        for i in range( self.nBlades ):
             b = self.blades[i]
             n = self.bladNams[i]
-            if b is not None:
+            if (b is not None) and (b != 0.0):
                 rtnStr += str( b ) + '*' + str( n )
-            if i < (self.rDim - 1):
-                rtnStr += ', '
+                if i < (self.nBlades - 1):
+                    rtnStr += ', '
         rtnStr += ']'
         return rtnStr
 
@@ -102,14 +122,92 @@ def add( mvc1, mvc2 ):
     return resVec
 
 
+def count_swaps_to_order( arr ):
+    """ Count the number of swaps needed to put the list in order """
+    # Orignal code by Osman Mamun, https://stackoverflow.com/a/56265854
+    swap_cnt = 0
+    i = len(arr) - 1
+    while i > 0:
+        for j in range(i):
+            if arr[j] > arr[j+1]:
+                arr[j], arr[j+1] = arr[j+1], arr[j]
+                swap_cnt += 1
+        i -= 1
+    return arr, swap_cnt
+
+
+def merge_blade_names( nam1, nam2 ):
+    """ Create a blade name of the appropriate order """
+    # NOTE: This function assumes blade names will have only one character following 'e'
+    return 'e' + nam1.replace( 'e', '' ) + nam2.replace( 'e', '' )
+
+
+def wedge_blades( nam1, val1, nam2, val2 ):
+    """ Wedge two blades """
+    rtnNam = merge_blade_names( nam1, nam2 )
+    if nam1 == nam2:
+        return rtnNam, 0
+    rtnVal = val1 * val2
+    ordered, nSwaps = count_swaps_to_order( [int( bNam ) for bNam in rtnNam.replace( 'e', '' )] )
+    if nSwaps % 2 != 0:
+        rtnVal *= -1.0
+    rtnNam = 'e' 
+    for chr in ordered:
+        rtnNam += str( chr )
+    return rtnNam, rtnVal
+    
+
 def wedge( mvc1, mvc2 ):
     """ Wedge product of two multivectors """
     # The wedge product is always antisymmetric, associative, and anti-commutative.
     # (u^v)_{ij} = ( (u_i)(v_j) - (u_j)(v_i) )
-    # FIXME: START HERE
-    # FIXME: WEDGE VECTORS
-    # FIXME: WEDGE HIGHER VECTORS
-    pass
+    mvc1dct = mvc1.get_by_name()
+    mvc2dct = mvc2.get_by_name()
+    setDct  = {}
+    rtnMvc  = Mvec( mvc1.rDim )
+
+    for nam1, val1 in mvc1dct.items():
+        for nam2, val2 in mvc2dct.items():
+            pNam, pVal = wedge_blades( nam1, val1, nam2, val2 )
+            tmpMvc = Mvec( mvc1.rDim )
+            tmpMvc.set_by_name( {pNam: pVal} )
+            rtnMvc = add( tmpMvc, rtnMvc )
+
+    # print( rtnMvc.bladNams )
+    # print( setDct )
+
+    rtnMvc.set_by_name( setDct )
+    return rtnMvc
 
 
 ########## Tests ###################################################################################
+
+##### Creation Test #####
+
+print( "Creation Test" )
+
+mvc1 = Mvec()
+mvc1.set_by_name({
+    'e1': 1, 
+    'e2': 2, 
+    'e3': 3,
+})
+print( mvc1 )
+
+print()
+
+
+##### Wedge Tests #####
+
+print( "Wedge Tests" )
+mvc2 = Mvec()
+mvc2.set_by_name({
+    'e1': 1, 
+    'e2': 2, 
+    'e3': 3,
+})
+
+mvc3 = wedge( mvc1, mvc1 )
+print( mvc3 )
+
+print()
