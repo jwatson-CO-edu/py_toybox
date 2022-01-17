@@ -213,4 +213,8 @@ mvc2.set_by_name({
 mvc3 = wedge( mvc1, mvc1 )
 print( mvc3 )
 
+### CalcBLUE 4 : Ch. 8.3 : The Wedge Product, https://www.youtube.com/watch?v=49eh4i1vokk ###
+
+mvc4
+
 print()
