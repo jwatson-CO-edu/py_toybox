@@ -1,15 +1,18 @@
 exLst = [ 'a', 'b', 'c' ]
 
 
-def ordered_combos( lst, accumList = None, prefix = None ):
+def ordered_combos( lst, accumList = None, prefix = None, maxLen = None ):
     """ Return all combos of elements in `lst` """
     
-    print( lst, (not lst) )
+    N = len( lst )
+    d = len( prefix ) if (prefix is not None) else 0
+
+    if (maxLen is None) and (prefix is None):
+        maxLen = N
     
     if not lst:
         return []
-    
-    N = len( lst )
+
     if accumList is None:
         rtnLst = []
     else:
@@ -17,8 +20,7 @@ def ordered_combos( lst, accumList = None, prefix = None ):
     
     for i, elem in enumerate( lst ):
         
-        
-        if (prefix is not None) and (len( prefix ) >= N):
+        if (prefix is not None) and (len( prefix ) >= maxLen):
             return []
         if prefix is None:
             nuElem = [ elem ]
@@ -26,15 +28,12 @@ def ordered_combos( lst, accumList = None, prefix = None ):
             nuElem = prefix[:]
             nuElem.append( elem )
         
+        # print( '\t'*d, f"Adding: {nuElem}" )
         
         rtnLst.append( nuElem )
-        print( lst[i+1:], rtnLst, nuElem )
+        # print( lst[i+1:], rtnLst, nuElem )
         if i < N:
-            nxtPiece = ordered_combos( lst[i+1:], accumList = rtnLst, prefix = nuElem )
-            if nxtPiece is not None:
-                rtnLst.extend(
-                    nxtPiece
-                )
+            ordered_combos( lst[i+1:], accumList = rtnLst, prefix = nuElem, maxLen = maxLen )
     return rtnLst
         
 res = ordered_combos( exLst ) 
