@@ -1,8 +1,8 @@
-exLst = [ 'a', 'b', 'c' ]
+exLst = [ 'a', 'b', 'c', 'd' ]
 
 
 def ordered_combos( lst, accumList = None, prefix = None, maxLen = None ):
-    """ Return all combos of elements in `lst` """
+    """ Return all combos of elements in `lst` in lexigraphic order (according to `lst`) """
     
     N = len( lst )
     d = len( prefix ) if (prefix is not None) else 0

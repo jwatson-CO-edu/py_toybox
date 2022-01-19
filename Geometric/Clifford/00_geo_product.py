@@ -6,6 +6,7 @@ from scipy.special import comb
 
 ########## UTIL FUNCTIONS ##########################################################################
 
+
 def count_combos( dim ):
     """ Count the number of combinations we can pick from dim """
     count = []
@@ -14,12 +15,74 @@ def count_combos( dim ):
     count.append(1) # n choose n = 1
     return count
 
+
 def accum_elems( numLst ):
+    """ Return a list that is the elementwise running sum of `numList` """
     total  = 0
     rtnLst = []
     for num in numLst:
         total += num
         rtnLst.append( total )
+    return rtnLst
+
+
+def ordered_combos( lst, accumList = None, prefix = None, maxLen = None ):
+    """ Return all combos of elements in `lst` in lexigraphic order (according to `lst`) """
+    ## Init ##
+    # Length of current sublist
+    N = len( lst )
+    # Establish length of symbol lexicon at depth 0
+    if (maxLen is None) and (prefix is None):
+        maxLen = N
+    # Establish or link to the list of accumulated combos
+    if not lst: 
+        return []
+    if accumList is None:
+        rtnLst = []
+    else:
+        rtnLst = accumList
+    ## Cases ##
+    for i, elem in enumerate( lst ):
+        # Base Case, End of original list: Return empty list
+        if (prefix is not None) and (len( prefix ) >= maxLen):
+            return []
+        # Base Case, Beginning of original list: Gather first element
+        if prefix is None:
+            nuElem = [ elem ]
+        # Recursive Case: Append upper level prefix to current element to product combo
+        elif prefix is not None:
+            nuElem = prefix[:]
+            nuElem.append( elem )
+        # All Cases: Gather the element / combo
+        rtnLst.append( nuElem )
+        # Recursive Case: Compute all possible combos with current element as prefix
+        if i < N:
+            ordered_combos( lst[i+1:], accumList = rtnLst, prefix = nuElem, maxLen = maxLen )
+    ## End: Return all combos computed at this depth and below ##
+    return rtnLst
+
+
+def bin_lists_by_length( lstLst ):
+    """ Return a dictionary with length keys and values that a lists of lists of that length """
+    rtnDct = {}
+    for lst in lstLst:
+        N = len( lst )
+        if N in rtnDct:
+            rtnDct[N].append( lst )
+        else:
+            rtnDct[N] = [ lst, ]
+    return rtnDct
+
+
+def combine_and_sort_string_list( strLstLst ):
+    """ Concat the elements of each list in `strLstLst` into single strings, then sort the resulting list """
+    rtnLst = []
+    for strLst in strLstLst:
+        elemStr = ""
+        for elem in strLst:
+            elemStr += str( elem )
+        rtnLst.append( elemStr )
+    rtnLst.sort()
     return rtnLst
 
 
@@ -42,14 +105,26 @@ class Mvec:
 
 
     def get_blade_labels( self ):
-        """  Create labels e1, e2, e3, ... """
-        # FIXME: THIS IS A HACK FOR R3 AND NOT GENERAL
-        dimInt = [ i+1 for i in range( self.rDim ) ]
-        rtnNam = [ 'e'+str( elem ) for elem in dimInt ]
-        for i in range( 0, self.rDim -1 ):
-            for j in range( i+1, self.rDim ):
-                rtnNam.append( 'e'+str( dimInt[i] )+str( dimInt[j] ) )
-        rtnNam.append( 'e123' )
+        """  Create labels {e1, e2, e3, ..., e12, ...} to appropriate length all the way to `self.rDim` """
+        dimStr = [ str( i+1 ) for i in range( self.rDim ) ]
+        bldCmb = ordered_combos( dimStr )
+        bldDct = bin_lists_by_length( bldCmb )
+        bldLst = []
+        Nlst   = []
+        for k, v in bldDct.items():
+            cmbLst = combine_and_sort_string_list( v )
+            if (not bldLst) or (k > Nlst[-1]):
+                bldLst.append( cmbLst )
+                Nlst.append( k )
+            elif k < Nlst[0]:
+                bldLst.insert( 0, cmbLst )
+                Nlst.insert(   0, k      )
+            else:
+                raise ValueError( "There was a problem with `bin_lists_by_length`" )
+        rtnNam = []
+        for subLst in bldLst:
+            rtnNam.extend( subLst )
+        rtnNam = [ 'e'+str( elem ) for elem in rtnNam ]
         return rtnNam
 
 
@@ -215,6 +290,6 @@ print( mvc3 )
 
 ### CalcBLUE 4 : Ch. 8.3 : The Wedge Product, https://www.youtube.com/watch?v=49eh4i1vokk ###
 
-mvc4
+# mvc4
 
 print()
