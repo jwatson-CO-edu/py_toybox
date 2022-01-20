@@ -277,7 +277,7 @@ print()
 
 ##### Wedge Tests #####
 
-print( "Wedge Tests" )
+print( "Wedge Test" )
 mvc2 = Mvec()
 mvc2.set_by_name({
     'e1': 1, 
@@ -288,8 +288,33 @@ mvc2.set_by_name({
 mvc3 = wedge( mvc1, mvc1 )
 print( mvc3 )
 
-### CalcBLUE 4 : Ch. 8.3 : The Wedge Product, https://www.youtube.com/watch?v=49eh4i1vokk ###
+### CalcBLUE 4 : Ch. 16.3 : The Wedge Product, https://www.youtube.com/watch?v=iVwrA0K3ebc ###
 
-# mvc4
+print( "CalcBLUE 4 : Ch. 16.3" )
 
-print()
+# t = 4:19
+alpha = Mvec(6) 
+alpha.set_by_name({
+    'e1':  3,
+    'e3': -2,
+    'e6':  1,
+})
+
+beta  = Mvec(6) 
+beta.set_by_name({
+    'e246': -5,
+})
+
+omega = Mvec(6)
+omega.set_by_name({
+    'e12': 1,
+    'e34': 1,
+}) 
+
+mvc4 = wedge( beta, omega )
+
+print( mvc4 ) # t = 4:19, CORRECT!
+
+mvc5 = wedge( alpha, beta )
+
+print( mvc5 ) # t = 5:37, CORRECT!
