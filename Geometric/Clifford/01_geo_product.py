@@ -259,13 +259,50 @@ def wedge( mvc1, mvc2 ):
 
 
 def div( mvc1, mvc2 ):
-    """ Multivector ratio """
+    """ Multivector ratio --> Scalar """
+    # 1. Fetch blade values by name
     mvc1dct = mvc1.get_by_name()
     mvc2dct = mvc2.get_by_name()
-    setDct  = {}
-    rtnMvc  = Mvec( mvc1.rDim )
+    # 2. Init resultant multivector
+    rtnMvc    = Mvec( mvc1.rDim )
+    rtnMvc.e0 = 0.0
     # FIXME: https://www.youtube.com/watch?v=M0X2XyfFfRY&list=PLxo3PbygE0PLdFFy_2b02JAaUsleFW8py&index=6
     # t = 28:13
+    # 3. Ratio of scalar parts
+    if mvc2dct.e0 != 0.0:
+        rtnMvc.e0 = mvc1dct.e0 / mvc2dct.e0
+    else:
+        rtnMvc.e0 = float('nan')
+        return rtnMvc 
+    # 4. Sum the ratio of each corresponding pair of blades in each operand
+    for bldNam1, blvVal1 in mvc1dct.items():
+        if bldNam1 in mvc2dct:
+            blvVal2 = mvc2dct[ bldNam1 ]
+            if (blvVal1 != 0.0) and (blvVal2 != 0.0):
+                rtnMvc.e0 += blvVal1 / blvVal2
+    # 4. The result is a pure scalar, return it
+    return rtnMvc
+
+
+def mlt( mvc1, mvc2 ):
+    """ Multivector product --> Scalar """
+    # 1. Fetch blade values by name
+    mvc1dct = mvc1.get_by_name()
+    mvc2dct = mvc2.get_by_name()
+    # 2. Init resultant multivector
+    rtnMvc    = Mvec( mvc1.rDim )
+    # 3. Product of scalar parts
+    rtnMvc.e0 = mvc1dct.e0 * mvc2dct.e0
+    # FIXME: https://www.youtube.com/watch?v=M0X2XyfFfRY&list=PLxo3PbygE0PLdFFy_2b02JAaUsleFW8py&index=6
+    # t = 28:13
+    # 4. Sum the product of each corresponding pair of blades in each operand
+    for bldNam1, blvVal1 in mvc1dct.items():
+        if bldNam1 in mvc2dct:
+            blvVal2 = mvc2dct[ bldNam1 ]
+            if (blvVal1 != 0.0) and (blvVal2 != 0.0):
+                rtnMvc.e0 += blvVal1 * blvVal2
+    # 4. The result is a pure scalar, return it
+    return rtnMvc
 
 
 ########## Tests ###################################################################################
