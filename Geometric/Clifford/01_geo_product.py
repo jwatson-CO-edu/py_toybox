@@ -1,3 +1,9 @@
+"""
+FIXME: https://www.youtube.com/watch?v=jePGhow3mlA&list=PLxo3PbygE0PLdFFy_2b02JAaUsleFW8py&index=7
+t = 13:41
+"""
+
+
 ########## INIT ####################################################################################
 import numpy as np
 from scipy.special import comb
@@ -178,7 +184,7 @@ class Mvec:
 
 
 
-##### Composite Operations #####
+##### Multivector Operations #####
 
 ### Addition ###
 
@@ -251,9 +257,6 @@ def wedge( mvc1, mvc2 ):
             tmpMvc.set_by_name( {pNam: pVal} )
             rtnMvc = add( tmpMvc, rtnMvc )
 
-    # print( rtnMvc.bladNams )
-    # print( setDct )
-
     rtnMvc.set_by_name( setDct )
     return rtnMvc
 
@@ -266,8 +269,6 @@ def div( mvc1, mvc2 ):
     # 2. Init resultant multivector
     rtnMvc    = Mvec( mvc1.rDim )
     rtnMvc.e0 = 0.0
-    # FIXME: https://www.youtube.com/watch?v=M0X2XyfFfRY&list=PLxo3PbygE0PLdFFy_2b02JAaUsleFW8py&index=6
-    # t = 28:13
     # 3. Ratio of scalar parts
     if mvc2dct.e0 != 0.0:
         rtnMvc.e0 = mvc1dct.e0 / mvc2dct.e0
@@ -293,8 +294,6 @@ def mlt( mvc1, mvc2 ):
     rtnMvc    = Mvec( mvc1.rDim )
     # 3. Product of scalar parts
     rtnMvc.e0 = mvc1dct.e0 * mvc2dct.e0
-    # FIXME: https://www.youtube.com/watch?v=M0X2XyfFfRY&list=PLxo3PbygE0PLdFFy_2b02JAaUsleFW8py&index=6
-    # t = 28:13
     # 4. Sum the product of each corresponding pair of blades in each operand
     for bldNam1, blvVal1 in mvc1dct.items():
         if bldNam1 in mvc2dct:
